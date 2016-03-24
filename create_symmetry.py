@@ -23,7 +23,7 @@ import re
 
 # math
 from cmath import exp
-from math import sqrt
+from math import sqrt, pi
 from random import randint, uniform, shuffle
 # >>>1
 
@@ -132,7 +132,7 @@ p1m1, p11m, p2mm, p11g or p2mg)"""
 ###
 # making an image from a transformation and a colorwheel
 def make_world_numpy(                   # <<<1
-        M,                              # the matrix of the transformation
+        A,                              # the matrix of the transformation
         color_im,                       # image for the colorwheel image
         width, height,                  # size of the output image
         x_min=-1,                       # coordinates of the world
@@ -173,16 +173,37 @@ def make_world_numpy(                   # <<<1
 
     ys = np.arange(height)
     ys = y_max - ys*delta_y
-    zs = xs[:, None] + 1j*ys
-    if E is None:
-        pass
-    elif isinstance(E, float) or isinstance(E, int):
-        zs = np.exp(E * 1j * zs)
-    zcs = np.conj(zs)
-
     res = np.zeros((width, height), complex)
-    for (n, m) in M:
-        res = res + M[(n, m)] * zs**n * zcs**m
+    for (n, m) in A:
+        if E is None:
+            zs = xs[:, None] + 1j*ys
+            zcs = np.conj(zs)
+            res = res + A[(n, m)] * zs**n * zcs**m
+        elif isinstance(E, float) or isinstance(E, int):
+            zs = xs[:, None] + 1j*ys
+            zs = np.exp(E * 2j * pi * zs)
+            zcs = np.conj(zs)
+            res = res + A[(n, m)] * zs**n * zcs**m
+        elif isinstance(E, str):
+            if E == "square":
+                zs = (np.exp(2j*pi*(n*xs[:, None] + m*ys)) +
+                      np.exp(2j*pi*(m*xs[:, None] - n*ys)) +
+                      np.exp(2j*pi*(-n*xs[:, None] - m*ys)) +
+                      np.exp(2j*pi*(-m*xs[:, None] + n*ys))) / 4
+                res = res + A[(n, m)] * zs
+            elif E == "hexagonal":
+                Xs = xs[:, None] + ys/sqrt(3)
+                Ys = 2*ys / sqrt(3)
+                zs = (np.exp(2j*pi*(n*Xs + m*Ys)) +
+                      np.exp(2j*pi*(m*Xs - (n+m)*Ys)) +
+                      np.exp(2j*pi*(-(n+m)*Xs + n*Ys))) / 3
+                res = res + A[(n, m)] * zs
+            else:
+                error("unknown lattice: '{}'".format(E))
+        else:   # E should be a 2x2 array
+            zs = (n*(E[0][0]*xs[:, None] + E[0][1]*ys) +
+                  m*(E[1][0]*xs[:, None] + E[1][1]*ys))
+            res = res + A[(n, m)] * np.exp(2j*pi*zs)
 
     xs = np.rint((res.real - color_x_min) / color_delta_x).astype(int)
     ys = np.rint((color_y_max - res.imag) / color_delta_y).astype(int)
@@ -208,14 +229,14 @@ def make_world_numpy(                   # <<<1
 
 
 def make_world_plain(                   # <<<1
-        M,                              # the matrix of the transformation
+        A,                              # the matrix of the transformation
         color_im,                       # image for the colorwheel image
         width, height,                  # size of the output image
         x_min=-1,                       # coordinates of the world
         x_max=1,                        # ...
         y_min=-1,                       # ...
         y_max=1,                        # ...
-        E=None,                         # None, an integer, or the 2x2 matrix giving the transformation to apply to the input
+        E=None,                         # None, an integer, a string ("square" or "hexagonal") or the 2x2 matrix giving the transformation to apply to the input
         color_x_min=-1,                 # coordinates of the colorwheel
         color_x_max=1,                  # ...
         color_y_min=-1,                 # ...
@@ -249,15 +270,39 @@ def make_world_plain(                   # <<<1
         for j in range(height):
             x = x_min + i*delta_x
             y = y_max - j*delta_y
-            z = complex(x, y)
-            if E is None:
-                pass
-            elif isinstance(E, float):
-                z = exp(E * 1j * z)
-            zc = z.conjugate()
             res = 0
-            for (n, m) in M:
-                res = res + M[(n, m)] * z**n * zc**m
+            for (n, m) in A:
+                if E is None:
+                    z = complex(x, y)
+                    zc = z.conjugate()
+                    res = res + A[(n, m)] * z**n * zc**m
+                elif isinstance(E, float):
+                    z = exp(E * 1j * z)
+                    zc = z.conjugate()
+                    res = res + A[(n, m)] * z**n * zc**m
+                elif isinstance(E, str):
+                    if E == "square":
+                        z = (exp(2j*pi*(n*x + m*y)) +
+                             exp(2j*pi*(m*x - n*y)) +
+                             exp(2j*pi*(-n*x - m*y)) +
+                             exp(2j*pi*(-m*x + n*y))) / 4
+                        res = res + A[(n, m)] * z
+                    elif E == "hexagonal":
+                        X = x + y/sqrt(3)
+                        Y = 2*y / sqrt(3)
+                        z = (exp(2j*pi*(n*X + m*Y)) +
+                             exp(2j*pi*(m*X - (n+m)*Y)) +
+                             exp(2j*pi*(-(n+m)*X + n*Y))) / 3
+                        res = res + A[(n, m)] * z
+                    else:
+                        error("unknown lattice: '{}'".format(E))
+                else:   # E should be a 2x2 array
+                    z = exp(2j*pi*(
+                            n*(E[0][0]*x + E[0][1]*y) +
+                            m*(E[1][0]*x + E[1][1]*y)
+                            ))
+                    res = res + A[(n, m)] * z
+
             res_x = round((res.real - color_x_min) / color_delta_x)
             res_y = round((color_y_max - res.imag) / color_delta_y)
             try:
@@ -850,13 +895,21 @@ def main():     # <<<1
         else:
             assert False
 
-    M = { (1,0): 2 }
-    # M = {
-    #      (0, 1): .3,
-    #      (1, -1): -.123,
-    #      (3, 1): .4,
-    #     }
+    # M = { (1,0): 2 }
+    M = {
+         (0, 1): .3,
+         (1, -1): -.123,
+         (3, 1): .4,
+        }
     # M = make_frieze(M, "p211")
+    a = .7
+    b = -.3
+    M = {
+         (1, 2): a,
+         (1, -2): a,
+         (3, 1): -b,
+         (3, -1): -b,
+         }
 
     if use_numpy:
         make_world = make_world_numpy
@@ -865,7 +918,10 @@ def main():     # <<<1
     output_image = make_world(M, colors_filename,
                               output_width, output_height,
                               x_min, x_max, y_min, y_max,
-                              None,
+                              # "square",
+                              "hexagonal",
+                              # [[1,0],[0,1]],
+                              # None,
                               color_x_min, color_x_max, color_y_min, color_y_max,
                               default_color="black")
 
