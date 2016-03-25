@@ -20,6 +20,7 @@ import sys
 import os.path
 from itertools import product
 import re
+import json
 
 # math
 from cmath import exp
@@ -28,6 +29,7 @@ from random import randint, uniform, shuffle
 # >>>1
 
 verbose = 0
+PREVIEW_SIZE = 400
 
 
 ###
@@ -59,38 +61,52 @@ def apply(M, z):
 ###
 # functions to manipulate matrices of functions
 # <<<1
+def parse_matrix(s):        # <<<2
+    """parse a string and return the corresponding matrix"""
+    s = s.strip(" {}")
+    tmp = re.split("\s*(?:[,;:]|(?:[-=]>))\s*", s)
+    M = {}
+    for i in range(0, len(tmp), 3):
+        n, m, e = tmp[i:i+3]
+        n = n.strip(" ()")
+        m = m.strip(" ()")
+        M[(int(n), int(m))] = complex(e)
+    return M
+# >>>2
+
+
 def make_frieze(M, frieze):     # <<<2
     """modify the matrix ``M`` to give a frieze pattern with symetries
 ``frieze`` can be any of the seven types of frieze patterns (p111, p211,
 p1m1, p11m, p2mm, p11g or p2mg)"""
-    if frieze == "p111":
+    if frieze in ["p111", "p1", "∞∞"]:
         return M
-    elif frieze == "p211":
+    elif frieze in ["p211", "p2", "22∞"]:
         R = {}
         for (n, m) in M:
             coeff = (M.get((n, m), 0) + M.get((-n, -m), 0)) / 2
             R[(n, m)] = R[(-n, -m)] = coeff
         return R
-    elif frieze == "p1m1":
+    elif frieze in ["p1m1", "∞∞*"]:
         R = {}
         for (n, m) in M:
             coeff = (M.get((n, m), 0) + M.get((m, n), 0)) / 2
             R[(n, m)] = R[(m, n)] = coeff
         return R
-    elif frieze == "p11m":
+    elif frieze in ["p11m", "*∞"]:
         R = {}
         for (n, m) in M:
             coeff = (M.get((n, m), 0) + M.get((-m, -n), 0)) / 2
             R[(n, m)] = R[(-m, -n)] = coeff
         return R
-    elif frieze == "p2mm":
+    elif frieze in ["p2mm", "*22∞"]:
         R = {}
         for (n, m) in M:
             coeff = (M.get((n, m), 0) + M.get((m, n), 0) +
                      M.get((-n, -m), 0) + M.get((-m, -n), 0)) / 4
             R[(n, m)] = R[(m, n)] = R[(-n, -m)] = R[(-m, -n)] = coeff
         return R
-    elif frieze == "p11g":
+    elif frieze in ["p11g", "∞×"]:
         R = {}
         for (n, m) in M:
             coeff = (M.get((n, m), 0) + M.get((-m, -n), 0)) / 2
@@ -103,7 +119,7 @@ p1m1, p11m, p2mm, p11g or p2mg)"""
             else:
                 S[(n, m)] = S[(-m, -n)] = R[(-m, -n)]
         return S
-    elif frieze == "p2mg":
+    elif frieze in ["p2mg", "2*∞"]:
         R = {}
         for (n, m) in M:
             coeff = (M.get((n, m), 0) + M.get((m, n), 0) +
@@ -139,7 +155,10 @@ def make_world_numpy(                   # <<<1
         x_max=1,                        # ...
         y_min=-1,                       # ...
         y_max=1,                        # ...
-        E=None,                         # None, an integer, or the 2x2 matrix giving the transformation to apply to the input
+        E=None,                         # None, an integer, a string ("square"
+                                        # or "hexagonal") or the 2x2 matrix
+                                        # giving the transformation to apply to
+                                        # the input
         color_x_min=-1,                 # coordinates of the colorwheel
         color_x_max=1,                  # ...
         color_y_min=-1,                 # ...
@@ -181,7 +200,7 @@ def make_world_numpy(                   # <<<1
             res = res + A[(n, m)] * zs**n * zcs**m
         elif isinstance(E, float) or isinstance(E, int):
             zs = xs[:, None] + 1j*ys
-            zs = np.exp(E * 2j * pi * zs)
+            zs = np.exp(E * 1j * zs)
             zcs = np.conj(zs)
             res = res + A[(n, m)] * zs**n * zcs**m
         elif isinstance(E, str):
@@ -236,7 +255,10 @@ def make_world_plain(                   # <<<1
         x_max=1,                        # ...
         y_min=-1,                       # ...
         y_max=1,                        # ...
-        E=None,                         # None, an integer, a string ("square" or "hexagonal") or the 2x2 matrix giving the transformation to apply to the input
+        E=None,                         # None, an integer, a string ("square"
+                                        # or "hexagonal") or the 2x2 matrix
+                                        # giving the transformation to apply to
+                                        # the input
         color_x_min=-1,                 # coordinates of the colorwheel
         color_x_max=1,                  # ...
         color_y_min=-1,                 # ...
@@ -317,16 +339,17 @@ def make_world_plain(                   # <<<1
 ###
 # GUI
 # <<<1
-
 class LabelEntry(Frame):  # <<<2
     """
     An Entry widget with a label on its left.
     """
     __entry = None  # the Entry widget
     __label = None  # the Label widget
-    content = None  # the corresponding StringVar
+    content = None  # the corresponding StringVar / IntVar / BoolVar
+    __init = ""
 
     def __init__(self, parent, label, on_click=None,  # <<<3
+                 value="",
                  state=NORMAL, **kwargs):
         Frame.__init__(self, parent)
 
@@ -334,7 +357,19 @@ class LabelEntry(Frame):  # <<<2
             self.__label = Label(self, text=label)
             self.__label.pack(side=LEFT, padx=(0, 5))
 
-        self.content = StringVar("")
+        self.__init = value
+        if isinstance(value, int):
+            self.content = IntVar()
+            self.content.set(value)
+        elif isinstance(value, float):
+            self.content = FloatVar()
+            self.content.set(value)
+        elif isinstance(value, bool):
+            self.content = BoolVar()
+            self.content.set(value)
+        else:
+            self.content = StringVar("")
+            self.content.set(value)
         self.__entry = Entry(self, textvar=self.content, state=state, **kwargs)
         self.__entry.pack(side=LEFT)
 
@@ -350,7 +385,18 @@ class LabelEntry(Frame):  # <<<2
     # >>>3
 
     def get(self):  # <<<3
-        return self.content.get()
+        s = self.content.get()
+        try:
+            if isinstance(self.__init, int):
+                return int(s)
+            elif isinstance(self.__init, float):
+                return float(s)
+            elif isinstance(self.__init, bool):
+                return bool(s)
+            else:
+                return s
+        except Exception as e:
+            error("cannot convert value of field '{}': {}".format(s, e))
     # >>>3
 
     def delete(self):  # <<<3
@@ -360,9 +406,6 @@ class LabelEntry(Frame):  # <<<2
 
 
 class GUI(Tk):
-
-    preview_width = 500
-    preview_height = 500
 
     output_width = 1280
     output_height = 960
@@ -430,6 +473,10 @@ class GUI(Tk):
 
         canvas = Canvas(frame, width=200, height=200, bg="white")
         canvas.pack(side=TOP, padx=10, pady=10)
+        for i in range(5, 200, 10):
+            for j in range(5, 200, 10):
+                canvas.create_line(i-1, j, i+2, j, fill="gray")
+                canvas.create_line(i, j-1, i, j+2, fill="gray")
         self.colorwheel["display"] = canvas
 
         filename = Label(frame, text="...")
@@ -443,29 +490,29 @@ class GUI(Tk):
         coord_frame = LabelFrame(frame, text="coordinates")
         coord_frame.pack(side=TOP, padx=5, pady=20)
 
-        x_min = LabelEntry(coord_frame, label="x min", width=3, justify=RIGHT)
+        x_min = LabelEntry(coord_frame, label="x min", value=-1,
+                           width=3, justify=RIGHT)
         x_min.grid(row=0, column=0, padx=5, pady=5)
-        x_min.set("-1")
         self.colorwheel["x_min"] = x_min
 
-        x_max = LabelEntry(coord_frame, label="x max", width=3, justify=RIGHT)
+        x_max = LabelEntry(coord_frame, label="x max", value=1,
+                           width=3, justify=RIGHT)
         x_max.grid(row=0, column=1, padx=5, pady=5)
-        x_max.set("1")
         self.colorwheel["x_max"] = x_max
 
-        y_min = LabelEntry(coord_frame, label="y min", width=3, justify=RIGHT)
+        y_min = LabelEntry(coord_frame, label="y min", value=-1,
+                           width=3, justify=RIGHT)
         y_min.grid(row=1, column=0, padx=5, pady=5)
-        y_min.set("-1")
         self.colorwheel["y_min"] = y_min
 
-        y_max = LabelEntry(coord_frame, label="y max", width=3, justify=RIGHT)
+        y_max = LabelEntry(coord_frame, label="y max", value=1,
+                           width=3, justify=RIGHT)
         y_max.grid(row=1, column=1, padx=5, pady=5)
-        y_max.set("1")
         self.colorwheel["y_max"] = y_max
 
-        color = LabelEntry(frame, label="default color", width=10)
+        color = LabelEntry(frame, label="default color", value="black",
+                           width=10)
         color.pack(side=TOP, padx=5, pady=5)
-        color.set("black")
         self.colorwheel["default_color"] = color
 
         Button(frame, text="update",
@@ -477,33 +524,40 @@ class GUI(Tk):
         frame.grid(row=0, column=1, padx=10, pady=10)
 
         # the preview image     <<<3
-        image = Canvas(frame, width=500, height=500, bg="white")
-        image.pack(side=LEFT, padx=10, pady=10)
-        self.result["display"] = image
+        canvas = Canvas(frame, width=PREVIEW_SIZE, height=PREVIEW_SIZE,
+                        bg="white")
+        for i in range(5, PREVIEW_SIZE, 10):
+            for j in range(5, PREVIEW_SIZE, 10):
+                canvas.create_line(i-1, j, i+2, j, fill="gray")
+                canvas.create_line(i, j-1, i, j+2, fill="gray")
+        canvas.pack(side=LEFT, padx=10, pady=10)
+        self.result["display"] = canvas
+        self.result["preview_id"] = None
         # >>>3
 
         # geometry of result    <<<3
         coord_frame = LabelFrame(frame, text="coordinates")
         coord_frame.pack(side=TOP, padx=5, pady=5)
 
-        x_min = LabelEntry(coord_frame, label="x min", width=3, justify=RIGHT)
+        x_min = LabelEntry(coord_frame, label="x min", value=-2,
+                           width=3, justify=RIGHT)
         x_min.grid(row=0, column=0, padx=5, pady=5)
         x_min.set("-2")
         self.result["x_min"] = x_min
 
-        x_max = LabelEntry(coord_frame, label="x max", width=3, justify=RIGHT)
+        x_max = LabelEntry(coord_frame, label="x max", value=2,
+                           width=3, justify=RIGHT)
         x_max.grid(row=0, column=1, padx=5, pady=5)
-        x_max.set("2")
         self.result["x_max"] = x_max
 
-        y_min = LabelEntry(coord_frame, label="y min", width=3, justify=RIGHT)
+        y_min = LabelEntry(coord_frame, label="y min", value=-2,
+                           width=3, justify=RIGHT)
         y_min.grid(row=1, column=0, padx=5, pady=5)
-        y_min.set("-2")
         self.result["y_min"] = y_min
 
-        y_max = LabelEntry(coord_frame, label="y max", width=3, justify=RIGHT)
+        y_max = LabelEntry(coord_frame, label="y max", value=2,
+                           width=3, justify=RIGHT)
         y_max.grid(row=1, column=1, padx=5, pady=5)
-        y_max.set("2")
         self.result["y_max"] = y_max
         # >>>3
 
@@ -511,16 +565,15 @@ class GUI(Tk):
         preview_setting_frame = LabelFrame(frame, text="preview")
         preview_setting_frame.pack(side=TOP, fill=X, padx=5, pady=5)
 
-        preview_width = LabelEntry(preview_setting_frame, label="width",
-                                   width=6, justify=RIGHT)
+        preview_width = LabelEntry(preview_setting_frame, value=PREVIEW_SIZE,
+                                   label="width", width=6, justify=RIGHT)
         preview_width.pack(anchor=E, padx=5, pady=5)
-        preview_width.set("500")
         self.result["preview_width"] = preview_width
 
-        preview_height = LabelEntry(preview_setting_frame, label="height",
-                                    width=6, justify=RIGHT)
+        preview_height = LabelEntry(preview_setting_frame, value=PREVIEW_SIZE,
+                                    label="height", width=6, justify=RIGHT)
         preview_height.pack(anchor=E, padx=5, pady=5)
-        preview_height.set("500")
+        preview_height.set(str(PREVIEW_SIZE))
         self.result["preview_height"] = preview_height
         # >>>3
         Button(frame, text="preview",
@@ -530,21 +583,22 @@ class GUI(Tk):
         settings_frame = LabelFrame(frame, text="output")
         settings_frame.pack(side=TOP, fill=X, padx=5, pady=5)
 
-        output_width = LabelEntry(settings_frame, label="width",
+        output_width = LabelEntry(settings_frame,
+                                  label="width", value=self.output_width,
                                   width=6, justify=RIGHT)
         output_width.pack(side=TOP, anchor=E, padx=5, pady=5)
-        output_width.set(self.output_width)
         self.result["output_width"] = output_width
 
-        output_height = LabelEntry(settings_frame, label="height",
+        output_height = LabelEntry(settings_frame,
+                                   label="height", value=self.output_height,
                                    width=6, justify=RIGHT)
         output_height.pack(side=TOP, anchor=E, padx=5, pady=5)
-        output_height.set(self.output_height)
         self.result["output_height"] = output_height
 
-        output_filename = LabelEntry(settings_frame, label=None, width=15)
+        output_filename = LabelEntry(settings_frame,
+                                     label=None, value=self.output_filename,
+                                     width=15)
         output_filename.pack(side=TOP, anchor=E, padx=5, pady=5)
-        output_filename.set(self.output_filename)
         self.result["output_filename"] = output_height
         # >>>3
         Button(frame, text="generate and save",
@@ -571,7 +625,7 @@ class GUI(Tk):
 
         tmp = LabelFrame(change_frame, text="Change entry")
         tmp.pack(side=TOP, padx=5, pady=5)
-        new_entry = LabelEntry(tmp, label="", width=10)
+        new_entry = LabelEntry(tmp, label="", value="", width=10)
         new_entry.pack(side=TOP, padx=5, pady=5)
 
         def add_entry(*args):
@@ -579,17 +633,21 @@ class GUI(Tk):
             if e == "":
                 return
             try:
-                tmp = re.split("\s*(?:[,;]|(?:=>))\s*", e)
+                tmp = re.split("\s*(?:[,;:]|(?:[-=]>))\s*", e)
                 n, m, z = tmp
+                n = n.strip(" ()")
+                m = m.strip(" ()")
                 n = int(n)
                 m = int(m)
                 z = re.sub("\s*", "", z)
+                z = z.replace("i", "j")
                 z = complex(z)
                 if z == 0:
                     del self.function["matrix"][(n, m)]
                 else:
                     self.function["matrix"][(n, m)] = z
                 self.change_matrix()
+                new_entry.set("")
             except Exception as err:
                 error("cannot parse matrix entry '{}': {}".format(e, err))
 
@@ -608,13 +666,12 @@ class GUI(Tk):
         # add noise <<<3
         tmp = LabelFrame(change_frame, text="random noise")
         tmp.pack(side=TOP, padx=5, pady=5)
-        noise_entry = LabelEntry(tmp, label="level (%)", width=3)
-        noise_entry.set("10")
+        noise_entry = LabelEntry(tmp, label="level (%)", value=10, width=3)
         noise_entry.pack(side=TOP, padx=5, pady=5)
 
         def add_noise(*args):
             try:
-                e = float(noise_entry.get())/100
+                e = noise_entry.get()/100
             except:
                 e = 0.1
             M = self.function["matrix"]
@@ -635,35 +692,30 @@ class GUI(Tk):
         tmp = LabelFrame(frame, text="random matrix")
         tmp.pack(side=LEFT, padx=5, pady=5)
 
-        nb_coeff = LabelEntry(tmp, label="nb coefficients", width=4)
-        nb_coeff.set("3")
+        nb_coeff = LabelEntry(tmp, label="nb coefficients", value=3, width=4)
         nb_coeff.pack(side=TOP, anchor=E, padx=5, pady=5)
 
-        min_degre = LabelEntry(tmp, label="min degre", width=4)
-        min_degre.set("-6")
+        min_degre = LabelEntry(tmp, label="min degre", value=-6, width=4)
         min_degre.pack(side=TOP, anchor=E, padx=5, pady=5)
 
-        max_degre = LabelEntry(tmp, label="max degre", width=4)
-        max_degre.set("6")
+        max_degre = LabelEntry(tmp, label="max degre", value=6, width=4)
         max_degre.pack(side=TOP, anchor=E, padx=5, pady=5)
 
-        min_coeff = LabelEntry(tmp, label="min coefficient", width=4)
-        min_coeff.set("-1")
+        min_coeff = LabelEntry(tmp, label="min coefficient", value=-1, width=4)
         min_coeff.pack(side=TOP, anchor=E, padx=5, pady=5)
 
-        max_coeff = LabelEntry(tmp, label="max coefficient", width=4)
-        max_coeff.set("1")
+        max_coeff = LabelEntry(tmp, label="max coefficient", value=1, width=4)
         max_coeff.pack(side=TOP, anchor=E, padx=5, pady=5)
 
         def new_random_matrix(*args):
-            a = int(min_degre.get())
-            b = int(max_degre.get())
+            a = min_degre.get()
+            b = max_degre.get()
             coeffs = list(product(range(a, b+1), range(a, b+1)))
             shuffle(coeffs)
-            n = int(nb_coeff.get())
+            n = nb_coeff.get()
             coeffs = coeffs[:n]
-            a = int(min_coeff.get())
-            b = int(max_coeff.get())
+            a = min_coeff.get()
+            b = max_coeff.get()
             M = {}
             for (n, m) in coeffs:
                 M[(n, m)] = complex(uniform(a, b), uniform(a, b))
@@ -685,9 +737,12 @@ class GUI(Tk):
         tabs.add(wallpaper_tab, text="wallpaper")
 
         frieze_type = StringVar()
-        OptionMenu(frieze_tab, frieze_type, "p111",
-                   "p111", "p211", "p1m1", "p11m",
-                   "p2mm", "p11g", "p2mg").pack(side=TOP, padx=5, pady=5)
+        # OptionMenu(frieze_tab, frieze_type, "p111",
+        #            "p111", "p211", "p1m1", "p11m",
+        #            "p2mm", "p11g", "p2mg").pack(side=TOP, padx=5, pady=5)
+        OptionMenu(frieze_tab, frieze_type, "∞∞",
+                   "∞∞", "22∞", "∞∞*", "*∞",
+                   "*22∞", "∞×", "2*∞").pack(side=TOP, padx=5, pady=5)
         self.function["frieze_type"] = frieze_type
 
         rosette = BooleanVar()
@@ -698,9 +753,8 @@ class GUI(Tk):
         rosette.set(True)
         self.function["rosette"] = rosette
 
-        nb_fold = LabelEntry(frieze_tab, label="symmetries", width=2)
+        nb_fold = LabelEntry(frieze_tab, label="symmetries", value=5, width=2)
         nb_fold.pack(side=TOP, padx=5, pady=5)
-        nb_fold.set("5")
         self.function["nb_fold"] = nb_fold
 
         Button(frieze_tab, text="make matrix",
@@ -749,14 +803,26 @@ class GUI(Tk):
         keys.sort()
 
         def show(z):
-            x = "{:.4f}".format(z.real).rstrip("0")
-            y = "{:.4f}".format(z.imag).rstrip("0")
-            x = x.rstrip(".")
-            y = y.rstrip(".")
-            return "{} + {}j".format(x, y)
+            if z == 0:
+                return "0"
+            elif z == z.real:
+                x = "{:.4f}".format(z.real).rstrip("0")
+                x = x.rstrip(".")
+                return x
+            elif z == z - z.real:
+                print("ICI")
+                y = "{:.4f}".format(z.imag).rstrip("0")
+                y = y.rstrip(".") + "i"
+                return y
+            else:
+                x = "{:.4f}".format(z.real).rstrip("0")
+                y = "{:.4f}".format(z.imag).rstrip("0")
+                x = x.rstrip(".")
+                y = y.rstrip(".")
+                return "{} + {}i".format(x, y)
 
         for (n, m) in keys:
-            display.insert(END, "{:2}, {:2} -> {}\n"
+            display.insert(END, "{:2}, {:2} : {}\n"
                                 .format(n, m, show(M[(n, m)])))
         display.config(state=DISABLED)
     # >>>2
@@ -764,7 +830,6 @@ class GUI(Tk):
     def make_matrix(self):       # <<<2
         p = self.function["nb_fold"].get()
         try:
-            p = int(p)
             M = self.function["matrix"]
             keys = list(M.keys())
             for (n, m) in keys:
@@ -791,24 +856,25 @@ class GUI(Tk):
         else:
             E = 1
 
-        width = int(self.result["preview_width"].get())
-        height = int(self.result["preview_height"].get())
+        width = self.result["preview_width"].get()
+        height = self.result["preview_height"].get()
 
-        x_min = int(self.result["x_min"].get())
-        x_max = int(self.result["x_max"].get())
-        y_min = int(self.result["y_min"].get())
-        y_max = int(self.result["y_max"].get())
+        x_min = self.result["x_min"].get()
+        x_max = self.result["x_max"].get()
+        y_min = self.result["y_min"].get()
+        y_max = self.result["y_max"].get()
 
-        color_x_min = int(self.colorwheel["x_min"].get())
-        color_x_max = int(self.colorwheel["x_max"].get())
-        color_y_min = int(self.colorwheel["y_min"].get())
-        color_y_max = int(self.colorwheel["y_max"].get())
+        color_x_min = self.colorwheel["x_min"].get()
+        color_x_max = self.colorwheel["x_max"].get()
+        color_y_min = self.colorwheel["y_min"].get()
+        color_y_max = self.colorwheel["y_max"].get()
 
         default_color = self.colorwheel["default_color"].get()
 
         matrix = self.function["matrix"]
 
-        preview_image = make_world_numpy(matrix, self.colorwheel["full_filename"],
+        preview_image = make_world_numpy(matrix,
+                                         self.colorwheel["full_filename"],
                                          width, height,
                                          x_min, x_max, y_min, y_max,
                                          E,
@@ -817,8 +883,8 @@ class GUI(Tk):
 
         tk_img = PIL.ImageTk.PhotoImage(preview_image)
         self.result["display"].tk_img = tk_img
-        self.result["display"].delete("all")
-        self.result["display"].create_image((self.preview_width//2, self.preview_height//2), image=tk_img)
+        self.result["display"].delete(self.result["preview_id"])
+        self.result["preview_id"] = self.result["display"].create_image((PREVIEW_SIZE//2, PREVIEW_SIZE//2), image=tk_img)
     # >>>2
 
 # >>>1
@@ -910,6 +976,7 @@ def main():     # <<<1
          (3, 1): -b,
          (3, -1): -b,
          }
+    assert M == parse_matrix(str(M))
 
     if use_numpy:
         make_world = make_world_numpy
