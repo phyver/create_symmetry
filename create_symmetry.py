@@ -29,9 +29,12 @@ from random import randint, uniform, shuffle
 # >>>1
 
 verbose = 0
-PREVIEW_SIZE = 400
+PREVIEW_SIZE = 500
 OUTPUT_WIDTH = 1280
 OUTPUT_HEIGHT = 960
+COLOR_SIZE = 200
+COLOR_GEOMETRY = (-1., 1., -1., 1.)
+WORLD_GEOMETRY = (-2., 2., -2., 2.)
 
 
 ###
@@ -163,7 +166,7 @@ def make_world_numpy(                   # <<<1
         color_filename="",                  # image for the colorwheel image
         size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),     # size of the output image
         geometry=(-2, 2, -2, 2),                # coordinates of the world
-        color_geometry=(-1, 1, -1, 1),          # coordinates of the colorwheel
+        color_geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
         E=None,                         # None, an integer, a string ("square"
                                         # or "hexagonal") or the 2x2 matrix
                                         # giving the transformation to apply to
@@ -262,7 +265,7 @@ def make_world_plain(                   # <<<1
         color_filename="",                  # image for the colorwheel image
         size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),     # size of the output image
         geometry=(-2, 2, -2, 2),                # coordinates of the world
-        color_geometry=(-1, 1, -1, 1),          # coordinates of the colorwheel
+        color_geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
         E=None,                         # None, an integer, a string ("square"
                                         # or "hexagonal") or the 2x2 matrix
                                         # giving the transformation to apply to
@@ -445,7 +448,7 @@ class GUI(Tk):
                  size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),
                  geometry=(-2, 2, -2, 2),
                  E=None,
-                 color_geometry=(-1, 1, -1, 1),
+                 color_geometry=COLOR_GEOMETRY,
                  default_color="black"):
 
         # tk interface
@@ -469,13 +472,13 @@ class GUI(Tk):
                         filename=None,
                         geometry=(-1, 1, -1, 1),
                         default_color="black"):
-        frame = LabelFrame(self, text="Color Wheel Image")
+        frame = LabelFrame(self, text="Colorwheel")
         frame.grid(row=0, column=0, padx=10, pady=10, sticky=N+S)
 
         canvas = Canvas(frame, width=200, height=200, bg="white")
         canvas.pack(side=TOP, padx=10, pady=10)
-        for i in range(5, 200, 10):
-            for j in range(5, 200, 10):
+        for i in range(5, COLOR_SIZE, 10):
+            for j in range(5, COLOR_SIZE, 10):
                 canvas.create_line(i-1, j, i+2, j, fill="gray")
                 canvas.create_line(i, j-1, i, j+2, fill="gray")
         self.colorwheel["display"] = canvas
@@ -515,6 +518,25 @@ class GUI(Tk):
         y_max.grid(row=1, column=1, padx=5, pady=5)
         self.colorwheel["y_max"] = y_max
 
+        def set_origin(event):
+            x, y = event.x, event.y
+            x_min = self.colorwheel["x_min"].get()
+            x_max = self.colorwheel["x_max"].get()
+            y_min = self.colorwheel["y_min"].get()
+            y_max = self.colorwheel["y_max"].get()
+            delta_x = x_max - x_min
+            delta_y = y_max - y_min
+
+            x_min = -x/COLOR_SIZE * delta_x
+            x_max = x_min + delta_x
+            y_max = y/COLOR_SIZE * delta_y
+            y_min = y_max - delta_y
+            self.colorwheel["x_min"].set(x_min)
+            self.colorwheel["x_max"].set(x_max)
+            self.colorwheel["y_min"].set(y_min)
+            self.colorwheel["y_max"].set(y_max)
+        canvas.bind("<Button-3>", set_origin)
+
         def zoom_out(*args):
             a = 2**0.1
             for c in ["x_min", "x_max", "y_min", "y_max"]:
@@ -525,26 +547,38 @@ class GUI(Tk):
             for c in ["x_min", "x_max", "y_min", "y_max"]:
                 self.colorwheel[c].set(self.colorwheel[c].get() / a)
 
+        def reset_geometry(*args):
+            self.colorwheel["x_min"].set(COLOR_GEOMETRY[0])
+            self.colorwheel["x_max"].set(COLOR_GEOMETRY[1])
+            self.colorwheel["y_min"].set(COLOR_GEOMETRY[2])
+            self.colorwheel["y_max"].set(COLOR_GEOMETRY[3])
+            self.update_colorwheel()
+
         Button(coord_frame, text="zoom -",
-               command=zoom_out).grid(row=4, column=0,
+               command=zoom_out).grid(row=2, column=0,
                                       padx=10, pady=10)
         Button(coord_frame, text="zoom +",
-               command=zoom_in).grid(row=4, column=1,
+               command=zoom_in).grid(row=2, column=1,
                                      padx=10, pady=10)
+
+        Button(coord_frame, text="reset",
+               command=reset_geometry).grid(row=3, column=0, columnspan=2,
+                                            padx=10, pady=10)
+
         color = LabelEntry(frame, label="default color", value=default_color,
                            width=10)
         color.pack(side=TOP, padx=5, pady=5)
         self.colorwheel["default_color"] = color
 
-        Button(frame, text="update",
-               command=self.update_colorwheel).pack(side=TOP, pady=10)
+        # Button(frame, text="update",
+        #        command=self.update_colorwheel).pack(side=TOP, pady=10)
 
         if filename is not None:
             self.change_colorwheel(filename)
     # >>>2
 
     def init_result(self, geometry=(-2, 2, -2, 2)):     # <<<2
-        frame = LabelFrame(self, text="Result Image")
+        frame = LabelFrame(self, text="World")
         frame.grid(row=0, column=1, padx=10, pady=10)
 
         # the preview image     <<<3
@@ -607,11 +641,11 @@ class GUI(Tk):
             self.result["y_min"].set(middle_y - delta_y/2)
             self.result["y_max"].set(middle_y + delta_y/2)
 
-        Button(coord_frame, text="adjust X to ratio",
-               command=adjustX).grid(row=2, column=0, columnspan=2,
+        Button(coord_frame, text="X to ratio",
+               command=adjustX).grid(row=2, column=0,
                                      padx=10, pady=10)
-        Button(coord_frame, text="adjust Y to ratio",
-               command=adjustY).grid(row=3, column=0, columnspan=2,
+        Button(coord_frame, text="Y to ratio",
+               command=adjustY).grid(row=2, column=1, columnspan=2,
                                      padx=10, pady=10)
 
         def zoom_out(*args):
@@ -624,16 +658,23 @@ class GUI(Tk):
             for c in ["x_min", "x_max", "y_min", "y_max"]:
                 self.result[c].set(self.result[c].get() / a)
 
+        def reset_geometry(*args):
+            self.result["x_min"].set(WORLD_GEOMETRY[0])
+            self.result["x_max"].set(WORLD_GEOMETRY[1])
+            self.result["y_min"].set(WORLD_GEOMETRY[2])
+            self.result["y_max"].set(WORLD_GEOMETRY[3])
+
         Button(coord_frame, text="zoom -",
-               command=zoom_out).grid(row=4, column=0,
+               command=zoom_out).grid(row=3, column=0,
                                       padx=10, pady=10)
         Button(coord_frame, text="zoom +",
-               command=zoom_in).grid(row=4, column=1,
+               command=zoom_in).grid(row=3, column=1,
                                      padx=10, pady=10)
-        # >>>3
 
-        Button(frame, text="preview",
-               command=self.make_preview).pack(padx=10, pady=10)
+        Button(coord_frame, text="reset",
+               command=reset_geometry).grid(row=4, column=0, columnspan=2,
+                                            padx=10, pady=10)
+        # >>>3
 
         # result settings       <<<3
         settings_frame = LabelFrame(frame, text="output")
@@ -657,6 +698,10 @@ class GUI(Tk):
         output_filename.pack(side=TOP, anchor=E, padx=5, pady=5)
         self.result["filename"] = output_filename
         # >>>3
+
+        Button(frame, text="preview",
+               command=self.make_preview).pack(padx=10, pady=10)
+
         Button(frame, text="generate and save",
                command=self.make_output).pack(side=TOP, padx=10, pady=10)
     # >>>2
@@ -847,6 +892,10 @@ class GUI(Tk):
                 initialdir="./",
                 filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")])
         self.change_colorwheel(filename)
+        self.colorwheel["x_min"].set(COLOR_GEOMETRY[0])
+        self.colorwheel["x_max"].set(COLOR_GEOMETRY[1])
+        self.colorwheel["y_min"].set(COLOR_GEOMETRY[2])
+        self.colorwheel["y_max"].set(COLOR_GEOMETRY[3])
     # >>>2
 
     def update_colorwheel(self):    # <<<2
