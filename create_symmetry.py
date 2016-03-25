@@ -515,6 +515,22 @@ class GUI(Tk):
         y_max.grid(row=1, column=1, padx=5, pady=5)
         self.colorwheel["y_max"] = y_max
 
+        def zoom_out(*args):
+            a = 2**0.1
+            for c in ["x_min", "x_max", "y_min", "y_max"]:
+                self.colorwheel[c].set(self.colorwheel[c].get() * a)
+
+        def zoom_in(*args):
+            a = 2**0.1
+            for c in ["x_min", "x_max", "y_min", "y_max"]:
+                self.colorwheel[c].set(self.colorwheel[c].get() / a)
+
+        Button(coord_frame, text="zoom -",
+               command=zoom_out).grid(row=4, column=0,
+                                      padx=10, pady=10)
+        Button(coord_frame, text="zoom +",
+               command=zoom_in).grid(row=4, column=1,
+                                     padx=10, pady=10)
         color = LabelEntry(frame, label="default color", value=default_color,
                            width=10)
         color.pack(side=TOP, padx=5, pady=5)
@@ -596,6 +612,23 @@ class GUI(Tk):
                                      padx=10, pady=10)
         Button(coord_frame, text="adjust Y to ratio",
                command=adjustY).grid(row=3, column=0, columnspan=2,
+                                     padx=10, pady=10)
+
+        def zoom_out(*args):
+            a = 2**0.1
+            for c in ["x_min", "x_max", "y_min", "y_max"]:
+                self.result[c].set(self.result[c].get() * a)
+
+        def zoom_in(*args):
+            a = 2**0.1
+            for c in ["x_min", "x_max", "y_min", "y_max"]:
+                self.result[c].set(self.result[c].get() / a)
+
+        Button(coord_frame, text="zoom -",
+               command=zoom_out).grid(row=4, column=0,
+                                      padx=10, pady=10)
+        Button(coord_frame, text="zoom +",
+               command=zoom_in).grid(row=4, column=1,
                                      padx=10, pady=10)
         # >>>3
 
