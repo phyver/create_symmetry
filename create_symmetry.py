@@ -77,6 +77,17 @@ def parse_matrix(s):        # <<<2
 # >>>2
 
 
+def mean(l, M):     # <<<1
+    """compute the mean of the existing values with keys in l,
+from the dictionnary M"""
+    vs = []
+    for k in l:
+        if k in M:
+            vs.append(M[k])
+    return sum(vs) / len(vs)
+# >>>1
+
+
 def make_frieze(M, frieze):     # <<<2
     """modify the matrix ``M`` to give a frieze pattern with symetries
 ``frieze`` can be any of the seven types of frieze patterns (p111, p211,
@@ -86,32 +97,31 @@ p1m1, p11m, p2mm, p11g or p2mg)"""
     elif frieze in ["p211", "p2", "22∞"]:
         R = {}
         for (n, m) in M:
-            coeff = (M.get((n, m), 0) + M.get((-n, -m), 0)) / 2
+            coeff = mean([(n, m), (-n, -m)], M)
             R[(n, m)] = R[(-n, -m)] = coeff
         return R
     elif frieze in ["p1m1", "∞∞*"]:
         R = {}
         for (n, m) in M:
-            coeff = (M.get((n, m), 0) + M.get((m, n), 0)) / 2
+            coeff = mean([(n, m), (m, n)], M)
             R[(n, m)] = R[(m, n)] = coeff
         return R
     elif frieze in ["p11m", "*∞"]:
         R = {}
         for (n, m) in M:
-            coeff = (M.get((n, m), 0) + M.get((-m, -n), 0)) / 2
+            coeff = mean([(n, m), (-m, -n)], M)
             R[(n, m)] = R[(-m, -n)] = coeff
         return R
     elif frieze in ["p2mm", "*22∞"]:
         R = {}
         for (n, m) in M:
-            coeff = (M.get((n, m), 0) + M.get((m, n), 0) +
-                     M.get((-n, -m), 0) + M.get((-m, -n), 0)) / 4
+            coeff = mean([(n, m), (m, n), (-n, -m), (-m, -n)], M)
             R[(n, m)] = R[(m, n)] = R[(-n, -m)] = R[(-m, -n)] = coeff
         return R
     elif frieze in ["p11g", "∞×"]:
         R = {}
         for (n, m) in M:
-            coeff = (M.get((n, m), 0) + M.get((-m, -n), 0)) / 2
+            coeff = mean([(n, m), (-m, -n)], M)
             R[(n, m)] = R[(-m, -n)] = coeff
         S = {}
         for (n, m) in R:
@@ -124,8 +134,7 @@ p1m1, p11m, p2mm, p11g or p2mg)"""
     elif frieze in ["p2mg", "2*∞"]:
         R = {}
         for (n, m) in M:
-            coeff = (M.get((n, m), 0) + M.get((m, n), 0) +
-                     M.get((-n, -m), 0) + M.get((-m, -n), 0)) / 4
+            coeff = mean([(n, m), (m, n), (-n, -m), (-m, -n)], M)
             R[(n, m)] = R[(m, n)] = R[(-n, -m)] = R[(-m, -n)] = coeff
         S = {}
         for (n, m) in R:
@@ -150,36 +159,35 @@ p1m1, p11m, p2mm, p11g or p2mg)"""
 ###
 # making an image from a transformation and a colorwheel
 def make_world_numpy(                   # <<<1
-        A,                              # the matrix of the transformation
-        color_im,                       # image for the colorwheel image
-        width, height,                  # size of the output image
-        x_min=-1,                       # coordinates of the world
-        x_max=1,                        # ...
-        y_min=-1,                       # ...
-        y_max=1,                        # ...
+        matrix=None,                            # the matrix of the transformation
+        color_filename="",                      # image for the colorwheel image
+        size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),     # size of the output image
+        geometry=(-2, 2, -2, 2),                # coordinates of the world
+        color_geometry=(-1, 1, -1, 1),          # coordinates of the colorwheel
         E=None,                         # None, an integer, a string ("square"
                                         # or "hexagonal") or the 2x2 matrix
                                         # giving the transformation to apply to
                                         # the input
-        color_x_min=-1,                 # coordinates of the colorwheel
-        color_x_max=1,                  # ...
-        color_y_min=-1,                 # ...
-        color_y_max=1,                  # ...
         default_color="black"
         ):
+
+    assert matrix is not None
+    assert color_filename != ""
+
+    x_min, x_max, y_min, y_max = geometry
+    color_x_min, color_x_max, color_y_min, color_y_max = color_geometry
+    width, height = size
 
     if isinstance(default_color, str):
         default_color = getrgb(default_color)
 
-    if isinstance(color_im, str):
-        tmp = PIL.Image.open(color_im)
-        border_size = 1
-        color_im = PIL.Image.new("RGB",
-                                 (tmp.size[0]+2*border_size,
-                                  tmp.size[1]+2*border_size),
-                                 color=default_color)
-        color_im.paste(tmp, (border_size, border_size))
-        del tmp
+    tmp = PIL.Image.open(color_filename)
+    border_size = 1
+    color_im = PIL.Image.new("RGB",
+                             (tmp.size[0]+2*border_size,
+                              tmp.size[1]+2*border_size),
+                             color=default_color)
+    color_im.paste(tmp, (border_size, border_size))
 
     import numpy as np
     delta_x = (x_max-x_min) / (width-1)
@@ -195,36 +203,36 @@ def make_world_numpy(                   # <<<1
     ys = np.arange(height)
     ys = y_max - ys*delta_y
     res = np.zeros((width, height), complex)
-    for (n, m) in A:
+    for (n, m) in matrix:
         if E is None:
             zs = xs[:, None] + 1j*ys
             zcs = np.conj(zs)
-            res = res + A[(n, m)] * zs**n * zcs**m
+            res = res + matrix[(n, m)] * zs**n * zcs**m
         elif isinstance(E, float) or isinstance(E, int):
             zs = xs[:, None] + 1j*ys
             zs = np.exp(E * 1j * zs)
             zcs = np.conj(zs)
-            res = res + A[(n, m)] * zs**n * zcs**m
+            res = res + matrix[(n, m)] * zs**n * zcs**m
         elif isinstance(E, str):
             if E == "square":
                 zs = (np.exp(2j*pi*(n*xs[:, None] + m*ys)) +
                       np.exp(2j*pi*(m*xs[:, None] - n*ys)) +
                       np.exp(2j*pi*(-n*xs[:, None] - m*ys)) +
                       np.exp(2j*pi*(-m*xs[:, None] + n*ys))) / 4
-                res = res + A[(n, m)] * zs
+                res = res + matrix[(n, m)] * zs
             elif E == "hexagonal":
                 Xs = xs[:, None] + ys/sqrt(3)
                 Ys = 2*ys / sqrt(3)
                 zs = (np.exp(2j*pi*(n*Xs + m*Ys)) +
                       np.exp(2j*pi*(m*Xs - (n+m)*Ys)) +
                       np.exp(2j*pi*(-(n+m)*Xs + n*Ys))) / 3
-                res = res + A[(n, m)] * zs
+                res = res + matrix[(n, m)] * zs
             else:
                 error("unknown lattice: '{}'".format(E))
         else:   # E should be a 2x2 array
             zs = (n*(E[0][0]*xs[:, None] + E[0][1]*ys) +
                   m*(E[1][0]*xs[:, None] + E[1][1]*ys))
-            res = res + A[(n, m)] * np.exp(2j*pi*zs)
+            res = res + matrix[(n, m)] * np.exp(2j*pi*zs)
 
     xs = np.rint((res.real - color_x_min) / color_delta_x).astype(int)
     ys = np.rint((color_y_max - res.imag) / color_delta_y).astype(int)
@@ -250,36 +258,32 @@ def make_world_numpy(                   # <<<1
 
 
 def make_world_plain(                   # <<<1
-        A,                              # the matrix of the transformation
-        color_im,                       # image for the colorwheel image
-        width, height,                  # size of the output image
-        x_min=-1,                       # coordinates of the world
-        x_max=1,                        # ...
-        y_min=-1,                       # ...
-        y_max=1,                        # ...
+        matrix=None,                            # the matrix of the transformation
+        color_filename="",                      # image for the colorwheel image
+        size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),     # size of the output image
+        geometry=(-2, 2, -2, 2),                # coordinates of the world
+        color_geometry=(-1, 1, -1, 1),          # coordinates of the colorwheel
         E=None,                         # None, an integer, a string ("square"
                                         # or "hexagonal") or the 2x2 matrix
                                         # giving the transformation to apply to
                                         # the input
-        color_x_min=-1,                 # coordinates of the colorwheel
-        color_x_max=1,                  # ...
-        color_y_min=-1,                 # ...
-        color_y_max=1,                  # ...
         default_color="black"
         ):
 
     if isinstance(default_color, str):
         default_color = getrgb(default_color)
 
-    if isinstance(color_im, str):
-        tmp = PIL.Image.open(color_im)
-        border_size = 1
-        color_im = PIL.Image.new("RGB",
-                                 (tmp.size[0]+2*border_size,
-                                  tmp.size[1]+2*border_size),
-                                 color=default_color)
-        color_im.paste(tmp, (border_size, border_size))
-        del tmp
+    x_min, x_max, y_min, y_max = geometry
+    color_x_min, color_x_max, color_y_min, color_y_max = color_geometry
+    width, height = size
+
+    tmp = PIL.Image.open(color_filename)
+    border_size = 1
+    color_im = PIL.Image.new("RGB",
+                             (tmp.size[0]+2*border_size,
+                              tmp.size[1]+2*border_size),
+                             color=default_color)
+    color_im.paste(tmp, (border_size, border_size))
 
     delta_x = (x_max-x_min) / (width-1)
     delta_y = (y_max-y_min) / (height-1)
@@ -295,29 +299,29 @@ def make_world_plain(                   # <<<1
             x = x_min + i*delta_x
             y = y_max - j*delta_y
             res = 0
-            for (n, m) in A:
+            for (n, m) in matrix:
                 if E is None:
                     z = complex(x, y)
                     zc = z.conjugate()
-                    res = res + A[(n, m)] * z**n * zc**m
+                    res = res + matrix[(n, m)] * z**n * zc**m
                 elif isinstance(E, float):
                     z = exp(E * 1j * z)
                     zc = z.conjugate()
-                    res = res + A[(n, m)] * z**n * zc**m
+                    res = res + matrix[(n, m)] * z**n * zc**m
                 elif isinstance(E, str):
                     if E == "square":
                         z = (exp(2j*pi*(n*x + m*y)) +
                              exp(2j*pi*(m*x - n*y)) +
                              exp(2j*pi*(-n*x - m*y)) +
                              exp(2j*pi*(-m*x + n*y))) / 4
-                        res = res + A[(n, m)] * z
+                        res = res + matrix[(n, m)] * z
                     elif E == "hexagonal":
                         X = x + y/sqrt(3)
                         Y = 2*y / sqrt(3)
                         z = (exp(2j*pi*(n*X + m*Y)) +
                              exp(2j*pi*(m*X - (n+m)*Y)) +
                              exp(2j*pi*(-(n+m)*X + n*Y))) / 3
-                        res = res + A[(n, m)] * z
+                        res = res + matrix[(n, m)] * z
                     else:
                         error("unknown lattice: '{}'".format(E))
                 else:   # E should be a 2x2 array
@@ -325,7 +329,7 @@ def make_world_plain(                   # <<<1
                             n*(E[0][0]*x + E[0][1]*y) +
                             m*(E[1][0]*x + E[1][1]*y)
                             ))
-                    res = res + A[(n, m)] * z
+                    res = res + matrix[(n, m)] * z
 
             res_x = round((res.real - color_x_min) / color_delta_x)
             res_y = round((color_y_max - res.imag) / color_delta_y)
@@ -436,9 +440,13 @@ class GUI(Tk):
     #  - nb_fold for the number of rotational symmetries for rosettes
 
     def __init__(self,      # <<<2
-                 output_filename=None,
+                 matrix=None,
                  color_filename=None,
-                 matrix=None):
+                 size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),
+                 geometry=(-2, 2, -2, 2),
+                 E=None,
+                 color_geometry=(-1, 1, -1, 1),
+                 default_color="black"):
 
         # tk interface
         Tk.__init__(self)
@@ -446,27 +454,21 @@ class GUI(Tk):
         # self.geometry("1200x600")
         self.title("Create Symmetry")
 
-        self.init_colorwheel()
-        self.init_result()
-        self.init_function()
-
-        if output_filename is not None:
-            self.output_filename = output_filename
-
-        if color_filename is not None:
-            self.change_colorwheel(color_filename)
-
-        if matrix is not None:
-            self.change_matrix(matrix)
-        else:
-            self.change_matrix({})
+        self.init_colorwheel(filename=color_filename,
+                             geometry=color_geometry,
+                             default_color=default_color)
+        self.init_result(geometry=geometry)
+        self.init_function(matrix=matrix)
 
         # keybindings
         self.bind("q", lambda _: self.destroy())
         self.bind("p", lambda _: self.make_preview())
     # >>>2
 
-    def init_colorwheel(self):     # <<<2
+    def init_colorwheel(self,       # <<<2
+                        filename=None,
+                        geometry=(-1, 1, -1, 1),
+                        default_color="black"):
         frame = LabelFrame(self, text="Color Wheel Image")
         frame.grid(row=0, column=0, padx=10, pady=10, sticky=N+S)
 
@@ -478,9 +480,9 @@ class GUI(Tk):
                 canvas.create_line(i, j-1, i, j+2, fill="gray")
         self.colorwheel["display"] = canvas
 
-        filename = Label(frame, text="...")
-        filename.pack(side=TOP, pady=(0, 5))
-        self.colorwheel["filename"] = filename
+        short_filename = Label(frame, text="...")
+        short_filename.pack(side=TOP, pady=(0, 5))
+        self.colorwheel["filename"] = short_filename
         self.colorwheel["full_filename"] = ""
 
         Button(frame, text="choose file",
@@ -489,36 +491,43 @@ class GUI(Tk):
         coord_frame = LabelFrame(frame, text="coordinates")
         coord_frame.pack(side=TOP, padx=5, pady=20)
 
-        x_min = LabelEntry(coord_frame, label="x min", value=-1.,
+        x_min = LabelEntry(coord_frame, label="x min",
+                           value=float(geometry[0]),
                            width=4, justify=RIGHT)
         x_min.grid(row=0, column=0, padx=5, pady=5)
         self.colorwheel["x_min"] = x_min
 
-        x_max = LabelEntry(coord_frame, label="x max", value=1.,
+        x_max = LabelEntry(coord_frame, label="x max",
+                           value=float(geometry[1]),
                            width=4, justify=RIGHT)
         x_max.grid(row=0, column=1, padx=5, pady=5)
         self.colorwheel["x_max"] = x_max
 
-        y_min = LabelEntry(coord_frame, label="y min", value=-1.,
+        y_min = LabelEntry(coord_frame, label="y min",
+                           value=float(geometry[2]),
                            width=4, justify=RIGHT)
         y_min.grid(row=1, column=0, padx=5, pady=5)
         self.colorwheel["y_min"] = y_min
 
-        y_max = LabelEntry(coord_frame, label="y max", value=1.,
+        y_max = LabelEntry(coord_frame, label="y max",
+                           value=float(geometry[3]),
                            width=4, justify=RIGHT)
         y_max.grid(row=1, column=1, padx=5, pady=5)
         self.colorwheel["y_max"] = y_max
 
-        color = LabelEntry(frame, label="default color", value="black",
+        color = LabelEntry(frame, label="default color", value=default_color,
                            width=10)
         color.pack(side=TOP, padx=5, pady=5)
         self.colorwheel["default_color"] = color
 
         Button(frame, text="update",
                command=self.update_colorwheel).pack(side=TOP, pady=10)
+
+        if filename is not None:
+            self.change_colorwheel(filename)
     # >>>2
 
-    def init_result(self):     # <<<2
+    def init_result(self, geometry=(-2, 2, -2, 2)):     # <<<2
         frame = LabelFrame(self, text="Result Image")
         frame.grid(row=0, column=1, padx=10, pady=10)
 
@@ -538,23 +547,26 @@ class GUI(Tk):
         coord_frame = LabelFrame(frame, text="coordinates")
         coord_frame.pack(side=TOP, padx=5, pady=5)
 
-        x_min = LabelEntry(coord_frame, label="x min", value=-2.,
+        x_min = LabelEntry(coord_frame, label="x min",
+                           value=float(geometry[0]),
                            width=4, justify=RIGHT)
         x_min.grid(row=0, column=0, padx=5, pady=5)
-        x_min.set("-2")
         self.result["x_min"] = x_min
 
-        x_max = LabelEntry(coord_frame, label="x max", value=2.,
+        x_max = LabelEntry(coord_frame, label="x max",
+                           value=float(geometry[1]),
                            width=4, justify=RIGHT)
         x_max.grid(row=0, column=1, padx=5, pady=5)
         self.result["x_max"] = x_max
 
-        y_min = LabelEntry(coord_frame, label="y min", value=-2.,
+        y_min = LabelEntry(coord_frame, label="y min",
+                           value=float(geometry[2]),
                            width=4, justify=RIGHT)
         y_min.grid(row=1, column=0, padx=5, pady=5)
         self.result["y_min"] = y_min
 
-        y_max = LabelEntry(coord_frame, label="y max", value=2.,
+        y_max = LabelEntry(coord_frame, label="y max",
+                           value=float(geometry[3]),
                            width=4, justify=RIGHT)
         y_max.grid(row=1, column=1, padx=5, pady=5)
         self.result["y_max"] = y_max
@@ -608,13 +620,13 @@ class GUI(Tk):
                                      label=None, value=self.output_filename,
                                      width=15)
         output_filename.pack(side=TOP, anchor=E, padx=5, pady=5)
-        self.result["output_filename"] = height
+        self.result["filename"] = output_filename
         # >>>3
         Button(frame, text="generate and save",
-               command=None).pack(side=TOP, padx=10, pady=10)
+               command=self.make_output).pack(side=TOP, padx=10, pady=10)
     # >>>2
 
-    def init_function(self):     # <<<2
+    def init_function(self, matrix=None):     # <<<2
         frame = LabelFrame(self, text="Function")
         frame.grid(row=1, column=0, columnspan=2, sticky=W+E, padx=10, pady=10)
 
@@ -626,6 +638,11 @@ class GUI(Tk):
         display.config(state=DISABLED, bg="gray", relief="ridge")
         display.pack(padx=5, pady=5)
         self.function["display"] = display
+
+        if matrix is not None:
+            self.change_matrix(matrix)
+        else:
+            self.change_matrix({})
         # >>>3
 
         # change entries <<<3
@@ -710,10 +727,10 @@ class GUI(Tk):
         max_degre = LabelEntry(tmp, label="max degre", value=6, width=4)
         max_degre.pack(side=TOP, anchor=E, padx=5, pady=5)
 
-        min_coeff = LabelEntry(tmp, label="min coefficient", value=-1, width=4)
+        min_coeff = LabelEntry(tmp, label="min coefficient", value=float(-.1), width=4)
         min_coeff.pack(side=TOP, anchor=E, padx=5, pady=5)
 
-        max_coeff = LabelEntry(tmp, label="max coefficient", value=1, width=4)
+        max_coeff = LabelEntry(tmp, label="max coefficient", value=float(.1), width=4)
         max_coeff.pack(side=TOP, anchor=E, padx=5, pady=5)
 
         def new_random_matrix(*args):
@@ -887,19 +904,98 @@ class GUI(Tk):
 
         matrix = self.function["matrix"]
 
-        preview_image = make_world_numpy(matrix,
-                                         self.colorwheel["full_filename"],
-                                         width, height,
-                                         x_min, x_max, y_min, y_max,
-                                         E,
-                                         color_x_min, color_x_max, color_y_min, color_y_max,
-                                         default_color=default_color)
+        preview_image = make_world_numpy(
+                matrix=matrix,
+                color_filename=self.colorwheel["full_filename"],
+                size=(width, height),
+                geometry=(x_min, x_max, y_min, y_max),
+                E=E,
+                color_geometry=(color_x_min, color_x_max, color_y_min, color_y_max),
+                default_color=default_color)
 
         tk_img = PIL.ImageTk.PhotoImage(preview_image)
         self.result["display"].tk_img = tk_img
         self.result["display"].delete(self.result["preview_id"])
         self.result["preview_id"] = self.result["display"].create_image((PREVIEW_SIZE//2, PREVIEW_SIZE//2), image=tk_img)
     # >>>2
+
+    def make_output(self, *args):      # <<<2
+
+        if self.colorwheel.get("image") is None:
+            error("choose a color wheel image")
+            return
+
+        if self.function["rosette"].get():
+            E = None
+        else:
+            E = 1
+
+        width = self.result["width"].get()
+        height = self.result["height"].get()
+
+        x_min = self.result["x_min"].get()
+        x_max = self.result["x_max"].get()
+        y_min = self.result["y_min"].get()
+        y_max = self.result["y_max"].get()
+
+        color_x_min = self.colorwheel["x_min"].get()
+        color_x_max = self.colorwheel["x_max"].get()
+        color_y_min = self.colorwheel["y_min"].get()
+        color_y_max = self.colorwheel["y_max"].get()
+
+        default_color = self.colorwheel["default_color"].get()
+
+        matrix = self.function["matrix"]
+
+        output_image = make_world_numpy(
+                matrix=matrix,
+                color_filename=self.colorwheel["full_filename"],
+                size=(width, height),
+                geometry=(x_min, x_max, y_min, y_max),
+                E=E,
+                color_geometry=(color_x_min, color_x_max, color_y_min, color_y_max),
+                default_color=default_color)
+
+        filename_template = self.result["filename"].get()
+        nb = 1
+        while True:
+            filename = filename_template.format(nb)
+            if (not os.path.exists(filename+".jpg") and
+                    not os.path.exists(filename+".sh")):
+                break
+            nb += 1
+        output_image.save(filename + ".jpg")
+        cs = open(filename + ".sh", mode="w")
+        cs.write("""#!/bin/sh
+WD={cwd:}
+CREATE_SYM=$WD/{prog:}
+
+$CREATE_SYM --color={color:} \\
+            --color-geometry={c_x_min:},{c_x_max:},{c_y_min:},{c_y_max:} \\
+            --output={output:} \\
+            --geometry={x_min:},{x_max:},{y_min:},{y_max:} \\
+            --size={width:},{height:} \\
+            --matrix='{matrix:}' \\
+            $@
+""".format(cwd=os.getcwd(),
+           prog=sys.argv[0],
+           color=self.colorwheel["full_filename"],
+           c_x_min=color_x_min,
+           c_x_max=color_x_max,
+           c_y_min=color_y_min,
+           c_y_max=color_y_max,
+           output=filename + ".jpg",
+           x_min=x_min,
+           x_max=x_max,
+           y_min=y_min,
+           y_max=y_max,
+           width=width,
+           height=height,
+           matrix=str(self.function["matrix"])
+           ))
+        cs.close()
+    # >>>2
+
 
 # >>>1
 
@@ -914,6 +1010,10 @@ def main():     # <<<1
     -g X,Y,X,Y  /  --geometry=X,Y,X,Y   choose "geometry of output"
     --color-geometry=X,Y,X,Y            choose "geometry" of the color file
     --no-numpy                          do not use numpy for computation (slow)
+    --matrix=...                        transformation matrix
+
+    --gui                               use GUI instead of CLI
+                                        (default when no flag is present)
 
     -v  /  -verbose                     add information messages
     -h  /  --help                       this message
@@ -921,8 +1021,8 @@ def main():     # <<<1
 
     # parsing the command line arguments
     short_options = "hc:o:s:g:v"
-    long_options = ["help", "color=", "color-geometry", "output=", "size=",
-                    "geometry=", "verbose", "no-numpy"]
+    long_options = ["help", "color=", "color-geometry=", "output=", "size=",
+                    "geometry=", "verbose", "no-numpy", "matrix=", "gui"]
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], short_options, long_options)
@@ -930,12 +1030,18 @@ def main():     # <<<1
         print(str(err))
         sys.exit(-1)
 
+    if len(sys.argv) == 1:
+        GUI().mainloop()
+        return
+
     output_filename = "output.jpg"
     colors_filename = None
     width, height = 400, 400
     x_min, x_max, y_min, y_max = -2, 2, -2, 2
     color_x_min, color_x_max, color_y_min, color_y_max = -1, 1, -1, 1
     use_numpy = True
+    matrix = {}
+    gui = False
     global verbose
     for o, a in opts:
         if o in ["-h", "--help"]:
@@ -972,51 +1078,58 @@ def main():     # <<<1
             verbose += 1
         elif o in ["--no-numpy"]:
             use_numpy = False
+        elif o in ["--matrix"]:
+            matrix = parse_matrix(a)
+        elif o in ["--gui"]:
+            gui = True
         else:
             assert False
 
-    # M = { (1,0): 2 }
-    M = {
-         (0, 1): .3,
-         (1, -1): -.123,
-         (3, 1): .4,
-        }
-    # M = make_frieze(M, "p211")
-    a = .7
-    b = -.3
-    M = {
-         (1, 2): a,
-         (1, -2): a,
-         (3, 1): -b,
-         (3, -1): -b,
-         }
-    assert M == parse_matrix(str(M))
+    # # M = { (1,0): 2 }
+    # M = {
+    #      (0, 1): .3,
+    #      (1, -1): -.123,
+    #      (3, 1): .4,
+    #     }
+    # # M = make_frieze(M, "p211")
+    # a = .7
+    # b = -.3
+    # M = {
+    #      (1, 2): a,
+    #      (1, -2): a,
+    #      (3, 1): -b,
+    #      (3, -1): -b,
+    #      }
+    # assert M == parse_matrix(str(M))
 
-    if use_numpy:
-        make_world = make_world_numpy
+    if gui:
+        GUI(matrix=matrix,
+            color_filename=colors_filename,
+            size=(width, height),
+            geometry=(x_min, x_max, y_min, y_max),
+            E=None,     # "square", "hexagonal", [[1,0],[0,1]]
+            color_geometry=(color_x_min, color_x_max, color_y_min, color_y_max),
+            default_color="black"
+           ).mainloop()
+
     else:
-        make_world = make_world_plain
-    output_image = make_world(M, colors_filename,
-                              width, height,
-                              x_min, x_max, y_min, y_max,
-                              # "square",
-                              "hexagonal",
-                              # [[1,0],[0,1]],
-                              # None,
-                              color_x_min, color_x_max, color_y_min, color_y_max,
-                              default_color="black")
-
-    output_image.save(output_filename)
-    output_image.show()
+        if use_numpy:
+            make_world = make_world_numpy
+        else:
+            make_world = make_world_plain
+        output_image = make_world(matrix=matrix,
+                                  color_filename=colors_filename,
+                                  size=(width, height),
+                                  geometry=(x_min, x_max, y_min, y_max),
+                                  E=None,     # "square", "hexagonal", [[1,0],[0,1]]
+                                  color_geometry=(color_x_min, color_x_max, color_y_min, color_y_max),
+                                  default_color="black")
+        output_image.save(output_filename)
+        output_image.show()
 # >>>1
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        M = {(4, -6): 0.5, (1, 6): -0.5, (-6, 4): 0.5, (5, 0): 1, (0, 5): 1, (6, 1): -0.5}
-        # GUI(matrix=M, color_filename="./Farris-img/farris-027.jpg").mainloop()
-        GUI(matrix=M, color_filename="./Images/leaf.jpg").mainloop()
-    else:
-        main()
+    main()
 
 # vim: textwidth=0 foldmarker=<<<,>>> foldmethod=marker foldlevel=0
