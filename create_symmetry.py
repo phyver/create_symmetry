@@ -30,6 +30,8 @@ from random import randint, uniform, shuffle
 
 verbose = 0
 PREVIEW_SIZE = 400
+OUTPUT_WIDTH = 1280
+OUTPUT_HEIGHT = 960
 
 
 ###
@@ -362,8 +364,8 @@ class LabelEntry(Frame):  # <<<2
             self.content = IntVar()
             self.content.set(value)
         elif isinstance(value, float):
-            self.content = FloatVar()
-            self.content.set(value)
+            self.content = StringVar()
+            self.content.set(float(value))
         elif isinstance(value, bool):
             self.content = BoolVar()
             self.content.set(value)
@@ -407,33 +409,30 @@ class LabelEntry(Frame):  # <<<2
 
 class GUI(Tk):
 
-    output_width = 1280
-    output_height = 960
     output_filename = "output-{:03}"
 
     colorwheel = {}     # form elements for the colorwheel:
     #  - tk_image to keep a reference to the TkImage object
     #  - image for the corresponding Image
     #  - display for the corresponding Canvas showing the image
-    #  - x_min, x_max, y_min, y_max for the geometry of the image (StringVars)
-    #  - default_color for the default color (StringVar)
-    #  - filename for the displayed filename (Label)
+    #  - x_min, x_max, y_min, y_max for the geometry of the image
+    #  - default_color for the default color
+    #  - filename for the displayed filename
     #  - full_filename for the real filename
 
     result = {}     # form elements for the result
     #  - tk_image to keep a reference to the TkImage object
     #  - image for the corresponding Image
     #  - display for the corresponding Canvas showing the image
-    #  - x_min, x_max, y_min, y_max for the geometry of the image (StringVars)
-    #  - preview_width, preview_height for the size of the preview
-    #  - output_width, output_height for the size of the final image
-    #  - filename for the filename of saved images (StringVar)
+    #  - x_min, x_max, y_min, y_max for the geometry of the image
+    #  - width, height for the size of the final image
+    #  - filename for the filename of saved images
 
     function = {}   # form element for the function
     #  - matrix for the matrix (dict) of coefficients
-    #  - display for displaying the matrix (Text)
-    #  - frieze_type for the frieze pattern type (StringVar)
-    #  - rosette for the rosette boolean (StringVar)
+    #  - display for displaying the matrix
+    #  - frieze_type for the frieze pattern type
+    #  - rosette for the rosette boolean
     #  - nb_fold for the number of rotational symmetries for rosettes
 
     def __init__(self,      # <<<2
@@ -490,23 +489,23 @@ class GUI(Tk):
         coord_frame = LabelFrame(frame, text="coordinates")
         coord_frame.pack(side=TOP, padx=5, pady=20)
 
-        x_min = LabelEntry(coord_frame, label="x min", value=-1,
-                           width=3, justify=RIGHT)
+        x_min = LabelEntry(coord_frame, label="x min", value=-1.,
+                           width=4, justify=RIGHT)
         x_min.grid(row=0, column=0, padx=5, pady=5)
         self.colorwheel["x_min"] = x_min
 
-        x_max = LabelEntry(coord_frame, label="x max", value=1,
-                           width=3, justify=RIGHT)
+        x_max = LabelEntry(coord_frame, label="x max", value=1.,
+                           width=4, justify=RIGHT)
         x_max.grid(row=0, column=1, padx=5, pady=5)
         self.colorwheel["x_max"] = x_max
 
-        y_min = LabelEntry(coord_frame, label="y min", value=-1,
-                           width=3, justify=RIGHT)
+        y_min = LabelEntry(coord_frame, label="y min", value=-1.,
+                           width=4, justify=RIGHT)
         y_min.grid(row=1, column=0, padx=5, pady=5)
         self.colorwheel["y_min"] = y_min
 
-        y_max = LabelEntry(coord_frame, label="y max", value=1,
-                           width=3, justify=RIGHT)
+        y_max = LabelEntry(coord_frame, label="y max", value=1.,
+                           width=4, justify=RIGHT)
         y_max.grid(row=1, column=1, padx=5, pady=5)
         self.colorwheel["y_max"] = y_max
 
@@ -539,43 +538,53 @@ class GUI(Tk):
         coord_frame = LabelFrame(frame, text="coordinates")
         coord_frame.pack(side=TOP, padx=5, pady=5)
 
-        x_min = LabelEntry(coord_frame, label="x min", value=-2,
-                           width=3, justify=RIGHT)
+        x_min = LabelEntry(coord_frame, label="x min", value=-2.,
+                           width=4, justify=RIGHT)
         x_min.grid(row=0, column=0, padx=5, pady=5)
         x_min.set("-2")
         self.result["x_min"] = x_min
 
-        x_max = LabelEntry(coord_frame, label="x max", value=2,
-                           width=3, justify=RIGHT)
+        x_max = LabelEntry(coord_frame, label="x max", value=2.,
+                           width=4, justify=RIGHT)
         x_max.grid(row=0, column=1, padx=5, pady=5)
         self.result["x_max"] = x_max
 
-        y_min = LabelEntry(coord_frame, label="y min", value=-2,
-                           width=3, justify=RIGHT)
+        y_min = LabelEntry(coord_frame, label="y min", value=-2.,
+                           width=4, justify=RIGHT)
         y_min.grid(row=1, column=0, padx=5, pady=5)
         self.result["y_min"] = y_min
 
-        y_max = LabelEntry(coord_frame, label="y max", value=2,
-                           width=3, justify=RIGHT)
+        y_max = LabelEntry(coord_frame, label="y max", value=2.,
+                           width=4, justify=RIGHT)
         y_max.grid(row=1, column=1, padx=5, pady=5)
         self.result["y_max"] = y_max
+
+        def adjustX(*args):
+            ratio = self.result["width"].get() / self.result["height"].get()
+            x_min = self.result["x_min"].get()
+            x_max = self.result["x_max"].get()
+            delta_y = self.result["y_max"].get() - self.result["y_min"].get()
+            delta_x = delta_y * ratio
+            middle_x = (x_min+x_max) / 2
+            self.result["x_min"].set(middle_x - delta_x/2)
+            self.result["x_max"].set(middle_x + delta_x/2)
+
+        def adjustY(*args):
+            ratio =  self.result["height"].get() / self.result["width"].get()
+            y_min = self.result["y_min"].get()
+            y_max = self.result["y_max"].get()
+            delta_x = self.result["x_max"].get() - self.result["x_min"].get()
+            delta_y = delta_x * ratio
+            middle_y = (y_min+y_max) / 2
+            self.result["y_min"].set(middle_y - delta_y/2)
+            self.result["y_max"].set(middle_y + delta_y/2)
+
+        Button(coord_frame, text="adjust X to ratio",
+               command=adjustX).grid(row=2, column=0, columnspan=2, padx=10, pady=10)
+        Button(coord_frame, text="adjust Y to ratio",
+               command=adjustY).grid(row=3, column=0, columnspan=2, padx=10, pady=10)
         # >>>3
 
-        # preview settings      <<<3
-        preview_setting_frame = LabelFrame(frame, text="preview")
-        preview_setting_frame.pack(side=TOP, fill=X, padx=5, pady=5)
-
-        preview_width = LabelEntry(preview_setting_frame, value=PREVIEW_SIZE,
-                                   label="width", width=6, justify=RIGHT)
-        preview_width.pack(anchor=E, padx=5, pady=5)
-        self.result["preview_width"] = preview_width
-
-        preview_height = LabelEntry(preview_setting_frame, value=PREVIEW_SIZE,
-                                    label="height", width=6, justify=RIGHT)
-        preview_height.pack(anchor=E, padx=5, pady=5)
-        preview_height.set(str(PREVIEW_SIZE))
-        self.result["preview_height"] = preview_height
-        # >>>3
         Button(frame, text="preview",
                command=self.make_preview).pack(padx=10, pady=10)
 
@@ -583,23 +592,23 @@ class GUI(Tk):
         settings_frame = LabelFrame(frame, text="output")
         settings_frame.pack(side=TOP, fill=X, padx=5, pady=5)
 
-        output_width = LabelEntry(settings_frame,
-                                  label="width", value=self.output_width,
+        width = LabelEntry(settings_frame,
+                                  label="width", value=OUTPUT_WIDTH,
                                   width=6, justify=RIGHT)
-        output_width.pack(side=TOP, anchor=E, padx=5, pady=5)
-        self.result["output_width"] = output_width
+        width.pack(side=TOP, anchor=E, padx=5, pady=5)
+        self.result["width"] = width
 
-        output_height = LabelEntry(settings_frame,
-                                   label="height", value=self.output_height,
+        height = LabelEntry(settings_frame,
+                                   label="height", value=OUTPUT_HEIGHT,
                                    width=6, justify=RIGHT)
-        output_height.pack(side=TOP, anchor=E, padx=5, pady=5)
-        self.result["output_height"] = output_height
+        height.pack(side=TOP, anchor=E, padx=5, pady=5)
+        self.result["height"] = height
 
         output_filename = LabelEntry(settings_frame,
                                      label=None, value=self.output_filename,
                                      width=15)
         output_filename.pack(side=TOP, anchor=E, padx=5, pady=5)
-        self.result["output_filename"] = output_height
+        self.result["output_filename"] = height
         # >>>3
         Button(frame, text="generate and save",
                command=None).pack(side=TOP, padx=10, pady=10)
@@ -856,8 +865,13 @@ class GUI(Tk):
         else:
             E = 1
 
-        width = self.result["preview_width"].get()
-        height = self.result["preview_height"].get()
+        ratio = self.result["width"].get() / self.result["height"].get()
+        if ratio > 1:
+            width = PREVIEW_SIZE
+            height = round(PREVIEW_SIZE / ratio)
+        else:
+            width = round(PREVIEW_SIZE * ratio)
+            height = PREVIEW_SIZE
 
         x_min = self.result["x_min"].get()
         x_max = self.result["x_max"].get()
@@ -918,7 +932,7 @@ def main():     # <<<1
 
     output_filename = "output.jpg"
     colors_filename = None
-    output_width, output_height = 400, 400
+    width, height = 400, 400
     x_min, x_max, y_min, y_max = -2, 2, -2, 2
     color_x_min, color_x_max, color_y_min, color_y_max = -1, 1, -1, 1
     use_numpy = True
@@ -934,10 +948,10 @@ def main():     # <<<1
         elif o in ["-s", "--size"]:
             try:
                 tmp = map(int, a.split(","))
-                output_width, output_height = tmp
+                width, height = tmp
             except:
                 error("problem with size '{}'".format(a))
-                output_width, output_height = 400, 400
+                width, height = 400, 400
         elif o in ["-g", "--geometry"]:
             try:
                 tmp = map(float, a.split(","))
@@ -983,7 +997,7 @@ def main():     # <<<1
     else:
         make_world = make_world_plain
     output_image = make_world(M, colors_filename,
-                              output_width, output_height,
+                              width, height,
                               x_min, x_max, y_min, y_max,
                               # "square",
                               "hexagonal",
