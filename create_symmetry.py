@@ -159,8 +159,8 @@ p1m1, p11m, p2mm, p11g or p2mg)"""
 ###
 # making an image from a transformation and a colorwheel
 def make_world_numpy(                   # <<<1
-        matrix=None,                            # the matrix of the transformation
-        color_filename="",                      # image for the colorwheel image
+        matrix=None,                        # the matrix of the transformation
+        color_filename="",                  # image for the colorwheel image
         size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),     # size of the output image
         geometry=(-2, 2, -2, 2),                # coordinates of the world
         color_geometry=(-1, 1, -1, 1),          # coordinates of the colorwheel
@@ -258,8 +258,8 @@ def make_world_numpy(                   # <<<1
 
 
 def make_world_plain(                   # <<<1
-        matrix=None,                            # the matrix of the transformation
-        color_filename="",                      # image for the colorwheel image
+        matrix=None,                        # the matrix of the transformation
+        color_filename="",                  # image for the colorwheel image
         size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),     # size of the output image
         geometry=(-2, 2, -2, 2),                # coordinates of the world
         color_geometry=(-1, 1, -1, 1),          # coordinates of the colorwheel
@@ -582,7 +582,7 @@ class GUI(Tk):
             self.result["x_max"].set(middle_x + delta_x/2)
 
         def adjustY(*args):
-            ratio =  self.result["height"].get() / self.result["width"].get()
+            ratio = self.result["height"].get() / self.result["width"].get()
             y_min = self.result["y_min"].get()
             y_max = self.result["y_max"].get()
             delta_x = self.result["x_max"].get() - self.result["x_min"].get()
@@ -592,9 +592,11 @@ class GUI(Tk):
             self.result["y_max"].set(middle_y + delta_y/2)
 
         Button(coord_frame, text="adjust X to ratio",
-               command=adjustX).grid(row=2, column=0, columnspan=2, padx=10, pady=10)
+               command=adjustX).grid(row=2, column=0, columnspan=2,
+                                     padx=10, pady=10)
         Button(coord_frame, text="adjust Y to ratio",
-               command=adjustY).grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+               command=adjustY).grid(row=3, column=0, columnspan=2,
+                                     padx=10, pady=10)
         # >>>3
 
         Button(frame, text="preview",
@@ -605,14 +607,14 @@ class GUI(Tk):
         settings_frame.pack(side=TOP, fill=X, padx=5, pady=5)
 
         width = LabelEntry(settings_frame,
-                                  label="width", value=OUTPUT_WIDTH,
-                                  width=6, justify=RIGHT)
+                           label="width", value=OUTPUT_WIDTH,
+                           width=6, justify=RIGHT)
         width.pack(side=TOP, anchor=E, padx=5, pady=5)
         self.result["width"] = width
 
         height = LabelEntry(settings_frame,
-                                   label="height", value=OUTPUT_HEIGHT,
-                                   width=6, justify=RIGHT)
+                            label="height", value=OUTPUT_HEIGHT,
+                            width=6, justify=RIGHT)
         height.pack(side=TOP, anchor=E, padx=5, pady=5)
         self.result["height"] = height
 
@@ -727,10 +729,12 @@ class GUI(Tk):
         max_degre = LabelEntry(tmp, label="max degre", value=6, width=4)
         max_degre.pack(side=TOP, anchor=E, padx=5, pady=5)
 
-        min_coeff = LabelEntry(tmp, label="min coefficient", value=float(-.1), width=4)
+        min_coeff = LabelEntry(tmp, label="min coefficient", value=float(-.1),
+                               width=4)
         min_coeff.pack(side=TOP, anchor=E, padx=5, pady=5)
 
-        max_coeff = LabelEntry(tmp, label="max coefficient", value=float(.1), width=4)
+        max_coeff = LabelEntry(tmp, label="max coefficient", value=float(.1),
+                               width=4)
         max_coeff.pack(side=TOP, anchor=E, padx=5, pady=5)
 
         def new_random_matrix(*args):
@@ -1035,7 +1039,7 @@ def main():     # <<<1
         return
 
     output_filename = "output.jpg"
-    colors_filename = None
+    color_filename = None
     width, height = 400, 400
     x_min, x_max, y_min, y_max = -2, 2, -2, 2
     color_x_min, color_x_max, color_y_min, color_y_max = -1, 1, -1, 1
@@ -1048,7 +1052,7 @@ def main():     # <<<1
             display_help()
             sys.exit(0)
         elif o in ["-c", "--color"]:
-            colors_filename = a
+            color_filename = a
         elif o in ["-o", "--output"]:
             output_filename = a
         elif o in ["-s", "--size"]:
@@ -1104,13 +1108,13 @@ def main():     # <<<1
 
     if gui:
         GUI(matrix=matrix,
-            color_filename=colors_filename,
+            color_filename=color_filename,
             size=(width, height),
             geometry=(x_min, x_max, y_min, y_max),
             E=None,     # "square", "hexagonal", [[1,0],[0,1]]
             color_geometry=(color_x_min, color_x_max, color_y_min, color_y_max),
             default_color="black"
-           ).mainloop()
+            ).mainloop()
 
     else:
         if use_numpy:
@@ -1118,7 +1122,7 @@ def main():     # <<<1
         else:
             make_world = make_world_plain
         output_image = make_world(matrix=matrix,
-                                  color_filename=colors_filename,
+                                  color_filename=color_filename,
                                   size=(width, height),
                                   geometry=(x_min, x_max, y_min, y_max),
                                   E=None,     # "square", "hexagonal", [[1,0],[0,1]]
