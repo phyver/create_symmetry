@@ -464,8 +464,8 @@ class GUI(Tk):
         self.init_function(matrix=matrix)
 
         # keybindings
-        self.bind("q", lambda _: self.destroy())
-        self.bind("p", lambda _: self.make_preview())
+        self.bind("<Control-q>", lambda _: self.destroy())
+        self.bind("<Control-p>", lambda _: self.make_preview())
     # >>>2
 
     def init_colorwheel(self,       # <<<2
@@ -482,6 +482,7 @@ class GUI(Tk):
                 canvas.create_line(i-1, j, i+2, j, fill="gray")
                 canvas.create_line(i, j-1, i, j+2, fill="gray")
         self.colorwheel["display"] = canvas
+        self.colorwheel["colorwheel_id"] = None
 
         short_filename = Label(frame, text="...")
         short_filename.pack(side=TOP, pady=(0, 5))
@@ -552,7 +553,6 @@ class GUI(Tk):
             self.colorwheel["x_max"].set(COLOR_GEOMETRY[1])
             self.colorwheel["y_min"].set(COLOR_GEOMETRY[2])
             self.colorwheel["y_max"].set(COLOR_GEOMETRY[3])
-            self.update_colorwheel()
 
         Button(coord_frame, text="zoom -",
                command=zoom_out).grid(row=2, column=0,
@@ -570,11 +570,20 @@ class GUI(Tk):
         color.pack(side=TOP, padx=5, pady=5)
         self.colorwheel["default_color"] = color
 
-        # Button(frame, text="update",
-        #        command=self.update_colorwheel).pack(side=TOP, pady=10)
+        def update_defaultcolor(*args):
+            try:
+                c = getrgb(self.colorwheel["default_color"].get())
+                self.colorwheel["display"].configure(bg="#{:02x}{:02x}{:02x}"
+                                                        .format(*c))
+                self.colorwheel["default_color"].configure(foreground="black")
+            except Exception as e:
+                error("error: '{}'".format(e))
+                self.colorwheel["default_color"].configure(foreground="red")
 
-        if filename is not None:
-            self.change_colorwheel(filename)
+        color.bind("<Enter>", update_defaultcolor)
+        color.bind("<FocusOut>", update_defaultcolor)
+        update_defaultcolor()
+
     # >>>2
 
     def init_result(self, geometry=(-2, 2, -2, 2)):     # <<<2
@@ -877,8 +886,7 @@ class GUI(Tk):
             self.colorwheel["image"] = img
             tk_img = PIL.ImageTk.PhotoImage(img)
             self.colorwheel["tk_image"] = tk_img
-            self.colorwheel["display"].configure(bg=self.colorwheel["default_color"].get())
-            self.colorwheel["display"].delete("all")
+            self.colorwheel["display"].delete(self.colorwheel["colorwheel_id"])
             self.colorwheel["display"].create_image((100, 100), image=tk_img)
             self.colorwheel["full_filename"] = filename
             self.colorwheel["filename"].configure(text=os.path.basename(filename))
@@ -896,11 +904,6 @@ class GUI(Tk):
         self.colorwheel["x_max"].set(COLOR_GEOMETRY[1])
         self.colorwheel["y_min"].set(COLOR_GEOMETRY[2])
         self.colorwheel["y_max"].set(COLOR_GEOMETRY[3])
-    # >>>2
-
-    def update_colorwheel(self):    # <<<2
-        filename = self.colorwheel["full_filename"]
-        self.change_colorwheel(filename)
     # >>>2
 
     def change_matrix(self, M=None):    # <<<2
