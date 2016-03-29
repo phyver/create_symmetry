@@ -490,8 +490,11 @@ class GUI(Tk):
     #  - matrix for the matrix (dict) of coefficients
     #  - display for displaying the matrix
     #  - frieze_type for the frieze pattern type
+    #  - frieze_type_stringvar, to keep the stringvar from being collected
     #  - rosette for the rosette boolean
     #  - nb_fold for the number of rotational symmetries for rosettes
+    #  - wallpaper_type for the wallpaper pattern type
+    #  - wallpaper_type_stringvar, to keep the stringvar from being collected
 
     def __init__(self,      # <<<2
                  matrix=None,
@@ -891,7 +894,7 @@ class GUI(Tk):
         tabs.add(wallpaper_tab, text="wallpaper")
 
         frieze_type = StringVar()
-        self.function["frieze_type"] = frieze_type
+        self.function["frieze_type_stringvar"] = frieze_type
 
         frieze_combo = Combobox(frieze_tab, width=15, exportselection=0,
                                 textvariable=frieze_type,
@@ -907,8 +910,13 @@ class GUI(Tk):
                                 )
         frieze_combo.pack(side=TOP, padx=5, pady=5)
         frieze_combo.current(0)
-        frieze_combo.bind("<<ComboboxSelected>>",
-                          lambda event: frieze_combo.select_clear())
+        self.function["frieze_type"] = "∞∞ ({})".format(FRIEZE_TYPES["∞∞"])
+
+        def set_frieze_type(*args):
+            frieze_combo.select_clear()
+            self.function["frieze_type"] = self.function["frieze_type_stringvar"].get()
+
+        frieze_combo.bind("<<ComboboxSelected>>", set_frieze_type)
 
         rosette = BooleanVar()
         self.function["rosette"] = True
@@ -934,30 +942,30 @@ class GUI(Tk):
 
         # symmetries for wallpaper
         wallpaper_type = StringVar()
-        self.function["wallpaper_type"] = wallpaper_type
+        self.function["wallpaper_type_stringvar"] = wallpaper_type
 
         wallpaper_combo = Combobox(
-                wallpaper_tab, width=15, exportselection=0,
+                wallpaper_tab, width=18, exportselection=0,
                 textvariable=wallpaper_type,
                 state="readonly",
                 values=[
-                    # general lattice
+                    "--  general lattice",
                     "o ({})".format(WALLPAPER_TYPES["o"]),
                     "2222 ({})".format(WALLPAPER_TYPES["2222"]),
-                    # rhombic lattice
+                    "--  rhombic lattice",
                     "*× ({})".format(WALLPAPER_TYPES["*×"]),
                     "2*22 ({})".format(WALLPAPER_TYPES["2*22"]),
-                    # rectangular lattice
+                    "--  rectangular lattice",
                     "** ({})".format(WALLPAPER_TYPES["**"]),
                     "×× ({})".format(WALLPAPER_TYPES["××"]),
                     "*2222 ({})".format(WALLPAPER_TYPES["*2222"]),
                     "22* ({})".format(WALLPAPER_TYPES["22*"]),
                     "22× ({})".format(WALLPAPER_TYPES["22×"]),
-                    # square lattice
+                    "--  square lattice",
                     "442 ({})".format(WALLPAPER_TYPES["442"]),
                     "*442 ({})".format(WALLPAPER_TYPES["*442"]),
                     "4*2 ({})".format(WALLPAPER_TYPES["4*2"]),
-                    # hexagonal lattice
+                    "--  hexagonal lattice",
                     "333 ({})".format(WALLPAPER_TYPES["333"]),
                     "3*3 ({})".format(WALLPAPER_TYPES["3*3"]),
                     "*333 ({})".format(WALLPAPER_TYPES["*333"]),
@@ -965,9 +973,19 @@ class GUI(Tk):
                     ],
                 )
         wallpaper_combo.pack(side=TOP, padx=5, pady=5)
-        wallpaper_combo.current(0)
-        wallpaper_combo.bind("<<ComboboxSelected>>",
-                             lambda event: wallpaper_combo.select_clear())
+        wallpaper_combo.current(1)
+        self.function["wallpaper_type"] = "o ({})".format(WALLPAPER_TYPES["o"])
+
+        def select_wallpaper(*args):
+            old = self.function["wallpaper_type"]
+            s = self.function["wallpaper_type_stringvar"].get()
+            if s.startswith("-- "):
+                self.function["wallpaper_type_stringvar"].set(old)
+            else:
+                self.function["wallpaper_type"] = s
+            wallpaper_combo.select_clear()
+
+        wallpaper_combo.bind("<<ComboboxSelected>>", select_wallpaper)
         # >>>3
 
     # >>>2
@@ -1029,7 +1047,6 @@ class GUI(Tk):
                 x = x.rstrip(".")
                 return x
             elif z == z - z.real:
-                print("ICI")
                 y = "{:.4f}".format(z.imag).rstrip("0")
                 y = y.rstrip(".") + "i"
                 return y
@@ -1059,7 +1076,7 @@ class GUI(Tk):
                   .format(p, err))
             return
 
-        sym = self.function["frieze_type"].get().split*([0])
+        sym = self.function["frieze_type"].split()[0]
         M = make_frieze(M, sym)
         self.change_matrix(M)
     # >>>2
