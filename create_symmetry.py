@@ -885,10 +885,20 @@ class GUI(Tk):
                 initialdir="./",
                 filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")])
         self.change_colorwheel(filename)
-        self.colorwheel["x_min"].set(COLOR_GEOMETRY[0])
-        self.colorwheel["x_max"].set(COLOR_GEOMETRY[1])
-        self.colorwheel["y_min"].set(COLOR_GEOMETRY[2])
-        self.colorwheel["y_max"].set(COLOR_GEOMETRY[3])
+        width, height = self.colorwheel["image"].size
+        ratio = width / height
+        if ratio > 1:
+            self.colorwheel["x_min"].set(COLOR_GEOMETRY[0])
+            self.colorwheel["x_max"].set(COLOR_GEOMETRY[1])
+            self.colorwheel["y_min"].set(COLOR_GEOMETRY[2] / ratio)
+            self.colorwheel["y_max"].set(COLOR_GEOMETRY[3] / ratio)
+        else:
+            self.colorwheel["x_min"].set(COLOR_GEOMETRY[0] * ratio)
+            self.colorwheel["x_max"].set(COLOR_GEOMETRY[1] * ratio)
+            self.colorwheel["y_min"].set(COLOR_GEOMETRY[2])
+            self.colorwheel["y_max"].set(COLOR_GEOMETRY[3])
+
+
     # >>>2
 
     def change_matrix(self, M=None):    # <<<2
