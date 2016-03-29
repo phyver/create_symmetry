@@ -184,6 +184,7 @@ def make_world_numpy(                   # <<<1
     if isinstance(default_color, str):
         default_color = getrgb(default_color)
 
+    # print("start")
     tmp = PIL.Image.open(color_filename)
     border_size = 1
     color_im = PIL.Image.new("RGB",
@@ -191,6 +192,7 @@ def make_world_numpy(                   # <<<1
                               tmp.size[1]+2*border_size),
                              color=default_color)
     color_im.paste(tmp, (border_size, border_size))
+    # print("got color")
 
     import numpy as np
     delta_x = (x_max-x_min) / (width-1)
@@ -202,10 +204,14 @@ def make_world_numpy(                   # <<<1
 
     xs = np.arange(width)
     xs = x_min + xs*delta_x
+    # print("got xs")
 
     ys = np.arange(height)
     ys = y_max - ys*delta_y
+    # print("got ys")
+
     res = np.zeros((width, height), complex)
+    # print("initialized res")
     for (n, m) in matrix:
         if E is None:
             zs = xs[:, None] + 1j*ys
@@ -236,25 +242,37 @@ def make_world_numpy(                   # <<<1
             zs = (n*(E[0][0]*xs[:, None] + E[0][1]*ys) +
                   m*(E[1][0]*xs[:, None] + E[1][1]*ys))
             res = res + matrix[(n, m)] * np.exp(2j*pi*zs)
+    # print("computed res")
 
     xs = np.rint((res.real - color_x_min) / color_delta_x).astype(int)
+    # print("xs to int")
     ys = np.rint((color_y_max - res.imag) / color_delta_y).astype(int)
+    # print("ys to int")
 
     np.place(xs, xs < 0, [0])
     np.place(xs, xs >= color_width, [0])
+    # print("remove invalid values in xs")
     np.place(ys, ys < 0, [0])
     np.place(ys, ys >= color_height, [0])
+    # print("remove invalid values in ys")
 
     res = np.dstack([xs, ys])
+    # print("stack res")
 
-    color = np.array(color_im.getdata())
+    color = np.asarray(color_im)
+    # print("got color")
     color = color.reshape(color_height, color_width, 3)
+    # print("reshape color")
     color = color.transpose(1, 0, 2)
+    # print("transpose color")
 
     res = color[xs, ys]
+    # print("apply color to res")
     res = np.array(res, dtype=np.uint8)
+    # print("convert res")
 
     res = res.transpose(1, 0, 2)
+    # print("transpose res")
 
     return PIL.Image.fromarray(res, "RGB")
 # >>>1
