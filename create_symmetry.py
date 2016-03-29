@@ -36,6 +36,39 @@ COLOR_SIZE = 200
 COLOR_GEOMETRY = (-1., 1., -1., 1.)
 WORLD_GEOMETRY = (-2., 2., -2., 2.)
 
+FRIEZE_TYPES = {
+        "∞∞": "p111",
+        "22∞": "p211",
+        "∞∞*": "p1m1",
+        "*∞": "p11m",
+        "*22∞": "p2mm",
+        "∞×": "p11g",
+        "2*∞": "p2mg",
+        }
+
+WALLPAPER_TYPES = {
+        # general lattice
+        "o": "p1",
+        "2222": "p2",
+        # rhombic lattice
+        "*×": "cm",
+        "2*22": "cmm",
+        # rectangular lattice
+        "**": "pm",
+        "××": "pg",
+        "*2222": "pmm",
+        "22*": "pmg",
+        "22×": "pgg",
+        # square lattice
+        "442": "p4",
+        "*442": "p4m",
+        "4*2": "p4g",
+        # hexagonal lattice
+        "333": "p3",
+        "3*3": "p31m",
+        "*333": "p3m1",
+        "632": "p6",
+        }
 
 ###
 # some utility functions
@@ -853,25 +886,43 @@ class GUI(Tk):
         frieze_tab = Frame(tabs)
         wallpaper_tab = Frame(tabs)
 
+        # symmetries for rosettes and frieze patterns   <<<3
         tabs.add(frieze_tab, text="frieze")
         tabs.add(wallpaper_tab, text="wallpaper")
 
         frieze_type = StringVar()
-        # OptionMenu(frieze_tab, frieze_type, "p111",
-        #            "p111", "p211", "p1m1", "p11m",
-        #            "p2mm", "p11g", "p2mg").pack(side=TOP, padx=5, pady=5)
-        OptionMenu(frieze_tab, frieze_type, "∞∞",
-                   "∞∞", "22∞", "∞∞*", "*∞",
-                   "*22∞", "∞×", "2*∞").pack(side=TOP, padx=5, pady=5)
         self.function["frieze_type"] = frieze_type
 
+        frieze_combo = Combobox(frieze_tab, width=15, exportselection=0,
+                                textvariable=frieze_type,
+                                state="readonly",
+                                values=[
+                                  "∞∞ ({})".format(FRIEZE_TYPES["∞∞"]),
+                                  "22∞ ({})".format(FRIEZE_TYPES["22∞"]),
+                                  "∞∞* ({})".format(FRIEZE_TYPES["∞∞*"]),
+                                  "*∞ ({})".format(FRIEZE_TYPES["*∞"]),
+                                  "*22∞ ({})".format(FRIEZE_TYPES["*22∞"]),
+                                  "∞× ({})".format(FRIEZE_TYPES["∞×"]),
+                                  "2*∞ ({})".format(FRIEZE_TYPES["2*∞"])]
+                                )
+        frieze_combo.pack(side=TOP, padx=5, pady=5)
+        frieze_combo.current(0)
+        frieze_combo.bind("<<ComboboxSelected>>",
+                          lambda event: frieze_combo.select_clear())
+
         rosette = BooleanVar()
+        self.function["rosette"] = True
+        rosette.set(True)
+
+        def set_rosette(*args):
+            b = rosette.get()
+            self.function["rosette"] = b
+
         Checkbutton(frieze_tab, text="rosette",
                     variable=rosette,
-                    onvalue=True, offvalue=False
+                    onvalue=True, offvalue=False,
+                    command=set_rosette
                     ).pack(side=TOP, padx=5, pady=5)
-        rosette.set(True)
-        self.function["rosette"] = rosette
 
         nb_fold = LabelEntry(frieze_tab, label="symmetries", value=5, width=2)
         nb_fold.pack(side=TOP, padx=5, pady=5)
@@ -879,6 +930,46 @@ class GUI(Tk):
 
         Button(frieze_tab, text="make matrix",
                command=self.make_matrix).pack(side=TOP, padx=5, pady=5)
+        # >>>3
+
+        # symmetries for wallpaper
+        wallpaper_type = StringVar()
+        self.function["wallpaper_type"] = wallpaper_type
+
+        wallpaper_combo = Combobox(
+                wallpaper_tab, width=15, exportselection=0,
+                textvariable=wallpaper_type,
+                state="readonly",
+                values=[
+                    # general lattice
+                    "o ({})".format(WALLPAPER_TYPES["o"]),
+                    "2222 ({})".format(WALLPAPER_TYPES["2222"]),
+                    # rhombic lattice
+                    "*× ({})".format(WALLPAPER_TYPES["*×"]),
+                    "2*22 ({})".format(WALLPAPER_TYPES["2*22"]),
+                    # rectangular lattice
+                    "** ({})".format(WALLPAPER_TYPES["**"]),
+                    "×× ({})".format(WALLPAPER_TYPES["××"]),
+                    "*2222 ({})".format(WALLPAPER_TYPES["*2222"]),
+                    "22* ({})".format(WALLPAPER_TYPES["22*"]),
+                    "22× ({})".format(WALLPAPER_TYPES["22×"]),
+                    # square lattice
+                    "442 ({})".format(WALLPAPER_TYPES["442"]),
+                    "*442 ({})".format(WALLPAPER_TYPES["*442"]),
+                    "4*2 ({})".format(WALLPAPER_TYPES["4*2"]),
+                    # hexagonal lattice
+                    "333 ({})".format(WALLPAPER_TYPES["333"]),
+                    "3*3 ({})".format(WALLPAPER_TYPES["3*3"]),
+                    "*333 ({})".format(WALLPAPER_TYPES["*333"]),
+                    "632 ({})".format(WALLPAPER_TYPES["632"]),
+                    ],
+                )
+        wallpaper_combo.pack(side=TOP, padx=5, pady=5)
+        wallpaper_combo.current(0)
+        wallpaper_combo.bind("<<ComboboxSelected>>",
+                             lambda event: wallpaper_combo.select_clear())
+        # >>>3
+
     # >>>2
 
     def change_colorwheel(self, filename):  # <<<2
@@ -968,7 +1059,7 @@ class GUI(Tk):
                   .format(p, err))
             return
 
-        sym = self.function["frieze_type"].get()
+        sym = self.function["frieze_type"].get().split*([0])
         M = make_frieze(M, sym)
         self.change_matrix(M)
     # >>>2
@@ -979,7 +1070,7 @@ class GUI(Tk):
             error("choose a color wheel image")
             return
 
-        if self.function["rosette"].get():
+        if self.function["rosette"]:
             E = None
         else:
             E = 1
@@ -1027,7 +1118,7 @@ class GUI(Tk):
             error("choose a color wheel image")
             return
 
-        if self.function["rosette"].get():
+        if self.function["rosette"]:
             E = None
         else:
             E = 1
