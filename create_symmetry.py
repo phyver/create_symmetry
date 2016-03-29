@@ -630,32 +630,12 @@ class GUI(Tk):
         y_max.grid(row=1, column=1, padx=5, pady=5)
         self.result["y_max"] = y_max
 
-        def adjustX(*args):
-            ratio = self.result["width"].get() / self.result["height"].get()
-            x_min = self.result["x_min"].get()
-            x_max = self.result["x_max"].get()
-            delta_y = self.result["y_max"].get() - self.result["y_min"].get()
-            delta_x = delta_y * ratio
-            middle_x = (x_min+x_max) / 2
-            self.result["x_min"].set(middle_x - delta_x/2)
-            self.result["x_max"].set(middle_x + delta_x/2)
-
-        def adjustY(*args):
-            ratio = self.result["height"].get() / self.result["width"].get()
-            y_min = self.result["y_min"].get()
-            y_max = self.result["y_max"].get()
-            delta_x = self.result["x_max"].get() - self.result["x_min"].get()
-            delta_y = delta_x * ratio
-            middle_y = (y_min+y_max) / 2
-            self.result["y_min"].set(middle_y - delta_y/2)
-            self.result["y_max"].set(middle_y + delta_y/2)
-
         Button(coord_frame, text="X to ratio",
-               command=adjustX).grid(row=2, column=0,
-                                     padx=10, pady=10)
+               command=self.adjust_preview_X).grid(row=2, column=0,
+                                                   padx=10, pady=10)
         Button(coord_frame, text="Y to ratio",
-               command=adjustY).grid(row=2, column=1, columnspan=2,
-                                     padx=10, pady=10)
+               command=self.adjust_preview_Y).grid(row=2, column=1,
+                                                   padx=10, pady=10)
 
         def zoom_out(*args):
             a = 2**0.1
@@ -713,6 +693,11 @@ class GUI(Tk):
 
         Button(frame, text="generate and save",
                command=self.make_output).pack(side=TOP, padx=10, pady=10)
+
+        if self.result["width"].get() > self.result["height"].get():
+            self.adjust_preview_X()
+        else:
+            self.adjust_preview_X()
     # >>>2
 
     def init_function(self, matrix=None):     # <<<2
@@ -1085,6 +1070,27 @@ $CREATE_SYM --color={color:} \\
         cs.close()
     # >>>2
 
+    def adjust_preview_X(self, *args):      # <<<2
+        ratio = self.result["width"].get() / self.result["height"].get()
+        x_min = self.result["x_min"].get()
+        x_max = self.result["x_max"].get()
+        delta_y = self.result["y_max"].get() - self.result["y_min"].get()
+        delta_x = delta_y * ratio
+        middle_x = (x_min+x_max) / 2
+        self.result["x_min"].set(middle_x - delta_x/2)
+        self.result["x_max"].set(middle_x + delta_x/2)
+    # >>>2
+
+    def adjust_preview_Y(self, *args):      # <<<2
+        ratio = self.result["height"].get() / self.result["width"].get()
+        y_min = self.result["y_min"].get()
+        y_max = self.result["y_max"].get()
+        delta_x = self.result["x_max"].get() - self.result["x_min"].get()
+        delta_y = delta_x * ratio
+        middle_y = (y_min+y_max) / 2
+        self.result["y_min"].set(middle_y - delta_y/2)
+        self.result["y_max"].set(middle_y + delta_y/2)
+    # >>>2
 
 # >>>1
 
