@@ -313,7 +313,6 @@ def make_world_numpy(                   # <<<1
 
     assert matrix is not None
     assert color_filename != ""
-    print("<>>", lattice)
     assert lattice in ["frieze", "rosette", "general", "rhombic",
                        "rectangular", "square", "hexagonal"]
 
@@ -375,7 +374,7 @@ def make_world_numpy(                   # <<<1
             res = res + matrix[(n, m)] * zs**n * zcs**m
         elif lattice == "frieze":
             zs = xs[:, None] + 1j*ys
-            zs = np.exp(E * 1j * zs)
+            zs = np.exp(1j * zs)
             zcs = np.conj(zs)
             res = res + matrix[(n, m)] * zs**n * zcs**m
         elif lattice == "square":
@@ -917,6 +916,9 @@ class GUI(Tk):
             entries = display.curselection()
             p = 0
             for e in entries:
+                tmp = display.get(e-p)
+                n, m, _ = re.split("\s*(?:[,;:]|(?:[-=]>))\s*", tmp)
+                self.function["matrix"].pop((int(n), int(m)))
                 display.delete(e-p, e-p)
                 p += 1
 
@@ -961,16 +963,17 @@ class GUI(Tk):
             except Exception as err:
                 error("cannot parse matrix entry '{}': {}".format(e, err))
 
-        def clear_matrix(*args):
-            self.change_matrix({})
-
         new_entry.bind("<Return>", add_entry)
-        Button(tmp, text="update",
-               command=add_entry
-               ).pack(side=TOP, padx=5, pady=5)
-        Button(tmp, text="clear",
-               command=clear_matrix
-               ).pack(side=TOP, padx=5, pady=5)
+        # Button(tmp, text="update",
+        #        command=add_entry
+        #        ).pack(side=TOP, padx=5, pady=5)
+
+        # def clear_matrix(*args):
+        #     self.change_matrix({})
+
+        # Button(tmp, text="clear",
+        #        command=clear_matrix
+        #        ).pack(side=TOP, padx=5, pady=5)
         # >>>3
 
         # add noise <<<3
@@ -993,9 +996,9 @@ class GUI(Tk):
             self.change_matrix()
 
         noise_entry.bind("<Return>", add_noise)
-        Button(tmp, text="add noise",
-               command=add_noise
-               ).pack(side=TOP, padx=5, pady=5)
+        # Button(tmp, text="add noise",
+        #        command=add_noise
+        #        ).pack(side=TOP, padx=5, pady=5)
         # >>>3
 
         # random matrix     <<<3
@@ -1274,11 +1277,6 @@ class GUI(Tk):
             error("choose a color wheel image")
             return
 
-        if self.function["rosette"]:
-            E = None
-        else:
-            E = 1
-
         ratio = self.result["width"].get() / self.result["height"].get()
         if ratio > 1:
             width = PREVIEW_SIZE
@@ -1302,11 +1300,15 @@ class GUI(Tk):
         tabs = self.function["tabs"]
         if "frieze" in tabs.tab(tabs.select(), "text"):
             pattern = self.function["frieze_type"].split()[0]
+            if self.function["rosette"]:
+                lattice = "rosette"
+            else:
+                lattice = "frieze"
         elif "wallpaper" in tabs.tab(tabs.select(), "text"):
             pattern = self.function["wallpaper_type"].split()[0]
+            lattice = lattice_type(pattern)
         else:
             assert False
-        lattice = lattice_type(pattern)
 
         lattice_params = ()
         s = self.function["lattice_params"].get()
@@ -1349,11 +1351,6 @@ class GUI(Tk):
             error("choose a color wheel image")
             return
 
-        if self.function["rosette"]:
-            E = None
-        else:
-            E = 1
-
         width = self.result["width"].get()
         height = self.result["height"].get()
 
@@ -1372,8 +1369,13 @@ class GUI(Tk):
         tabs = self.function["tabs"]
         if "frieze" in tabs.tab(tabs.select(), "text"):
             pattern = self.function["frieze_type"].split()[0]
+            if self.function["rosette"]:
+                lattice = "rosette"
+            else:
+                lattice = "frieze"
         elif "wallpaper" in tabs.tab(tabs.select(), "text"):
             pattern = self.function["wallpaper_type"].split()[0]
+            lattice = lattice_type(pattern)
         else:
             assert False
         lattice = lattice_type(pattern)
