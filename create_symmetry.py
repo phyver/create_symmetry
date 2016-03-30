@@ -24,7 +24,7 @@ import json
 
 # math
 from cmath import exp
-from math import sqrt, pi
+from math import sqrt, pi, sin, cos
 from random import randint, uniform, shuffle
 # >>>1
 
@@ -985,9 +985,9 @@ class GUI(Tk):
             M = self.function["matrix"]
             for n, m in M:
                 z = M[(n, m)]
-                x = z.real * (1 + uniform(-e, e))
-                y = z.imag * (1 + uniform(-e, e))
-                M[(n, m)] = complex(x, y)
+                modulus = abs(z) * uniform(0, e)
+                angle = uniform(0, 2*pi)
+                M[(n, m)] = z + modulus * complex(cos(angle), sin(angle))
             self.change_matrix()
 
         noise_entry.bind("<Return>", add_noise)
