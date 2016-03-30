@@ -36,39 +36,43 @@ COLOR_SIZE = 200
 COLOR_GEOMETRY = (-1., 1., -1., 1.)
 WORLD_GEOMETRY = (-2., 2., -2., 2.)
 
-FRIEZE_TYPES = {
-        "∞∞": "p111",
-        "22∞": "p211",
-        "∞∞*": "p1m1",
-        "*∞": "p11m",
-        "*22∞": "p2mm",
-        "∞×": "p11g",
-        "2*∞": "p2mg",
-        }
+FRIEZE_TYPES = [    # <<<1
+        "∞∞ (p111)",
+        "22∞ (p211)",
+        "∞∞* (p1m1)",
+        "*∞ (p11m)",
+        "*22∞ (p2mm)",
+        "∞× (p11g)",
+        "2*∞ (p2mg)",
+        ]
+# >>>1
 
-WALLPAPER_TYPES = {
-        # general lattice
-        "o": "p1",
-        "2222": "p2",
-        # rhombic lattice
-        "*×": "cm",
-        "2*22": "cmm",
-        # rectangular lattice
-        "**": "pm",
-        "××": "pg",
-        "*2222": "pmm",
-        "22*": "pmg",
-        "22×": "pgg",
-        # square lattice
-        "442": "p4",
-        "*442": "p4m",
-        "4*2": "p4g",
-        # hexagonal lattice
-        "333": "p3",
-        "3*3": "p31m",
-        "*333": "p3m1",
-        "632": "p6",
-        }
+WALLPAPER_TYPES = [     # <<<1
+        "-- general lattice",
+        "o (p1)",
+        "2222 (p2)",
+        "-- rhombic lattice",
+        "*× (cm)",
+        "2*22 (cmm)",
+        "-- rectangular lattice",
+        "** (pm)",
+        "×× (pg)",
+        "*2222 (pmm)",
+        "22* (pmg)",
+        "22× (pgg)",
+        "-- square lattice",
+        "442 (p4)",
+        "*442 (p4m)",
+        "4*2 (p4g)",
+        "-- hexagonal lattice",
+        "333 (p3)",
+        "3*3 (p31m)",
+        "*333 (p3m1)",
+        "632 (p6)",
+        "*632 (p6m)",
+        ]
+# >>>1
+
 
 ###
 # some utility functions
@@ -113,7 +117,7 @@ def parse_matrix(s):        # <<<2
 # >>>2
 
 
-def mean(l, M):     # <<<1
+def mean(l, M):     # <<<2
     """compute the mean of the existing values with keys in l,
 from the dictionnary M"""
     vs = []
@@ -121,72 +125,169 @@ from the dictionnary M"""
         if k in M:
             vs.append(M[k])
     return sum(vs) / len(vs)
-# >>>1
+# >>>2
 
 
-def make_frieze(M, frieze):     # <<<2
-    """modify the matrix ``M`` to give a frieze pattern with symetries
-``frieze`` can be any of the seven types of frieze patterns (p111, p211,
-p1m1, p11m, p2mm, p11g or p2mg)"""
-    if frieze in ["p111", "p1", "∞∞"]:
+def lattice_type(pattern):      # <<<2
+    if pattern in ["o", "p1", "2222", "p2"]:
+        return "general"
+    elif pattern in ["*×", "cm", "2*22", "cmm"]:
+        return "rhombic"
+    elif pattern in ["**", "pm", "××", "pg", "*2222", "pmm",
+                     "22*", "pmg", "22×", "pgg"]:
+        return "rectangular"
+    elif pattern in ["442", "p4", "*442", "p4m", "4*2", "p4g"]:
+        return "square"
+    elif pattern in ["333", "p3", "3*3", "p31m", "*333", "p3m1", "632", "p6"]:
+        return "hexagonal"
+    elif pattern in ["∞∞", "p111", "22∞", "p211", "∞∞*", "p1m1", "*∞", "p11m",
+                     "*22∞", "p2mm", "∞×", "p11g", "2*∞", "p2mg"]:
+        return "frieze"
+    else:
+        error("unkwnow pattern type: '{}'".format(pattern))
+
+# >>>2
+
+
+def add_symmetries_to_matrix(M, pattern):     # <<<2
+    """modify the matrix ``M`` to give a matrix with appropriate symetries.
+``pattern`` can be any of the seven types of pattern patterns or wallpaper
+patterns, in crystallographic convention or orbifold notation.
+"""
+    if pattern in ["p111", "∞∞", "o", "p1", "333", "p3", "442", "p4"]:
         return M
-    elif frieze in ["p211", "p2", "22∞"]:
+    elif pattern in ["p211", "22∞", "2222", "p2", "632", "p6"]:
         R = {}
         for (n, m) in M:
             coeff = mean([(n, m), (-n, -m)], M)
             R[(n, m)] = R[(-n, -m)] = coeff
         return R
-    elif frieze in ["p1m1", "∞∞*"]:
+    elif pattern in ["p1m1", "∞∞*", "*×", "cm", "*442", "p4m", "3*3", "p31m"]:
         R = {}
         for (n, m) in M:
             coeff = mean([(n, m), (m, n)], M)
             R[(n, m)] = R[(m, n)] = coeff
         return R
-    elif frieze in ["p11m", "*∞"]:
+    elif pattern in ["p11m", "*∞", "*333", "p3m1"]:
         R = {}
         for (n, m) in M:
             coeff = mean([(n, m), (-m, -n)], M)
             R[(n, m)] = R[(-m, -n)] = coeff
         return R
-    elif frieze in ["p2mm", "*22∞"]:
-        R = {}
-        for (n, m) in M:
-            coeff = mean([(n, m), (m, n), (-n, -m), (-m, -n)], M)
-            R[(n, m)] = R[(m, n)] = R[(-n, -m)] = R[(-m, -n)] = coeff
-        return R
-    elif frieze in ["p11g", "∞×"]:
+    elif pattern in ["p11g", "∞×"]:
         R = {}
         for (n, m) in M:
             coeff = mean([(n, m), (-m, -n)], M)
             R[(n, m)] = R[(-m, -n)] = coeff
         S = {}
         for (n, m) in R:
+            coeff = R[(n, m)]
             if (n+m) % 2 == 1:
-                S[(n, m)] = -R[(-m, -n)]
-                S[(-m, -n)] = R[(-m, -n)]
+                S[(n, m)] = coeff
+                S[(-m, -n)] = -coeff
             else:
-                S[(n, m)] = S[(-m, -n)] = R[(-m, -n)]
+                S[(n, m)] = coeff
+                S[(-m, -n)] = coeff
         return S
-    elif frieze in ["p2mg", "2*∞"]:
+    elif pattern in ["p2mm", "*22∞", "2*22", "cmm", "*632", "p6m"]:
+        R = {}
+        for (n, m) in M:
+            coeff = mean([(n, m), (m, n), (-n, -m), (-m, -n)], M)
+            R[(n, m)] = R[(m, n)] = R[(-n, -m)] = R[(-m, -n)] = coeff
+        return R
+    elif pattern in ["p2mg", "2*∞"]:
         R = {}
         for (n, m) in M:
             coeff = mean([(n, m), (m, n), (-n, -m), (-m, -n)], M)
             R[(n, m)] = R[(m, n)] = R[(-n, -m)] = R[(-m, -n)] = coeff
         S = {}
         for (n, m) in R:
+            coeff = R[(n, m)]
             if (n+m) % 2 == 1:
-                S[(-m, -n)] = R[(-m, -n)]
-                S[(m, n)] = R[(m, n)]
-                S[(n, m)] = -R[(-m, -n)]
-                S[(-n, -m)] = -R[(m, n)]
+                S[(n, m)] = coeff
+                S[(-n, -m)] = coeff
+                S[(m, n)] = -coeff
+                S[(-m, -n)] = -coeff
             else:
-                S[(-m, -n)] = R[(-m, -n)]
-                S[(m, n)] = R[(m, n)]
-                S[(n, m)] = R[(-m, -n)]
-                S[(-n, -m)] = R[(m, n)]
+                S[(n, m)] = coeff
+                S[(-n, -m)] = coeff
+                S[(m, n)] = coeff
+                S[(-m, -n)] = coeff
+        return S
+    elif pattern in ["**", "pm"]:
+        R = {}
+        for (n, m) in M:
+            coeff = mean([(n, m), (n, -m)], M)
+            R[(n, m)] = R[(n, -m)] = coeff
+        return R
+    elif pattern in ["pg", "××"]:
+        R = {}
+        for (n, m) in M:
+            coeff = mean([(n, m), (n, -m)], M)
+            R[(n, m)] = R[(n, -m)] = coeff
+        S = {}
+        for (n, m) in R:
+            coeff = R[(n, m)]
+            if n % 2 == 1:
+                S[(n, m)] = coeff
+                S[(n, -m)] = -coeff
+            else:
+                S[(n, m)] = coeff
+                S[(n, -m)] = coeff
+        return S
+    elif pattern in ["pmm", "*2222"]:
+        R = {}
+        for (n, m) in M:
+            coeff = mean([(n, m), (-n, -m), (-n, m), (n, -m)], M)
+            R[(n, m)] = R[(-n, -m)] = R[(-n, m)] = R[(n, -m)] = coeff
+        return R
+    elif pattern in ["pmg", "22*"]:
+        R = {}
+        for (n, m) in M:
+            coeff = mean([(n, m), (-n, -m), (n, -m), (-n, m)], M)
+            R[(n, m)] = R[(-n, -m)] = R[(n, -m)] = R[(-n, m)] = coeff
+        S = {}
+        for (n, m) in R:
+            coeff = R[(n, m)]
+            if n % 2 == 1:
+                S[(n, m)] = S[(-n, -m)] = coeff
+                S[(n, -m)] = S[(-n, m)] = -coeff
+            else:
+                S[(n, m)] = S[(-n, -m)] = coeff
+                S[(n, -m)] = S[(-n, m)] = coeff
+        return S
+    elif pattern in ["pgg", "22×"]:
+        R = {}
+        for (n, m) in M:
+            coeff = mean([(n, m), (-n, -m), (n, -m), (-n, m)], M)
+            R[(n, m)] = R[(-n, -m)] = R[(n, -m)] = R[(-n, m)] = coeff
+        S = {}
+        for (n, m) in R:
+            coeff = R[(n, m)]
+            if (n+m) % 2 == 1:
+                S[(n, m)] = S[(-n, -m)] = coeff
+                S[(n, -m)] = S[(-n, m)] = -coeff
+            else:
+                S[(n, m)] = S[(-n, -m)] = coeff
+                S[(n, -m)] = S[(-n, m)] = coeff
+        return S
+    elif pattern in ["p4g", "2*2"]:
+        R = {}
+        for (n, m) in M:
+            coeff = mean([(n, m), (m, n)], M)
+            R[(n, m)] = R[(m, n)] = coeff
+        S = {}
+        for (n, m) in R:
+            coeff = R[(n, m)]
+            if (n+m) % 2 == 1:
+                S[(n, m)] = coeff
+                S[(m, n)] = -coeff
+            else:
+                S[(n, m)] = coeff
+                S[(m, n)] = coeff
         return S
     else:
-        error("Unknown frieze pattern type: {}".format(frieze))
+        error("Unknown pattern type: {}".format(pattern))
         sys.exit(1)
 # >>>2
 # >>>1
@@ -403,8 +504,8 @@ class LabelEntry(Frame):  # <<<2
     """
     An Entry widget with a label on its left.
     """
-    __entry = None  # the Entry widget
-    __label = None  # the Label widget
+    entry_widget = None  # the Entry widget
+    label_widget = None  # the Label widget
     content = None  # the corresponding StringVar / IntVar / BoolVar
     __init = ""
 
@@ -414,8 +515,8 @@ class LabelEntry(Frame):  # <<<2
         Frame.__init__(self, parent)
 
         if label:
-            self.__label = Label(self, text=label)
-            self.__label.pack(side=LEFT, padx=(0, 5))
+            self.label_widget = Label(self, text=label)
+            self.label_widget.pack(side=LEFT, padx=(0, 5))
 
         self.__init = value
         if isinstance(value, int):
@@ -430,11 +531,12 @@ class LabelEntry(Frame):  # <<<2
         else:
             self.content = StringVar("")
             self.content.set(value)
-        self.__entry = Entry(self, textvar=self.content, state=state, **kwargs)
-        self.__entry.pack(side=LEFT)
+        self.entry_widget = Entry(self, textvar=self.content,
+                                  state=state, **kwargs)
+        self.entry_widget.pack(side=LEFT)
 
-        for method in ["configure", "bind", "focus_set"]:
-            setattr(self, method, getattr(self.__entry, method))
+        for method in ["config", "configure", "bind", "focus_set"]:
+            setattr(self, method, getattr(self.entry_widget, method))
     # >>>3
 
     def set(self, s):  # <<<3
@@ -493,6 +595,7 @@ class GUI(Tk):
     #  - rosette for the rosette boolean
     #  - nb_fold for the number of rotational symmetries for rosettes
     #  - wallpaper_type for the wallpaper pattern type
+    #  - tabs for the notebook frieze / wallpaper
 
     def __init__(self,      # <<<2
                  matrix=None,
@@ -625,12 +728,12 @@ class GUI(Tk):
         def update_defaultcolor(*args):
             try:
                 c = getrgb(self.colorwheel["default_color"].get())
-                self.colorwheel["display"].configure(bg="#{:02x}{:02x}{:02x}"
-                                                        .format(*c))
-                self.colorwheel["default_color"].configure(foreground="black")
+                self.colorwheel["display"].config(bg="#{:02x}{:02x}{:02x}"
+                                                     .format(*c))
+                self.colorwheel["default_color"].config(foreground="black")
             except Exception as e:
                 error("error: '{}'".format(e))
-                self.colorwheel["default_color"].configure(foreground="red")
+                self.colorwheel["default_color"].config(foreground="red")
 
         color.bind("<Enter>", update_defaultcolor)
         color.bind("<FocusOut>", update_defaultcolor)
@@ -768,8 +871,8 @@ class GUI(Tk):
         self.function["display"] = display
         scrollbar = Scrollbar(tmp2)
         scrollbar.pack(side=RIGHT, fill=Y)
-        display.configure(yscrollcommand=scrollbar.set)
-        scrollbar.configure(command=display.yview)
+        display.config(yscrollcommand=scrollbar.set)
+        scrollbar.config(command=display.yview)
 
         def remove_entries(*args):
             entries = display.curselection()
@@ -899,6 +1002,7 @@ class GUI(Tk):
         # tabs for the different kinds of functions / symmetries
         tabs = Notebook(frame)
         tabs.pack(side=LEFT, fill=Y, padx=10, pady=10)
+        self.function["tabs"] = tabs
 
         frieze_tab = Frame(tabs)
         wallpaper_tab = Frame(tabs)
@@ -906,25 +1010,20 @@ class GUI(Tk):
         # symmetries for rosettes and frieze patterns   <<<3
         tabs.add(frieze_tab, text="frieze")
         tabs.add(wallpaper_tab, text="wallpaper")
+        tabs.select(1)  # select wallpaper tab
 
         frieze_type = StringVar()
 
         frieze_combo = Combobox(frieze_tab, width=15, exportselection=0,
                                 textvariable=frieze_type,
                                 state="readonly",
-                                values=[
-                                  "∞∞ ({})".format(FRIEZE_TYPES["∞∞"]),
-                                  "22∞ ({})".format(FRIEZE_TYPES["22∞"]),
-                                  "∞∞* ({})".format(FRIEZE_TYPES["∞∞*"]),
-                                  "*∞ ({})".format(FRIEZE_TYPES["*∞"]),
-                                  "*22∞ ({})".format(FRIEZE_TYPES["*22∞"]),
-                                  "∞× ({})".format(FRIEZE_TYPES["∞×"]),
-                                  "2*∞ ({})".format(FRIEZE_TYPES["2*∞"])]
+                                values=FRIEZE_TYPES
                                 )
-        frieze_combo.stringvar = frieze_type    # to make sure the stringvar isn't garbage collected
+        # make sure the stringvar isn't garbage collected
+        frieze_combo.stringvar = frieze_type
         frieze_combo.pack(side=TOP, padx=5, pady=5)
         frieze_combo.current(0)
-        self.function["frieze_type"] = "∞∞ ({})".format(FRIEZE_TYPES["∞∞"])
+        self.function["frieze_type"] = frieze_combo.stringvar.get()
 
         def set_frieze_type(*args):
             frieze_combo.select_clear()
@@ -933,25 +1032,34 @@ class GUI(Tk):
         frieze_combo.bind("<<ComboboxSelected>>", set_frieze_type)
 
         rosette = BooleanVar()
-        self.function["rosette"] = True
-        rosette.set(True)
+        rosette.set(False)
+        self.function["rosette"] = rosette.get()
 
         def set_rosette(*args):
             b = rosette.get()
             self.function["rosette"] = b
+            if b:
+                self.function["nb_fold"].config(state=NORMAL)
+                self.function["nb_fold"].label_widget.config(state=NORMAL)
+            else:
+                self.function["nb_fold"].config(state=DISABLED)
+                self.function["nb_fold"].label_widget.config(state=DISABLED)
 
-        Checkbutton(frieze_tab, text="rosette",
-                    variable=rosette,
-                    onvalue=True, offvalue=False,
-                    command=set_rosette
-                    ).pack(side=TOP, padx=5, pady=5)
+        rosette_button = Checkbutton(frieze_tab, text="rosette",
+                                     variable=rosette,
+                                     onvalue=True, offvalue=False,
+                                     )
+        rosette_button.pack(side=TOP, padx=5, pady=5)
 
         nb_fold = LabelEntry(frieze_tab, label="symmetries", value=5, width=2)
         nb_fold.pack(side=TOP, padx=5, pady=5)
         self.function["nb_fold"] = nb_fold
 
+        rosette_button.config(command=set_rosette)
+        set_rosette()
+
         Button(frieze_tab, text="make matrix",
-               command=self.make_matrix).pack(side=TOP, padx=5, pady=5)
+               command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=5)
         # >>>3
 
         # symmetries for wallpaper
@@ -961,34 +1069,19 @@ class GUI(Tk):
                 wallpaper_tab, width=18, exportselection=0,
                 textvariable=wallpaper_type,
                 state="readonly",
-                values=[
-                    "--  general lattice",
-                    "o ({})".format(WALLPAPER_TYPES["o"]),
-                    "2222 ({})".format(WALLPAPER_TYPES["2222"]),
-                    "--  rhombic lattice",
-                    "*× ({})".format(WALLPAPER_TYPES["*×"]),
-                    "2*22 ({})".format(WALLPAPER_TYPES["2*22"]),
-                    "--  rectangular lattice",
-                    "** ({})".format(WALLPAPER_TYPES["**"]),
-                    "×× ({})".format(WALLPAPER_TYPES["××"]),
-                    "*2222 ({})".format(WALLPAPER_TYPES["*2222"]),
-                    "22* ({})".format(WALLPAPER_TYPES["22*"]),
-                    "22× ({})".format(WALLPAPER_TYPES["22×"]),
-                    "--  square lattice",
-                    "442 ({})".format(WALLPAPER_TYPES["442"]),
-                    "*442 ({})".format(WALLPAPER_TYPES["*442"]),
-                    "4*2 ({})".format(WALLPAPER_TYPES["4*2"]),
-                    "--  hexagonal lattice",
-                    "333 ({})".format(WALLPAPER_TYPES["333"]),
-                    "3*3 ({})".format(WALLPAPER_TYPES["3*3"]),
-                    "*333 ({})".format(WALLPAPER_TYPES["*333"]),
-                    "632 ({})".format(WALLPAPER_TYPES["632"]),
-                    ],
+                values=WALLPAPER_TYPES
                 )
-        wallpaper_combo.stringvar = wallpaper_type  # to make sure the stringvar isn't garbage collected
+        # make sure the stringvar isn't garbage collected
+        wallpaper_combo.stringvar = wallpaper_type
         wallpaper_combo.pack(side=TOP, padx=5, pady=5)
         wallpaper_combo.current(1)
-        self.function["wallpaper_type"] = "o ({})".format(WALLPAPER_TYPES["o"])
+        self.function["wallpaper_type"] = wallpaper_combo.stringvar.get()
+
+        lattice_params = LabelEntry(wallpaper_tab,
+                                    label="lattice parameters",
+                                    value="1,1", width=7)
+        lattice_params.pack(side=TOP, padx=5, pady=5)
+        self.function["lattice_params"] = lattice_params
 
         def select_wallpaper(*args):
             old = self.function["wallpaper_type"]
@@ -998,8 +1091,42 @@ class GUI(Tk):
             else:
                 self.function["wallpaper_type"] = s
             wallpaper_combo.select_clear()
+            pattern = self.function["wallpaper_type"].split()[0]
+            lattice = lattice_type(pattern)
+            if lattice == "general":
+                lattice_params.config(state=NORMAL)
+                lattice_params.set("1, 2")
+                lattice_params.label_widget.config(state=NORMAL)
+                lattice_params.label_widget.config(text="xsi, eta")
+            elif lattice == "rhombic":
+                lattice_params.config(state=NORMAL)
+                lattice_params.set("2")
+                lattice_params.label_widget.config(state=NORMAL)
+                lattice_params.label_widget.config(text="b")
+            elif lattice == "rectangular":
+                lattice_params.config(state=NORMAL)
+                lattice_params.set("2")
+                lattice_params.label_widget.config(state=NORMAL)
+                lattice_params.label_widget.config(text="L")
+            elif lattice == "square":
+                lattice_params.config(state=DISABLED, width=3)
+                lattice_params.set("")
+                lattice_params.label_widget.config(state=DISABLED)
+                lattice_params.label_widget.conf(text="lattice parameters")
+            elif lattice == "hexagonal":
+                lattice_params.config(state=DISABLED, width=3)
+                lattice_params.set("")
+                lattice_params.label_widget.config(state=DISABLED)
+                lattice_params.label_widget.config(text="lattice parameters")
+            else:
+                assert False
+
+        select_wallpaper()
 
         wallpaper_combo.bind("<<ComboboxSelected>>", select_wallpaper)
+
+        Button(wallpaper_tab, text="make matrix",
+               command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=5)
         # >>>3
 
     # >>>2
@@ -1015,7 +1142,7 @@ class GUI(Tk):
             self.colorwheel["display"].delete(self.colorwheel["colorwheel_id"])
             self.colorwheel["display"].create_image((100, 100), image=tk_img)
             self.colorwheel["full_filename"] = filename
-            self.colorwheel["filename"].configure(text=os.path.basename(filename))
+            self.colorwheel["filename"].config(text=os.path.basename(filename))
         except:
             error("problem while opening {} for color image".format(filename))
     # >>>2
@@ -1038,8 +1165,6 @@ class GUI(Tk):
             self.colorwheel["x_max"].set(COLOR_GEOMETRY[1] * ratio)
             self.colorwheel["y_min"].set(COLOR_GEOMETRY[2])
             self.colorwheel["y_max"].set(COLOR_GEOMETRY[3])
-
-
     # >>>2
 
     def change_matrix(self, M=None):    # <<<2
@@ -1076,20 +1201,31 @@ class GUI(Tk):
     # >>>2
 
     def make_matrix(self):       # <<<2
-        p = self.function["nb_fold"].get()
-        try:
-            M = self.function["matrix"]
-            keys = list(M.keys())
-            for (n, m) in keys:
-                if (n-m) % p != 0 or n == m:
-                    del M[(n, m)]
-        except Exception as err:
-            error("problem while adding '{}'-fold symmetry to the matrix: {}"
-                  .format(p, err))
-            return
+        tabs = self.function["tabs"]
+        M = self.function["matrix"]
 
-        sym = self.function["frieze_type"].split()[0]
-        M = make_frieze(M, sym)
+        if ("frieze" in tabs.tab(tabs.select(), "text") and
+                self.function["rosette"]):
+            p = self.function["nb_fold"].get()
+            try:
+                keys = list(M.keys())
+                for (n, m) in keys:
+                    if (n-m) % p != 0 or n == m:
+                        del M[(n, m)]
+            except Exception as err:
+                error("problem while adding '{}'-fold symmetry "
+                      "to the matrix: {}"
+                      .format(p, err))
+                return
+
+        if "frieze" in tabs.tab(tabs.select(), "text"):
+            pattern = self.function["frieze_type"].split()[0]
+        elif "wallpaper" in tabs.tab(tabs.select(), "text"):
+            pattern = self.function["wallpaper_type"].split()[0]
+        else:
+            assert False
+
+        M = add_symmetries_to_matrix(M, pattern)
         self.change_matrix(M)
     # >>>2
 
@@ -1132,7 +1268,8 @@ class GUI(Tk):
                 size=(width, height),
                 geometry=(x_min, x_max, y_min, y_max),
                 E=E,
-                color_geometry=(color_x_min, color_x_max, color_y_min, color_y_max),
+                color_geometry=(color_x_min, color_x_max,
+                                color_y_min, color_y_max),
                 default_color=default_color)
 
         tk_img = PIL.ImageTk.PhotoImage(preview_image)
@@ -1175,7 +1312,8 @@ class GUI(Tk):
                 size=(width, height),
                 geometry=(x_min, x_max, y_min, y_max),
                 E=E,
-                color_geometry=(color_x_min, color_x_max, color_y_min, color_y_max),
+                color_geometry=(color_x_min, color_x_max,
+                                color_y_min, color_y_max),
                 default_color=default_color)
 
         filename_template = self.result["filename"].get()
@@ -1334,7 +1472,7 @@ def main():     # <<<1
     #      (1, -1): -.123,
     #      (3, 1): .4,
     #     }
-    # # M = make_frieze(M, "p211")
+    # # M = add_symmetries_to_matrix(M, "p211")
     # a = .7
     # b = -.3
     # M = {
@@ -1351,7 +1489,8 @@ def main():     # <<<1
             size=(width, height),
             geometry=(x_min, x_max, y_min, y_max),
             E=None,     # "square", "hexagonal", [[1,0],[0,1]]
-            color_geometry=(color_x_min, color_x_max, color_y_min, color_y_max),
+            color_geometry=(color_x_min, color_x_max,
+                            color_y_min, color_y_max),
             default_color="black"
             ).mainloop()
 
@@ -1364,8 +1503,9 @@ def main():     # <<<1
                                   color_filename=color_filename,
                                   size=(width, height),
                                   geometry=(x_min, x_max, y_min, y_max),
-                                  E=None,     # "square", "hexagonal", [[1,0],[0,1]]
-                                  color_geometry=(color_x_min, color_x_max, color_y_min, color_y_max),
+                                  E=None,
+                                  color_geometry=(color_x_min, color_x_max,
+                                                  color_y_min, color_y_max),
                                   default_color="black")
         output_image.save(output_filename)
         output_image.show()
