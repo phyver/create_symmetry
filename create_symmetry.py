@@ -490,11 +490,9 @@ class GUI(Tk):
     #  - matrix for the matrix (dict) of coefficients
     #  - display for displaying the matrix
     #  - frieze_type for the frieze pattern type
-    #  - frieze_type_stringvar, to keep the stringvar from being collected
     #  - rosette for the rosette boolean
     #  - nb_fold for the number of rotational symmetries for rosettes
     #  - wallpaper_type for the wallpaper pattern type
-    #  - wallpaper_type_stringvar, to keep the stringvar from being collected
 
     def __init__(self,      # <<<2
                  matrix=None,
@@ -761,11 +759,27 @@ class GUI(Tk):
         # display matrix    <<<3
         tmp = Frame(frame)
         tmp.pack(side=LEFT)
-        Label(tmp, text="matrix").pack()
-        display = Text(tmp, width=30, height=15)
-        display.config(state=DISABLED, bg="gray", relief="ridge")
-        display.pack(padx=5, pady=5)
+        Label(tmp, text="matrix").pack(side=TOP)
+
+        tmp2 = Frame(tmp)
+        tmp2.pack(padx=5, pady=5)
+        display = Listbox(tmp2, selectmode=MULTIPLE, width=30, height=15)
+        display.pack(side=LEFT)
         self.function["display"] = display
+        scrollbar = Scrollbar(tmp2)
+        scrollbar.pack(side=RIGHT, fill=Y)
+        display.configure(yscrollcommand=scrollbar.set)
+        scrollbar.configure(command=display.yview)
+
+        def remove_entries(*args):
+            entries = display.curselection()
+            p = 0
+            for e in entries:
+                display.delete(e-p, e-p)
+                p += 1
+
+        display.bind("<BackSpace>", remove_entries)
+        display.bind("<Delete>", remove_entries)
 
         if matrix is not None:
             self.change_matrix(matrix)
@@ -894,7 +908,6 @@ class GUI(Tk):
         tabs.add(wallpaper_tab, text="wallpaper")
 
         frieze_type = StringVar()
-        self.function["frieze_type_stringvar"] = frieze_type
 
         frieze_combo = Combobox(frieze_tab, width=15, exportselection=0,
                                 textvariable=frieze_type,
@@ -908,13 +921,14 @@ class GUI(Tk):
                                   "∞× ({})".format(FRIEZE_TYPES["∞×"]),
                                   "2*∞ ({})".format(FRIEZE_TYPES["2*∞"])]
                                 )
+        frieze_combo.stringvar = frieze_type    # to make sure the stringvar isn't garbage collected
         frieze_combo.pack(side=TOP, padx=5, pady=5)
         frieze_combo.current(0)
         self.function["frieze_type"] = "∞∞ ({})".format(FRIEZE_TYPES["∞∞"])
 
         def set_frieze_type(*args):
             frieze_combo.select_clear()
-            self.function["frieze_type"] = self.function["frieze_type_stringvar"].get()
+            self.function["frieze_type"] = frieze_combo.stringvar.get()
 
         frieze_combo.bind("<<ComboboxSelected>>", set_frieze_type)
 
@@ -942,7 +956,6 @@ class GUI(Tk):
 
         # symmetries for wallpaper
         wallpaper_type = StringVar()
-        self.function["wallpaper_type_stringvar"] = wallpaper_type
 
         wallpaper_combo = Combobox(
                 wallpaper_tab, width=18, exportselection=0,
@@ -972,15 +985,16 @@ class GUI(Tk):
                     "632 ({})".format(WALLPAPER_TYPES["632"]),
                     ],
                 )
+        wallpaper_combo.stringvar = wallpaper_type  # to make sure the stringvar isn't garbage collected
         wallpaper_combo.pack(side=TOP, padx=5, pady=5)
         wallpaper_combo.current(1)
         self.function["wallpaper_type"] = "o ({})".format(WALLPAPER_TYPES["o"])
 
         def select_wallpaper(*args):
             old = self.function["wallpaper_type"]
-            s = self.function["wallpaper_type_stringvar"].get()
+            s = wallpaper_combo.stringvar.get()
             if s.startswith("-- "):
-                self.function["wallpaper_type_stringvar"].set(old)
+                wallpaper_combo.stringvar.set(old)
             else:
                 self.function["wallpaper_type"] = s
             wallpaper_combo.select_clear()
@@ -1034,8 +1048,7 @@ class GUI(Tk):
         else:
             self.function["matrix"] = M
         display = self.function["display"]
-        display.config(state=NORMAL)
-        display.delete(1.0, END)
+        display.delete(0, END)
         keys = list(M.keys())
         keys.sort()
 
@@ -1058,9 +1071,8 @@ class GUI(Tk):
                 return "{} + {}i".format(x, y)
 
         for (n, m) in keys:
-            display.insert(END, "{:2}, {:2} : {}\n"
+            display.insert(END, "{:2}, {:2} : {}"
                                 .format(n, m, show(M[(n, m)])))
-        display.config(state=DISABLED)
     # >>>2
 
     def make_matrix(self):       # <<<2
