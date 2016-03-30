@@ -301,15 +301,35 @@ def make_world_numpy(                   # <<<1
         size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),     # size of the output image
         geometry=(-2, 2, -2, 2),                # coordinates of the world
         color_geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
-        E=None,                         # None, an integer, a string ("square"
-                                        # or "hexagonal") or the 2x2 matrix
-                                        # giving the transformation to apply to
-                                        # the input
+        lattice="",                     # "frieze", "rosette", "general",
+                                        # "rhombic", "rectangular", "square"
+                                        # or "hexagonal"
+        lattice_params=(),              # (xsi,eta) for "general", (b) for
+                                        # "rhombic", (L) for "rectangular",
+                                        # () for other lattices
         default_color="black"
         ):
 
     assert matrix is not None
     assert color_filename != ""
+    assert lattice in ["frieze", "rosette", "general", "rhombic",
+                       "rectangular", "square", "hexagonal"]
+
+    if lattice == "general":
+        xsi, eta = lattice_params
+        E = [[1, -xsi/eta], [0, 1/eta]]
+    elif lattice == "rhombic":
+        b = lattice_params
+        E = [[1, 1/(2*b)], [1, -1/(2*b)]]
+    elif lattice == "rectangular":
+        L = lattice_params
+        E = [[2, 0], [0, 1/L]]
+    # elif lattice == "square":
+    #     E = [[1, 0], [0, 1]]
+    # elif lattice == "hexagonal":
+    #     E = [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
+    else:
+        E = None
 
     x_min, x_max, y_min, y_max = geometry
     color_x_min, color_x_max, color_y_min, color_y_max = color_geometry
@@ -347,31 +367,28 @@ def make_world_numpy(                   # <<<1
     res = np.zeros((width, height), complex)
     # print("initialized res")
     for (n, m) in matrix:
-        if E is None:
+        if lattice == "rosette":
             zs = xs[:, None] + 1j*ys
             zcs = np.conj(zs)
             res = res + matrix[(n, m)] * zs**n * zcs**m
-        elif isinstance(E, float) or isinstance(E, int):
+        elif lattice == "frieze":
             zs = xs[:, None] + 1j*ys
             zs = np.exp(E * 1j * zs)
             zcs = np.conj(zs)
             res = res + matrix[(n, m)] * zs**n * zcs**m
-        elif isinstance(E, str):
-            if E == "square":
-                zs = (np.exp(2j*pi*(n*xs[:, None] + m*ys)) +
-                      np.exp(2j*pi*(m*xs[:, None] - n*ys)) +
-                      np.exp(2j*pi*(-n*xs[:, None] - m*ys)) +
-                      np.exp(2j*pi*(-m*xs[:, None] + n*ys))) / 4
-                res = res + matrix[(n, m)] * zs
-            elif E == "hexagonal":
-                Xs = xs[:, None] + ys/sqrt(3)
-                Ys = 2*ys / sqrt(3)
-                zs = (np.exp(2j*pi*(n*Xs + m*Ys)) +
-                      np.exp(2j*pi*(m*Xs - (n+m)*Ys)) +
-                      np.exp(2j*pi*(-(n+m)*Xs + n*Ys))) / 3
-                res = res + matrix[(n, m)] * zs
-            else:
-                error("unknown lattice: '{}'".format(E))
+        elif lattice == "square":
+            zs = (np.exp(2j*pi*(n*xs[:, None] + m*ys)) +
+                  np.exp(2j*pi*(m*xs[:, None] - n*ys)) +
+                  np.exp(2j*pi*(-n*xs[:, None] - m*ys)) +
+                  np.exp(2j*pi*(-m*xs[:, None] + n*ys))) / 4
+            res = res + matrix[(n, m)] * zs
+        elif lattice == "hexagonal":
+            Xs = xs[:, None] + ys/sqrt(3)
+            Ys = 2*ys / sqrt(3)
+            zs = (np.exp(2j*pi*(n*Xs + m*Ys)) +
+                  np.exp(2j*pi*(m*Xs - (n+m)*Ys)) +
+                  np.exp(2j*pi*(-(n+m)*Xs + n*Ys))) / 3
+            res = res + matrix[(n, m)] * zs
         else:   # E should be a 2x2 array
             zs = (n*(E[0][0]*xs[:, None] + E[0][1]*ys) +
                   m*(E[1][0]*xs[:, None] + E[1][1]*ys))
@@ -418,12 +435,35 @@ def make_world_plain(                   # <<<1
         size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),     # size of the output image
         geometry=(-2, 2, -2, 2),                # coordinates of the world
         color_geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
-        E=None,                         # None, an integer, a string ("square"
-                                        # or "hexagonal") or the 2x2 matrix
-                                        # giving the transformation to apply to
-                                        # the input
+        lattice="",                     # "frieze", "rosette", "general",
+                                        # "rhombic", "rectangular", "square"
+                                        # or "hexagonal"
+        lattice_params=(),              # (xsi,eta) for "general", (b) for
+                                        # "rhombic", (L) for "rectangular",
+                                        # () for other lattices
         default_color="black"
         ):
+
+    assert matrix is not None
+    assert color_filename != ""
+    assert lattice in ["frieze", "rosette", "general", "rhombic",
+                       "rectangular", "square", "hexagonal"]
+
+    if lattice == "general":
+        xsi, eta = lattice_params
+        E = [[1, -xsi/eta], [0, 1/eta]]
+    elif lattice == "rhombic":
+        b = lattice_params
+        E = [[1, 1/(2*b)], [1, -1/(2*b)]]
+    elif lattice == "rectangular":
+        L = lattice_params
+        E = [[2, 0], [0, 1/L]]
+    # elif lattice == "square":
+    #     E = [[1, 0], [0, 1]]
+    # elif lattice == "hexagonal":
+    #     E = [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
+    else:
+        E = None
 
     if isinstance(default_color, str):
         default_color = getrgb(default_color)
@@ -455,30 +495,27 @@ def make_world_plain(                   # <<<1
             y = y_max - j*delta_y
             res = 0
             for (n, m) in matrix:
-                if E is None:
+                if lattice == "rosette":
                     z = complex(x, y)
                     zc = z.conjugate()
                     res = res + matrix[(n, m)] * z**n * zc**m
-                elif isinstance(E, float):
+                elif lattice == "frieze":
                     z = exp(E * 1j * z)
                     zc = z.conjugate()
                     res = res + matrix[(n, m)] * z**n * zc**m
-                elif isinstance(E, str):
-                    if E == "square":
-                        z = (exp(2j*pi*(n*x + m*y)) +
-                             exp(2j*pi*(m*x - n*y)) +
-                             exp(2j*pi*(-n*x - m*y)) +
-                             exp(2j*pi*(-m*x + n*y))) / 4
-                        res = res + matrix[(n, m)] * z
-                    elif E == "hexagonal":
-                        X = x + y/sqrt(3)
-                        Y = 2*y / sqrt(3)
-                        z = (exp(2j*pi*(n*X + m*Y)) +
-                             exp(2j*pi*(m*X - (n+m)*Y)) +
-                             exp(2j*pi*(-(n+m)*X + n*Y))) / 3
-                        res = res + matrix[(n, m)] * z
-                    else:
-                        error("unknown lattice: '{}'".format(E))
+                elif lattice == "square":
+                    z = (exp(2j*pi*(n*x + m*y)) +
+                         exp(2j*pi*(m*x - n*y)) +
+                         exp(2j*pi*(-n*x - m*y)) +
+                         exp(2j*pi*(-m*x + n*y))) / 4
+                    res = res + matrix[(n, m)] * z
+                elif lattice == "hexagonal":
+                    X = x + y/sqrt(3)
+                    Y = 2*y / sqrt(3)
+                    z = (exp(2j*pi*(n*X + m*Y)) +
+                         exp(2j*pi*(m*X - (n+m)*Y)) +
+                         exp(2j*pi*(-(n+m)*X + n*Y))) / 3
+                    res = res + matrix[(n, m)] * z
                 else:   # E should be a 2x2 array
                     z = exp(2j*pi*(
                             n*(E[0][0]*x + E[0][1]*y) +
@@ -1260,6 +1297,31 @@ class GUI(Tk):
 
         default_color = self.colorwheel["default_color"].get()
 
+        tabs = self.function["tabs"]
+        if "frieze" in tabs.tab(tabs.select(), "text"):
+            pattern = self.function["frieze_type"].split()[0]
+        elif "wallpaper" in tabs.tab(tabs.select(), "text"):
+            pattern = self.function["wallpaper_type"].split()[0]
+        else:
+            assert False
+        lattice = lattice_type(pattern)
+
+        lattice_params = ()
+        s = self.function["lattice_params"].get()
+        try:
+            if lattice == "general":
+                xsi, eta = s.split(",")
+                lattice_params = (float(xsi), float(eta))
+            elif lattice == "rhombic":
+                b = s
+                lattice_params = float(b)
+            elif lattice == "rectangular":
+                L = s
+                lattice_params = float(L)
+        except Exception as e:
+            error("error while getting lattice parameters '{}': {}"
+                  .format(s, e))
+
         matrix = self.function["matrix"]
 
         preview_image = make_world_numpy(
@@ -1267,7 +1329,8 @@ class GUI(Tk):
                 color_filename=self.colorwheel["full_filename"],
                 size=(width, height),
                 geometry=(x_min, x_max, y_min, y_max),
-                E=E,
+                lattice=lattice,
+                lattice_params=lattice_params,
                 color_geometry=(color_x_min, color_x_max,
                                 color_y_min, color_y_max),
                 default_color=default_color)
@@ -1304,6 +1367,31 @@ class GUI(Tk):
 
         default_color = self.colorwheel["default_color"].get()
 
+        tabs = self.function["tabs"]
+        if "frieze" in tabs.tab(tabs.select(), "text"):
+            pattern = self.function["frieze_type"].split()[0]
+        elif "wallpaper" in tabs.tab(tabs.select(), "text"):
+            pattern = self.function["wallpaper_type"].split()[0]
+        else:
+            assert False
+        lattice = lattice_type(pattern)
+
+        lattice_params = ()
+        s = self.function["lattice_params"].get()
+        try:
+            if lattice == "general":
+                xsi, eta = s.split(",")
+                lattice_params = (float(xsi), float(eta))
+            elif lattice == "rhombic":
+                b = s
+                lattice_params = float(b)
+            elif lattice == "rectangular":
+                L = s
+                lattice_params = float(L)
+        except Exception as e:
+            error("error while getting lattice parameters '{}': {}"
+                  .format(s, e))
+
         matrix = self.function["matrix"]
 
         output_image = make_world_numpy(
@@ -1311,7 +1399,8 @@ class GUI(Tk):
                 color_filename=self.colorwheel["full_filename"],
                 size=(width, height),
                 geometry=(x_min, x_max, y_min, y_max),
-                E=E,
+                lattice=lattice,
+                lattice_params=lattice_params,
                 color_geometry=(color_x_min, color_x_max,
                                 color_y_min, color_y_max),
                 default_color=default_color)
