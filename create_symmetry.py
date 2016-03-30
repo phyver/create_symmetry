@@ -138,7 +138,8 @@ def lattice_type(pattern):      # <<<2
         return "rectangular"
     elif pattern in ["442", "p4", "*442", "p4m", "4*2", "p4g"]:
         return "square"
-    elif pattern in ["333", "p3", "3*3", "p31m", "*333", "p3m1", "632", "p6"]:
+    elif pattern in ["333", "p3", "3*3", "p31m", "*333", "p3m1",
+                     "632", "p6", "*632", "p6m"]:
         return "hexagonal"
     elif pattern in ["∞∞", "p111", "22∞", "p211", "∞∞*", "p1m1", "*∞", "p11m",
                      "*22∞", "p2mm", "∞×", "p11g", "2*∞", "p2mg"]:
@@ -271,7 +272,7 @@ patterns, in crystallographic convention or orbifold notation.
                 S[(n, m)] = S[(-n, -m)] = coeff
                 S[(n, -m)] = S[(-n, m)] = coeff
         return S
-    elif pattern in ["p4g", "2*2"]:
+    elif pattern in ["p4g", "4*2"]:
         R = {}
         for (n, m) in M:
             coeff = mean([(n, m), (m, n)], M)
@@ -312,6 +313,7 @@ def make_world_numpy(                   # <<<1
 
     assert matrix is not None
     assert color_filename != ""
+    print("<>>", lattice)
     assert lattice in ["frieze", "rosette", "general", "rhombic",
                        "rectangular", "square", "hexagonal"]
 
@@ -1149,7 +1151,7 @@ class GUI(Tk):
                 lattice_params.config(state=DISABLED, width=3)
                 lattice_params.set("")
                 lattice_params.label_widget.config(state=DISABLED)
-                lattice_params.label_widget.conf(text="lattice parameters")
+                lattice_params.label_widget.config(text="lattice parameters")
             elif lattice == "hexagonal":
                 lattice_params.config(state=DISABLED, width=3)
                 lattice_params.set("")
