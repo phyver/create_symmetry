@@ -742,10 +742,13 @@ class GUI(Tk):
                 self.colorwheel[c].set(self.colorwheel[c].get() / a)
 
         def reset_geometry(*args):
-            self.colorwheel["x_min"].set(COLOR_GEOMETRY[0])
-            self.colorwheel["x_max"].set(COLOR_GEOMETRY[1])
-            self.colorwheel["y_min"].set(COLOR_GEOMETRY[2])
-            self.colorwheel["y_max"].set(COLOR_GEOMETRY[3])
+            if self.colorwheel["full_filename"] != "":
+                self.change_colorwheel(self.colorwheel["full_filename"])
+            else:
+                self.colorwheel["x_min"].set(COLOR_GEOMETRY[0])
+                self.colorwheel["x_max"].set(COLOR_GEOMETRY[1])
+                self.colorwheel["y_min"].set(COLOR_GEOMETRY[2])
+                self.colorwheel["y_max"].set(COLOR_GEOMETRY[3])
 
         Button(coord_frame, text="zoom -",
                command=zoom_out).grid(row=2, column=0,
@@ -845,6 +848,10 @@ class GUI(Tk):
             self.result["x_max"].set(WORLD_GEOMETRY[1])
             self.result["y_min"].set(WORLD_GEOMETRY[2])
             self.result["y_max"].set(WORLD_GEOMETRY[3])
+            if self.result["width"].get() > self.result["height"].get():
+                self.adjust_preview_X()
+            else:
+                self.adjust_preview_X()
 
         Button(coord_frame, text="zoom -",
                command=zoom_out).grid(row=3, column=0,
@@ -1185,6 +1192,18 @@ class GUI(Tk):
             self.colorwheel["display"].create_image((100, 100), image=tk_img)
             self.colorwheel["full_filename"] = filename
             self.colorwheel["filename"].config(text=os.path.basename(filename))
+            width, height = self.colorwheel["image"].size
+            ratio = width / height
+            if ratio > 1:
+                self.colorwheel["x_min"].set(COLOR_GEOMETRY[0])
+                self.colorwheel["x_max"].set(COLOR_GEOMETRY[1])
+                self.colorwheel["y_min"].set(COLOR_GEOMETRY[2] / ratio)
+                self.colorwheel["y_max"].set(COLOR_GEOMETRY[3] / ratio)
+            else:
+                self.colorwheel["x_min"].set(COLOR_GEOMETRY[0] * ratio)
+                self.colorwheel["x_max"].set(COLOR_GEOMETRY[1] * ratio)
+                self.colorwheel["y_min"].set(COLOR_GEOMETRY[2])
+                self.colorwheel["y_max"].set(COLOR_GEOMETRY[3])
         except:
             error("problem while opening {} for color image".format(filename))
     # >>>2
@@ -1195,18 +1214,6 @@ class GUI(Tk):
                 initialdir="./",
                 filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")])
         self.change_colorwheel(filename)
-        width, height = self.colorwheel["image"].size
-        ratio = width / height
-        if ratio > 1:
-            self.colorwheel["x_min"].set(COLOR_GEOMETRY[0])
-            self.colorwheel["x_max"].set(COLOR_GEOMETRY[1])
-            self.colorwheel["y_min"].set(COLOR_GEOMETRY[2] / ratio)
-            self.colorwheel["y_max"].set(COLOR_GEOMETRY[3] / ratio)
-        else:
-            self.colorwheel["x_min"].set(COLOR_GEOMETRY[0] * ratio)
-            self.colorwheel["x_max"].set(COLOR_GEOMETRY[1] * ratio)
-            self.colorwheel["y_min"].set(COLOR_GEOMETRY[2])
-            self.colorwheel["y_max"].set(COLOR_GEOMETRY[3])
     # >>>2
 
     def change_matrix(self, M=None):    # <<<2
@@ -1290,7 +1297,6 @@ class GUI(Tk):
     # >>>2
 
     def make_output(self, *args):      # <<<2
-
         width = self.result["width"].get()
         height = self.result["height"].get()
 
@@ -1312,7 +1318,6 @@ class GUI(Tk):
     # >>>2
 
     def make_image(self, width, height, filename="output.jpg"):      # <<<2
-
         x_min = self.result["x_min"].get()
         x_max = self.result["x_max"].get()
         y_min = self.result["y_min"].get()
