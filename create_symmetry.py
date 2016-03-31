@@ -80,23 +80,6 @@ WALLPAPER_TYPES = [     # <<<1
 def error(s):
     """print string ``s`` on stderr"""
     print("*** " + s, file=sys.stderr)
-
-
-def horner(P, z):
-    """apply the polynomial ``\sum_{n} P[n] Z^n`` to ``z``"""
-    r = 0
-    for i in range(len(P)):
-        r = r*z + P[-i-1]
-    return r
-
-
-def apply(M, z):
-    """apply the function ``\sum_{n,m} M[n,m] Z^n \conj(Z)^m`` to ``z``"""
-    zc = z.conjugate()
-    r = 0
-    for (n, m) in M:
-        r += M[(n, m)] * z**n * zc**m
-    return r
 # >>>1
 
 
@@ -625,8 +608,6 @@ class LabelEntry(Frame):  # <<<2
 
 class GUI(Tk):
 
-    output_filename = "output-{:03}"
-
     colorwheel = {}     # form elements for the colorwheel:
     #  - tk_image to keep a reference to the TkImage object
     #  - image for the corresponding Image
@@ -657,6 +638,7 @@ class GUI(Tk):
                  matrix=None,
                  color_filename=None,
                  size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),
+                 output_filename="output-{:03}",
                  modulus=1.0,
                  angle=0.0,
                  geometry=(-2, 2, -2, 2),
@@ -678,11 +660,14 @@ class GUI(Tk):
                              default_color=default_color)
         self.init_result(geometry=geometry,
                          modulus=modulus,
-                         angle=angle)
+                         angle=angle,
+                         filename=output_filename)
         self.init_function(matrix=matrix)
 
         # keybindings
         self.bind("<Control-h>", lambda _: self.display_help())
+        self.bind("?", lambda _: self.display_help())
+        self.bind("<F1>", lambda _: self.display_help())
 
         self.bind("<Control-q>", lambda _: self.destroy())
 
@@ -701,6 +686,16 @@ class GUI(Tk):
         frame = LabelFrame(self, text="Colorwheel")
         frame.grid(row=0, column=0, padx=10, pady=10)
 
+        color = LabelEntry(frame, label="default color", value=default_color,
+                           width=10)
+        color.pack(padx=5, pady=10)
+        self.colorwheel["default_color"] = color
+
+        short_filename = Label(frame, text="...")
+        short_filename.pack(side=TOP)
+        self.colorwheel["filename"] = short_filename
+        self.colorwheel["full_filename"] = ""
+
         canvas = Canvas(frame, width=200, height=200, bg="white")
         canvas.pack(side=TOP, padx=10, pady=10)
         for i in range(5, COLOR_SIZE, 10):
@@ -709,11 +704,6 @@ class GUI(Tk):
                 canvas.create_line(i, j-1, i, j+2, fill="gray")
         self.colorwheel["display"] = canvas
         self.colorwheel["colorwheel_id"] = None
-
-        short_filename = Label(frame, text="...")
-        short_filename.pack(side=TOP, pady=(0, 5))
-        self.colorwheel["filename"] = short_filename
-        self.colorwheel["full_filename"] = ""
 
         Button(frame, text="choose file",
                command=self.choose_colorwheel).pack(side=TOP)
@@ -808,11 +798,6 @@ class GUI(Tk):
         angle.pack(padx=5, pady=5)
         self.colorwheel["angle"] = angle
 
-        color = LabelEntry(frame, label="default color", value=default_color,
-                           width=10)
-        color.pack(padx=5, pady=10)
-        self.colorwheel["default_color"] = color
-
         def update_defaultcolor(*args):
             try:
                 c = getrgb(self.colorwheel["default_color"].get())
@@ -832,7 +817,8 @@ class GUI(Tk):
     # >>>2
 
     def init_result(self, geometry=(-2, 2, -2, 2),     # <<<2
-                    modulus=1.0, angle=0.0):
+                    modulus=1.0, angle=0.0,
+                    filename="output-{03:}"):
         frame = LabelFrame(self, text="World")
         frame.grid(row=0, column=1, padx=10, pady=10)
 
@@ -957,7 +943,7 @@ class GUI(Tk):
         self.result["height"] = height
 
         output_filename = LabelEntry(settings_frame,
-                                     label=None, value=self.output_filename,
+                                     label=None, value=filename,
                                      width=15)
         output_filename.pack(side=TOP, anchor=E, padx=5, pady=5)
         self.result["filename"] = output_filename
@@ -1547,6 +1533,8 @@ Frank Farris recipes from his book "Creating Symmetry"
 Keyboard shortcuts:
 
   Control-h     this help message
+  F1            this help message
+  ?             this help message
 
   Control-q     quit
 
