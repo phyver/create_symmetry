@@ -979,8 +979,8 @@ class GUI(Tk):
         # add noise <<<3
         tmp = LabelFrame(change_frame, text="random noise")
         tmp.pack(side=TOP, padx=5, pady=5)
-        noise_entry = LabelEntry(tmp, label="level (%)", value=10, width=3)
-        noise_entry.pack(side=TOP, padx=5, pady=5)
+        noise_entry = LabelEntry(tmp, label="(%)", value=10, width=3)
+        noise_entry.pack(side=RIGHT, padx=5, pady=5)
 
         def add_noise(*args):
             try:
@@ -996,9 +996,9 @@ class GUI(Tk):
             self.change_matrix()
 
         noise_entry.bind("<Return>", add_noise)
-        # Button(tmp, text="add noise",
-        #        command=add_noise
-        #        ).pack(side=TOP, padx=5, pady=5)
+        Button(tmp, text="add noise",
+               command=add_noise
+               ).pack(side=LEFT, padx=5, pady=5)
         # >>>3
 
         # random matrix     <<<3
@@ -1273,10 +1273,6 @@ class GUI(Tk):
 
     def make_preview(self, *args):      # <<<2
 
-        if self.colorwheel.get("image") is None:
-            error("choose a color wheel image")
-            return
-
         ratio = self.result["width"].get() / self.result["height"].get()
         if ratio > 1:
             width = PREVIEW_SIZE
@@ -1285,59 +1281,7 @@ class GUI(Tk):
             width = round(PREVIEW_SIZE * ratio)
             height = PREVIEW_SIZE
 
-        x_min = self.result["x_min"].get()
-        x_max = self.result["x_max"].get()
-        y_min = self.result["y_min"].get()
-        y_max = self.result["y_max"].get()
-
-        color_x_min = self.colorwheel["x_min"].get()
-        color_x_max = self.colorwheel["x_max"].get()
-        color_y_min = self.colorwheel["y_min"].get()
-        color_y_max = self.colorwheel["y_max"].get()
-
-        default_color = self.colorwheel["default_color"].get()
-
-        tabs = self.function["tabs"]
-        if "frieze" in tabs.tab(tabs.select(), "text"):
-            pattern = self.function["frieze_type"].split()[0]
-            if self.function["rosette"]:
-                lattice = "rosette"
-            else:
-                lattice = "frieze"
-        elif "wallpaper" in tabs.tab(tabs.select(), "text"):
-            pattern = self.function["wallpaper_type"].split()[0]
-            lattice = lattice_type(pattern)
-        else:
-            assert False
-
-        lattice_params = ()
-        s = self.function["lattice_params"].get()
-        try:
-            if lattice == "general":
-                xsi, eta = s.split(",")
-                lattice_params = (float(xsi), float(eta))
-            elif lattice == "rhombic":
-                b = s
-                lattice_params = float(b)
-            elif lattice == "rectangular":
-                L = s
-                lattice_params = float(L)
-        except Exception as e:
-            error("error while getting lattice parameters '{}': {}"
-                  .format(s, e))
-
-        matrix = self.function["matrix"]
-
-        preview_image = make_world_numpy(
-                matrix=matrix,
-                color_filename=self.colorwheel["full_filename"],
-                size=(width, height),
-                geometry=(x_min, x_max, y_min, y_max),
-                lattice=lattice,
-                lattice_params=lattice_params,
-                color_geometry=(color_x_min, color_x_max,
-                                color_y_min, color_y_max),
-                default_color=default_color)
+        preview_image, _ = self.make_image(width, height)
 
         tk_img = PIL.ImageTk.PhotoImage(preview_image)
         self.result["display"].tk_img = tk_img
@@ -1347,12 +1291,27 @@ class GUI(Tk):
 
     def make_output(self, *args):      # <<<2
 
-        if self.colorwheel.get("image") is None:
-            error("choose a color wheel image")
-            return
-
         width = self.result["width"].get()
         height = self.result["height"].get()
+
+        filename_template = self.result["filename"].get()
+        nb = 1
+        while True:
+            filename = filename_template.format(nb)
+            if (not os.path.exists(filename+".jpg") and
+                    not os.path.exists(filename+".sh")):
+                break
+            nb += 1
+
+        output_image, cmd = self.make_image(width, height, filename + ".jpg")
+
+        output_image.save(filename + ".jpg")
+        cs = open(filename + ".sh", mode="w")
+        cs.write(cmd)
+        cs.close()
+    # >>>2
+
+    def make_image(self, width, height, filename="output.jpg"):      # <<<2
 
         x_min = self.result["x_min"].get()
         x_max = self.result["x_max"].get()
@@ -1378,7 +1337,6 @@ class GUI(Tk):
             lattice = lattice_type(pattern)
         else:
             assert False
-        lattice = lattice_type(pattern)
 
         lattice_params = ()
         s = self.function["lattice_params"].get()
@@ -1398,37 +1356,27 @@ class GUI(Tk):
 
         matrix = self.function["matrix"]
 
-        output_image = make_world_numpy(
-                matrix=matrix,
-                color_filename=self.colorwheel["full_filename"],
-                size=(width, height),
-                geometry=(x_min, x_max, y_min, y_max),
-                lattice=lattice,
-                lattice_params=lattice_params,
-                color_geometry=(color_x_min, color_x_max,
-                                color_y_min, color_y_max),
-                default_color=default_color)
+        image = make_world_numpy(
+                    matrix=matrix,
+                    color_filename=self.colorwheel["full_filename"],
+                    size=(width, height),
+                    geometry=(x_min, x_max, y_min, y_max),
+                    lattice=lattice,
+                    lattice_params=lattice_params,
+                    color_geometry=(color_x_min, color_x_max,
+                                    color_y_min, color_y_max),
+                    default_color=default_color)
 
-        filename_template = self.result["filename"].get()
-        nb = 1
-        while True:
-            filename = filename_template.format(nb)
-            if (not os.path.exists(filename+".jpg") and
-                    not os.path.exists(filename+".sh")):
-                break
-            nb += 1
-        output_image.save(filename + ".jpg")
-        cs = open(filename + ".sh", mode="w")
-        cs.write("""#!/bin/sh
+        cmd = ("""#!/bin/sh
 WD={cwd:}
 CREATE_SYM=$WD/{prog:}
 
 $CREATE_SYM --color={color:} \\
             --color-geometry={c_x_min:},{c_x_max:},{c_y_min:},{c_y_max:} \\
-            --output={output:} \\
             --geometry={x_min:},{x_max:},{y_min:},{y_max:} \\
             --size={width:},{height:} \\
             --matrix='{matrix:}' \\
+            --output={{output:}} \\
             $@
 """.format(cwd=os.getcwd(),
            prog=sys.argv[0],
@@ -1437,16 +1385,16 @@ $CREATE_SYM --color={color:} \\
            c_x_max=color_x_max,
            c_y_min=color_y_min,
            c_y_max=color_y_max,
-           output=filename + ".jpg",
            x_min=x_min,
            x_max=x_max,
            y_min=y_min,
            y_max=y_max,
            width=width,
            height=height,
-           matrix=str(self.function["matrix"])
+           matrix=str(self.function["matrix"]),
+           output=filename
            ))
-        cs.close()
+        return image, cmd
     # >>>2
 
     def adjust_preview_X(self, *args):      # <<<2
