@@ -1,0 +1,1 @@
+set makeprg=python3\ %
