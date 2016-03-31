@@ -939,17 +939,19 @@ class World(LabelFrame):     # <<<1
             self.adjust_preview_X()
     # >>>2
 
-    def zoom_out(self, *args):
+    def zoom_out(self, *args):      # <<<2
         a = 2**0.1
         for c in ["_x_min", "_x_max", "_y_min", "_y_max"]:
             self.__dict__[c].set(self.__dict__[c].get() * a)
+    # >>>2
 
-    def zoom_in(self, *args):
+    def zoom_in(self, *args):       # <<<2
         a = 2**0.1
         for c in ["_x_min", "_x_max", "_y_min", "_y_max"]:
             self.__dict__[c].set(self.__dict__[c].get() / a)
+    # >>>2
 
-    def reset_geometry(self, *args):
+    def reset_geometry(self, *args):        # <<<2
         self._x_min.set(WORLD_GEOMETRY[0])
         self._x_max.set(WORLD_GEOMETRY[1])
         self._y_min.set(WORLD_GEOMETRY[2])
@@ -958,6 +960,7 @@ class World(LabelFrame):     # <<<1
             self.adjust_preview_X()
         else:
             self.adjust_preview_X()
+    # >>>2
 
     def adjust_preview_X(self, *args):      # <<<2
         ratio = self.width / self.height
@@ -977,6 +980,325 @@ class World(LabelFrame):     # <<<1
         middle_y = (y_min+y_max) / 2
         self._y_min.set(middle_y - delta_y/2)
         self._y_max.set(middle_y + delta_y/2)
+    # >>>2
+# >>>1
+
+
+class Function(LabelFrame):     # <<<1
+
+    def __init__(self, root, matrix=None):      # <<<2
+
+        LabelFrame.__init__(self, root)
+        self.configure(text="Function")
+
+        # display matrix    <<<3
+        tmp = Frame(self)
+        tmp.pack(side=LEFT)
+        Label(tmp, text="matrix").pack()
+
+        tmp2 = Frame(tmp)
+        tmp2.pack(padx=5, pady=5)
+        self._display_matrix = Listbox(tmp2, selectmode=MULTIPLE,
+                                       width=30, height=15)
+        self._display_matrix.pack(side=LEFT)
+
+        scrollbar = Scrollbar(tmp2)
+        scrollbar.pack(side=RIGHT, fill=Y)
+        self._display_matrix.config(yscrollcommand=scrollbar.set)
+        scrollbar.config(command=self._display_matrix.yview)
+
+        self._display_matrix.bind("<BackSpace>", self.remove_entries)
+        self._display_matrix.bind("<Delete>", self.remove_entries)
+
+        if matrix is not None:
+            self.change_matrix(matrix)
+        else:
+            self.change_matrix({})
+        # >>>3
+
+        # change entries <<<3
+        change_frame = Frame(self)
+        change_frame.pack(side=LEFT)
+
+        tmp = LabelFrame(change_frame, text="Change entry")
+        tmp.pack(side=TOP, padx=5, pady=5)
+        self._change_entry = LabelEntry(tmp, label="", value="", width=10)
+        self._change_entry.pack()
+        self._change_entry.bind("<Return>", self.add_entry)
+        # >>>3
+
+        # add noise <<<3
+        tmp = LabelFrame(change_frame, text="random noise")
+        tmp.pack()
+        self._noise = LabelEntry(tmp, label="(%)", value=10, width=3)
+        self._noise.pack(side=RIGHT)
+        self._noise.bind("<Return>", self.add_noise)
+        self.bind("<Control-n>", self.add_noise)
+
+        Button(tmp, text="add noise", command=self.add_noise).pack(side=LEFT)
+        # >>>3
+
+        # random matrix     <<<3
+        tmp = LabelFrame(self, text="random matrix")
+        tmp.pack(side=LEFT)
+
+        self._random_nb_coeff = LabelEntry(tmp, label="nb coefficients",
+                                           value=3, width=4)
+        self._random_nb_coeff.pack()
+
+        self._random_min_degre = LabelEntry(tmp, label="min degre",
+                                            value=-6, width=4)
+        self._random_min_degre.pack()
+
+        self._random_max_degre = LabelEntry(tmp, label="max degre",
+                                            value=6, width=4)
+        self._random_max_degre.pack()
+
+        self._random_min_coeff = LabelEntry(tmp, label="min coefficient",
+                                            value=float(-.1), width=4)
+        self._random_min_coeff.pack()
+
+        self._random_max_coeff = LabelEntry(tmp, label="max coefficient",
+                                            value=float(.1), width=4)
+        self._random_max_coeff.pack()
+
+        Button(tmp, text="generate", command=self.new_random_matrix).pack()
+        self.bind("<Control-g>", self.new_random_matrix)
+        # >>>3
+
+        # tabs for the different kinds of functions / symmetries
+        self._tabs = Notebook(self)
+        self._tabs.pack(side=LEFT)
+
+        frieze_tab = Frame(self._tabs)
+        wallpaper_tab = Frame(self._tabs)
+
+        # # symmetries for rosettes and frieze patterns   <<<3
+        # tabs.add(frieze_tab, text="frieze")
+        # tabs.add(wallpaper_tab, text="wallpaper")
+        # tabs.select(1)  # select wallpaper tab
+
+        # frieze_type = StringVar()
+
+        # frieze_combo = Combobox(frieze_tab, width=15, exportselection=0,
+        #                         textvariable=frieze_type,
+        #                         state="readonly",
+        #                         values=FRIEZE_TYPES
+        #                         )
+        # # make sure the stringvar isn't garbage collected
+        # frieze_combo.stringvar = frieze_type
+        # frieze_combo.pack(side=TOP, padx=5, pady=5)
+        # frieze_combo.current(0)
+        # self.function["frieze_type"] = frieze_combo.stringvar.get()
+
+        # frieze_combo.bind("<<ComboboxSelected>>", set_frieze_type)
+
+        # rosette = BooleanVar()
+        # rosette.set(False)
+        # self.function["rosette"] = rosette.get()
+
+        # rosette_button = Checkbutton(frieze_tab, text="rosette",
+        #                              variable=rosette,
+        #                              onvalue=True, offvalue=False,
+        #                              )
+        # rosette_button.pack(side=TOP, padx=5, pady=5)
+
+        # nb_fold = LabelEntry(frieze_tab, label="symmetries", value=5, width=2)
+        # nb_fold.pack(side=TOP, padx=5, pady=5)
+        # self.function["nb_fold"] = nb_fold
+
+        # rosette_button.config(command=set_rosette)
+        # set_rosette()
+
+        # Button(frieze_tab, text="make matrix",
+        #        command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=5)
+        # # >>>3
+
+        # # symmetries for wallpaper
+        # wallpaper_type = StringVar()
+
+        # wallpaper_combo = Combobox(
+        #         wallpaper_tab, width=18, exportselection=0,
+        #         textvariable=wallpaper_type,
+        #         state="readonly",
+        #         values=WALLPAPER_TYPES
+        #         )
+        # # make sure the stringvar isn't garbage collected
+        # wallpaper_combo.stringvar = wallpaper_type
+        # wallpaper_combo.pack(side=TOP, padx=5, pady=5)
+        # wallpaper_combo.current(1)
+        # self.function["wallpaper_type"] = wallpaper_combo.stringvar.get()
+
+        # lattice_params = LabelEntry(wallpaper_tab,
+        #                             label="lattice parameters",
+        #                             value="1,1", width=7)
+        # lattice_params.pack(side=TOP, padx=5, pady=5)
+        # self.function["lattice_params"] = lattice_params
+
+        # self.select_wallpaper()
+
+        # wallpaper_combo.bind("<<ComboboxSelected>>", select_wallpaper)
+
+        # Button(wallpaper_tab, text="make matrix",
+        #        command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=5)
+        # # >>>3
+    # >>>2
+
+    def change_matrix(self, M=None):    # <<<2
+        if M is None:
+            M = self._matrix
+        else:
+            self._matrix = M
+        self._display_matrix.delete(0, END)
+        keys = list(M.keys())
+        keys.sort()
+
+        def show(z):
+            if z == 0:
+                return "0"
+            elif z == z.real:
+                x = "{:.4f}".format(z.real).rstrip("0")
+                x = x.rstrip(".")
+                return x
+            elif z == z - z.real:
+                y = "{:.4f}".format(z.imag).rstrip("0")
+                y = y.rstrip(".") + "i"
+                return y
+            else:
+                x = "{:.4f}".format(z.real).rstrip("0")
+                y = "{:.4f}".format(z.imag).rstrip("0")
+                x = x.rstrip(".")
+                y = y.rstrip(".")
+                return "{} + {}i".format(x, y)
+
+        for (n, m) in keys:
+            self._display_matrix.insert(END, "{:2}, {:2} : {}"
+                                             .format(n, m, show(M[(n, m)])))
+    # >>>2
+
+    def add_entry(self, *args):     # <<<2
+        e = self._change_entry.get().strip()
+        if e == "":
+            return
+        try:
+            tmp = re.split("\s*(?:[,;:]|(?:[-=]>))\s*", e)
+            n, m, z = tmp
+            n = n.strip(" ()")
+            m = m.strip(" ()")
+            n = int(n)
+            m = int(m)
+            z = re.sub("\s*", "", z)
+            z = z.replace("i", "j")
+            z = complex(z)
+            if z == 0:
+                del self._matrix[(n, m)]
+            else:
+                self._matrix[(n, m)] = z
+            self.change_matrix()
+            self._change_entry.set("")
+        except Exception as err:
+            error("cannot parse matrix entry '{}': {}".format(e, err))
+        # >>>2
+
+    def remove_entries(self, *args):        # <<<2
+        entries = self._display_matrix.curselection()
+        p = 0
+        for e in entries:
+            tmp = self._display_matrix.get(e-p)
+            n, m, _ = re.split("\s*(?:[,;:]|(?:[-=]>))\s*", tmp)
+            self._matrix.pop((int(n), int(m)))
+            self._display_matrix.delete(e-p, e-p)
+            p += 1
+    # >>>2
+
+    def add_noise(self, *args):     # <<<2
+        try:
+            e = self._noise.get()/100
+        except:
+            e = 0.1
+        M = self._matrix
+        for n, m in M:
+            z = M[(n, m)]
+            modulus = abs(z) * uniform(0, e)
+            angle = uniform(0, 2*pi)
+            M[(n, m)] = z + modulus * complex(cos(angle), sin(angle))
+        self.change_matrix()
+    # >>>2
+
+    def new_random_matrix(self, *args):     # <<<2
+        a = self._random_min_degre.get()
+        b = self._random_max_degre.get()
+        coeffs = list(product(range(a, b+1), range(a, b+1)))
+        shuffle(coeffs)
+        n = self._random_nb_coeff.get()
+        coeffs = coeffs[:n]
+        a = self._random_min_coeff.get()
+        b = self._random_max_coeff.get()
+        M = {}
+        for (n, m) in coeffs:
+            M[(n, m)] = complex(uniform(a, b), uniform(a, b))
+        self.change_matrix(M)
+    # >>>2
+
+    def random_matrix_preview(self, *args):     # <<<2
+        new_random_matrix()
+        self.make_matrix()
+        self.make_preview()
+    # >>>2
+
+    def set_frieze_type(self, *args):       # <<<2
+        frieze_combo.select_clear()
+        self.function["frieze_type"] = frieze_combo.stringvar.get()
+    # >>>2
+
+    def set_rosette(self, *args):     # <<<2
+        b = rosette.get()
+        self.function["rosette"] = b
+        if b:
+            self.function["nb_fold"].config(state=NORMAL)
+            self.function["nb_fold"].label_widget.config(state=NORMAL)
+        else:
+            self.function["nb_fold"].config(state=DISABLED)
+            self.function["nb_fold"].label_widget.config(state=DISABLED)
+    # >>>2
+
+    def select_wallpaper(self, *args):        # <<<2
+        old = self.function["wallpaper_type"]
+        s = wallpaper_combo.stringvar.get()
+        if s.startswith("-- "):
+            wallpaper_combo.stringvar.set(old)
+        else:
+            self.function["wallpaper_type"] = s
+        wallpaper_combo.select_clear()
+        pattern = self.function["wallpaper_type"].split()[0]
+        lattice = lattice_type(pattern)
+        if lattice == "general":
+            lattice_params.config(state=NORMAL)
+            lattice_params.set("1, 2")
+            lattice_params.label_widget.config(state=NORMAL)
+            lattice_params.label_widget.config(text="xsi, eta")
+        elif lattice == "rhombic":
+            lattice_params.config(state=NORMAL)
+            lattice_params.set("2")
+            lattice_params.label_widget.config(state=NORMAL)
+            lattice_params.label_widget.config(text="b")
+        elif lattice == "rectangular":
+            lattice_params.config(state=NORMAL)
+            lattice_params.set("2")
+            lattice_params.label_widget.config(state=NORMAL)
+            lattice_params.label_widget.config(text="L")
+        elif lattice == "square":
+            lattice_params.config(state=DISABLED, width=3)
+            lattice_params.set("")
+            lattice_params.label_widget.config(state=DISABLED)
+            lattice_params.label_widget.config(text="lattice parameters")
+        elif lattice == "hexagonal":
+            lattice_params.config(state=DISABLED, width=3)
+            lattice_params.set("")
+            lattice_params.label_widget.config(state=DISABLED)
+            lattice_params.label_widget.config(text="lattice parameters")
+        else:
+            assert False
     # >>>2
 # >>>1
 
@@ -1053,6 +1375,8 @@ class GUI(Tk):      # <<<1
         # tmp.grid(row=0, column=5)
         # tmp = World(self)
         # tmp.grid(row=0, column=6)
+        # tmp = Function(self)
+        # tmp.grid(row=0, column=7)
     # >>>2
 
     def init_colorwheel(self,       # <<<2
