@@ -302,6 +302,8 @@ def make_world_numpy(                   # <<<1
         size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),     # size of the output image
         geometry=(-2, 2, -2, 2),                # coordinates of the world
         color_geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
+        color_modulus="1",
+        color_angle="0",
         lattice="",                     # "frieze", "rosette", "general",
                                         # "rhombic", "rectangular", "square"
                                         # or "hexagonal"
@@ -395,6 +397,8 @@ def make_world_numpy(                   # <<<1
                   m*(E[1][0]*xs[:, None] + E[1][1]*ys))
             res = res + matrix[(n, m)] * np.exp(2j*pi*zs)
     # print("computed res")
+
+    res = res / (color_modulus * complex(cos(color_angle), sin(color_angle)))
 
     xs = np.rint((res.real - color_x_min) / color_delta_x).astype(int)
     # print("xs to int")
@@ -750,20 +754,34 @@ class GUI(Tk):
                 self.colorwheel["y_min"].set(COLOR_GEOMETRY[2])
                 self.colorwheel["y_max"].set(COLOR_GEOMETRY[3])
 
-        Button(coord_frame, text="zoom -",
-               command=zoom_out).grid(row=2, column=0,
-                                      padx=10, pady=10)
-        Button(coord_frame, text="zoom +",
-               command=zoom_in).grid(row=2, column=1,
-                                     padx=10, pady=10)
+        # Button(coord_frame, text="zoom -",
+        #        command=zoom_out).grid(row=2, column=0,
+        #                               padx=10, pady=10)
+        # Button(coord_frame, text="zoom +",
+        #        command=zoom_in).grid(row=2, column=1,
+        #                              padx=10, pady=10)
 
         Button(coord_frame, text="reset",
-               command=reset_geometry).grid(row=3, column=0, columnspan=2,
+               command=reset_geometry).grid(row=2, column=0, columnspan=2,
                                             padx=10, pady=10)
+
+        transformation_frame = LabelFrame(frame, text="transformation")
+        transformation_frame.pack(padx=5, pady=5)
+        modulus = LabelEntry(transformation_frame, label="modulus",
+                             value=float(1),
+                             width=4)
+        modulus.pack(padx=5, pady=5)
+        self.colorwheel["modulus"] = modulus
+
+        angle = LabelEntry(transformation_frame, label="angle (°)",
+                           value=float(0),
+                           width=4)
+        angle.pack(padx=5, pady=5)
+        self.colorwheel["angle"] = angle
 
         color = LabelEntry(frame, label="default color", value=default_color,
                            width=10)
-        color.pack(side=TOP, padx=5, pady=5)
+        color.pack(padx=5, pady=10)
         self.colorwheel["default_color"] = color
 
         def update_defaultcolor(*args):
@@ -1328,6 +1346,9 @@ class GUI(Tk):
         color_y_min = self.colorwheel["y_min"].get()
         color_y_max = self.colorwheel["y_max"].get()
 
+        color_mod = self.colorwheel["modulus"].get()
+        color_ang = self.colorwheel["angle"].get() * pi / 180
+
         default_color = self.colorwheel["default_color"].get()
 
         tabs = self.function["tabs"]
@@ -1370,6 +1391,8 @@ class GUI(Tk):
                     lattice_params=lattice_params,
                     color_geometry=(color_x_min, color_x_max,
                                     color_y_min, color_y_max),
+                    color_modulus=color_mod,
+                    color_angle=color_ang,
                     default_color=default_color)
 
         cmd = ("""#!/bin/sh
