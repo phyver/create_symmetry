@@ -614,21 +614,21 @@ class ColorWheel(LabelFrame):   # <<<1
 
     @property
     def geometry(self): # <<<2
-        x_min = self.__x_min.get()
-        x_max = self.__x_max.get()
-        y_min = self.__y_min.get()
-        y_max = self.__y_max.get()
+        x_min = self._x_min.get()
+        x_max = self._x_max.get()
+        y_min = self._y_min.get()
+        y_max = self._y_max.get()
         return x_min, x_max, y_min, y_max
     # >>>2
 
     @property
     def modulus(self):  # <<<2
-        return self.__modulus.get()
+        return self._modulus.get()
     # >>>2
 
     @property
     def angle(self):    # <<<2
-        return self.__angle.get()
+        return self._angle.get()
     # >>>2
 
     @property
@@ -648,7 +648,7 @@ class ColorWheel(LabelFrame):   # <<<1
                  default_color="black"):
 
         LabelFrame.__init__(self, root)
-        self.configure(text="Colorwheel")
+        self.configure(text="Color Wheel")
 
         self._color = LabelEntry(self,
                                  label="default color",
@@ -752,7 +752,8 @@ class ColorWheel(LabelFrame):   # <<<1
                 self._y_min.set(COLOR_GEOMETRY[2])
                 self._y_max.set(COLOR_GEOMETRY[3])
         except Exception as e:
-            error("problem while opening {} for color image: {}".format(filename, e))
+            error("problem while opening {} for color image: {}"
+                  .format(filename, e))
     # >>>2
 
     def choose_colorwheel(self):    # <<<2
@@ -773,20 +774,209 @@ class ColorWheel(LabelFrame):   # <<<1
         x_max = x_min + delta_x
         y_max = y/COLOR_SIZE * delta_y
         y_min = y_max - delta_y
-        self.__x_min.set(x_min)
-        self.__x_max.set(x_max)
-        self.__y_min.set(y_min)
-        self.__y_max.set(y_max)
+        self._x_min.set(x_min)
+        self._x_max.set(x_max)
+        self._y_min.set(y_min)
+        self._y_max.set(y_max)
     # >>>2
 
     def reset_geometry(self, *args):        # <<<2
-        if self.__filename is not None:
-            self.change_colorwheel(self.__filename)
+        if self._filename is not None:
+            self.change_colorwheel(self._filename)
         else:
-            self.__x_min.set(COLOR_GEOMETRY[0])
-            self.__x_max.set(COLOR_GEOMETRY[1])
-            self.__y_min.set(COLOR_GEOMETRY[2])
-            self.__y_max.set(COLOR_GEOMETRY[3])
+            self._x_min.set(COLOR_GEOMETRY[0])
+            self._x_max.set(COLOR_GEOMETRY[1])
+            self._y_min.set(COLOR_GEOMETRY[2])
+            self._y_max.set(COLOR_GEOMETRY[3])
+    # >>>2
+# >>>1
+
+
+class World(LabelFrame):     # <<<1
+
+    @property
+    def geometry(self):     # <<<2
+        x_min = self._x_min.get()
+        x_max = self._x_max.get()
+        y_min = self._y_min.get()
+        y_max = self._y_max.get()
+        return x_min, x_max, y_min, y_max
+    # >>>2
+
+    @property
+    def modulus(self):  # <<<2
+        return self._modulus.get()
+    # >>>2
+
+    @property
+    def angle(self):    # <<<2
+        return self._angle.get()
+    # >>>2
+
+    @property
+    def size(self):    # <<<2
+        return self._width.get(), self._height.get()
+    # >>>2
+
+    @property
+    def width(self):    # <<<2
+        return self._width.get()
+    # >>>2
+
+    @property
+    def height(self):    # <<<2
+        return self._height.get()
+    # >>>2
+
+    @property
+    def filename_template(self):    # <<<2
+        return self._filename_template()
+    # >>>2
+
+    def __init__(self,              # <<<2
+                 root,
+                 geometry=WORLD_GEOMETRY,
+                 modulus=1,
+                 angle=0,
+                 size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),
+                 filename_template="output-{:03}"):
+
+        LabelFrame.__init__(self, root)
+        self.configure(text="World")
+
+        # the preview image     <<<3
+        self._canvas = Canvas(self, width=PREVIEW_SIZE, height=PREVIEW_SIZE,
+                              bg="white")
+        for i in range(5, PREVIEW_SIZE, 10):
+            for j in range(5, PREVIEW_SIZE, 10):
+                self._canvas.create_line(i-1, j, i+2, j, fill="gray")
+                self._canvas.create_line(i, j-1, i, j+2, fill="gray")
+        self._canvas.pack(side=LEFT)
+        self._image_id = None
+        # >>>3
+
+        # geometry of result    <<<3
+        coord_frame = LabelFrame(self, text="coordinates")
+        coord_frame.pack()
+
+        self._x_min = LabelEntry(coord_frame, label="x min",
+                                 value=float(geometry[0]),
+                                 width=4, justify=RIGHT)
+        self._x_min.grid(row=0, column=0, padx=5, pady=5)
+
+        self._x_max = LabelEntry(coord_frame, label="x max",
+                                 value=float(geometry[1]),
+                                 width=4, justify=RIGHT)
+        self._x_max.grid(row=0, column=1, padx=5, pady=5)
+
+        self._y_min = LabelEntry(coord_frame, label="y min",
+                                 value=float(geometry[2]),
+                                 width=4, justify=RIGHT)
+        self._y_min.grid(row=1, column=0, padx=5, pady=5)
+
+        self._y_max = LabelEntry(coord_frame, label="y max",
+                                 value=float(geometry[3]),
+                                 width=4, justify=RIGHT)
+        self._y_max.grid(row=1, column=1, padx=5, pady=5)
+
+        Button(coord_frame, text="zoom -",
+               command=self.zoom_out).grid(row=3, column=0,
+                                           padx=10, pady=10)
+        Button(coord_frame, text="zoom +",
+               command=self.zoom_in).grid(row=3, column=1,
+                                          padx=10, pady=10)
+
+        transformation_frame = LabelFrame(self, text="transformation")
+        transformation_frame.pack(padx=5, pady=5)
+        self._modulus = LabelEntry(transformation_frame, label="modulus",
+                                   value=float(modulus),
+                                   width=4)
+        self._modulus.pack()
+
+        self._angle = LabelEntry(transformation_frame, label="angle (°)",
+                                 value=float(angle),
+                                 width=4)
+        self._angle.pack()
+
+        Button(coord_frame, text="reset",
+               command=self.reset_geometry).grid(row=4, column=0, columnspan=2,
+                                                 padx=10, pady=10)
+        # >>>3
+
+        # result settings       <<<3
+        settings_frame = LabelFrame(self, text="output")
+        settings_frame.pack(side=TOP, padx=5, pady=5)
+
+        self._width = LabelEntry(settings_frame,
+                                 label="width", value=OUTPUT_WIDTH,
+                                 width=6, justify=RIGHT)
+        self._width.pack()
+
+        self._height = LabelEntry(settings_frame,
+                                  label="height", value=OUTPUT_HEIGHT,
+                                  width=6, justify=RIGHT)
+        self._height.pack()
+
+        self._filename_template = LabelEntry(settings_frame, label=None,
+                                             value=filename_template,
+                                             width=15)
+        self._filename_template.pack()
+        # >>>3
+
+        tmp = LabelFrame(self, text="image")
+        tmp.pack(padx=10, pady=10)
+
+        self.preview_button = Button(tmp, text="preview", command=None)
+        self.preview_button.pack()
+
+        self.save_button = Button(tmp, text="save", command=None)
+        self.save_button.pack()
+
+        width, height = self.size
+        if width > height:
+            self.adjust_preview_X()
+        else:
+            self.adjust_preview_X()
+    # >>>2
+
+    def zoom_out(self, *args):
+        a = 2**0.1
+        for c in ["_x_min", "_x_max", "_y_min", "_y_max"]:
+            self.__dict__[c].set(self.__dict__[c].get() * a)
+
+    def zoom_in(self, *args):
+        a = 2**0.1
+        for c in ["_x_min", "_x_max", "_y_min", "_y_max"]:
+            self.__dict__[c].set(self.__dict__[c].get() / a)
+
+    def reset_geometry(self, *args):
+        self._x_min.set(WORLD_GEOMETRY[0])
+        self._x_max.set(WORLD_GEOMETRY[1])
+        self._y_min.set(WORLD_GEOMETRY[2])
+        self._y_max.set(WORLD_GEOMETRY[3])
+        if self.width > self.height:
+            self.adjust_preview_X()
+        else:
+            self.adjust_preview_X()
+
+    def adjust_preview_X(self, *args):      # <<<2
+        ratio = self.width / self.height
+        x_min, x_max, y_min, y_max = self.geometry
+        delta_y = y_max - y_min
+        delta_x = delta_y * ratio
+        middle_x = (x_min+x_max) / 2
+        self._x_min.set(middle_x - delta_x/2)
+        self._x_max.set(middle_x + delta_x/2)
+    # >>>2
+
+    def adjust_preview_Y(self, *args):      # <<<2
+        ratio = self.height / self.width
+        x_min, x_max, y_min, y_max = self.geometry
+        delta_x = x_max - x_min
+        delta_y = delta_x * ratio
+        middle_y = (y_min+y_max) / 2
+        self._y_min.set(middle_y - delta_y/2)
+        self._y_max.set(middle_y + delta_y/2)
     # >>>2
 # >>>1
 
@@ -859,9 +1049,10 @@ class GUI(Tk):      # <<<1
         self.bind("<Control-p>", lambda _: self.make_preview())
         self.bind("<Control-s>", lambda _: self.make_result())
 
-        tmp = ColorWheel(self)
-        tmp.grid(row=0, column=5)
-
+        # tmp = ColorWheel(self)
+        # tmp.grid(row=0, column=5)
+        # tmp = World(self)
+        # tmp.grid(row=0, column=6)
     # >>>2
 
     def init_colorwheel(self,       # <<<2
