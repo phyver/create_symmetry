@@ -328,19 +328,21 @@ def make_world_numpy(                   # <<<1
 
     # print("start")
     tmp = PIL.Image.open(color_filename)
-    border_size = 1
+    color_width, color_height = tmp.size
+
+    # we add a border to the top / right of the color image, using the default
+    # color
     color_im = PIL.Image.new("RGB",
-                             (tmp.size[0]+2*border_size,
-                              tmp.size[1]+2*border_size),
+                             (color_width+1,
+                              color_height+1),
                              color=default_color)
-    color_im.paste(tmp, (border_size, border_size))
+    color_im.paste(tmp, (1, 1))
     # print("got color")
 
     import numpy as np
     delta_x = (x_max-x_min) / (width-1)
     delta_y = (y_max-y_min) / (height-1)
 
-    color_width, color_height = color_im.size
     color_delta_x = (color_x_max-color_x_min) / (color_width-1)
     color_delta_y = (color_y_max-color_y_min) / (color_height-1)
 
@@ -393,6 +395,9 @@ def make_world_numpy(                   # <<<1
     ys = np.rint((color_y_max - res.imag) / color_delta_y).astype(int)
     # print("ys to int")
 
+    xs = xs + 1
+    ys = ys + 1
+
     np.place(xs, xs < 0, [0])
     np.place(xs, xs >= color_width, [0])
     # print("remove invalid values in xs")
@@ -405,7 +410,7 @@ def make_world_numpy(                   # <<<1
 
     color = np.asarray(color_im)
     # print("got color")
-    color = color.reshape(color_height, color_width, 3)
+    color = color.reshape(color_height+1, color_width+1, 3)
     # print("reshape color")
     color = color.transpose(1, 0, 2)
     # print("transpose color")
