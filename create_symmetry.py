@@ -543,8 +543,7 @@ def make_world_plain(                   # <<<1
 
 ###
 # GUI
-# <<<1
-class LabelEntry(Frame):  # <<<2
+class LabelEntry(Frame):  # <<<1
     """
     An Entry widget with a label on its left.
     """
@@ -608,10 +607,191 @@ class LabelEntry(Frame):  # <<<2
     def delete(self):  # <<<3
         self.content.set("")
     # >>>3
-# >>>2
+# >>>1
 
 
-class GUI(Tk):
+class ColorWheel(LabelFrame):   # <<<1
+
+    @property
+    def geometry(self): # <<<2
+        x_min = self.__x_min.get()
+        x_max = self.__x_max.get()
+        y_min = self.__y_min.get()
+        y_max = self.__y_max.get()
+        return x_min, x_max, y_min, y_max
+    # >>>2
+
+    @property
+    def modulus(self):  # <<<2
+        return self.__modulus.get()
+    # >>>2
+
+    @property
+    def angle(self):    # <<<2
+        return self.__angle.get()
+    # >>>2
+
+    @property
+    def color(self):    # <<<2
+        try:
+            return getrgb(self._color.get())
+        except Exception as e:
+            error("'{}' is not a color".format(e))
+    # >>>2
+
+    def __init__(self,              # <<<2
+                 root,
+                 filename=None,
+                 geometry=COLOR_GEOMETRY,
+                 modulus=1,
+                 angle=0,
+                 default_color="black"):
+
+        LabelFrame.__init__(self, root)
+        self.configure(text="Colorwheel")
+
+        self._color = LabelEntry(self,
+                                 label="default color",
+                                 value=default_color,
+                                 width=10)
+        self._color.pack()
+        self._color.bind("<Enter>", self.update_defaultcolor)
+        self._color.bind("<FocusOut>", self.update_defaultcolor)
+
+        self._filename = Label(self, text="...")
+        self._filename.pack()
+
+        self._canvas = Canvas(self, width=200, height=200, bg="white")
+        self._canvas.pack()
+        for i in range(5, COLOR_SIZE, 10):
+            for j in range(5, COLOR_SIZE, 10):
+                self._canvas.create_line(i-1, j, i+2, j, fill="gray")
+                self._canvas.create_line(i, j-1, i, j+2, fill="gray")
+        self._colorwheel_id = None
+        self._canvas.bind("<Button-3>", self.set_origin)
+
+        Button(self, text="choose file",
+               command=self.choose_colorwheel).pack()
+
+        coord_frame = LabelFrame(self, text="coordinates")
+        coord_frame.pack()
+
+        self._x_min = LabelEntry(coord_frame, label="x min",
+                                 value=float(geometry[0]),
+                                 width=4, justify=RIGHT)
+        self._x_min.grid(row=0, column=0, padx=5, pady=5)
+
+        self._x_max = LabelEntry(coord_frame, label="x max",
+                                 value=float(geometry[1]),
+                                 width=4, justify=RIGHT)
+        self._x_max.grid(row=0, column=1, padx=5, pady=5)
+
+        self._y_min = LabelEntry(coord_frame, label="y min",
+                                 value=float(geometry[2]),
+                                 width=4, justify=RIGHT)
+        self._y_min.grid(row=1, column=0, padx=5, pady=5)
+
+        self._y_max = LabelEntry(coord_frame, label="y max",
+                                 value=float(geometry[3]),
+                                 width=4, justify=RIGHT)
+        self._y_max.grid(row=1, column=1, padx=5, pady=5)
+
+        Button(coord_frame, text="reset",
+               command=self.reset_geometry).grid(row=2, column=0, columnspan=2,
+                                                 padx=10, pady=10)
+
+        transformation_frame = LabelFrame(self, text="transformation")
+        transformation_frame.pack()
+        self._modulus = LabelEntry(transformation_frame, label="modulus",
+                                   value=float(modulus),
+                                   width=4)
+        self._modulus.pack()
+
+        self._angle = LabelEntry(transformation_frame, label="angle (°)",
+                                 value=float(angle),
+                                 width=4)
+        self._angle.pack()
+
+        self.update_defaultcolor()
+
+        if filename is not None:
+            self.change_colorwheel(filename)
+    # >>>2
+
+    def update_defaultcolor(self, *args):     # <<<2
+        try:
+            c = self.color
+            self._canvas.config(bg="#{:02x}{:02x}{:02x}".format(*c))
+            self._color.config(foreground="black")
+        except Exception as e:
+            error("error: '{}'".format(e))
+            self._color.config(foreground="red")
+    # >>>2
+
+    def change_colorwheel(self, filename):  # <<<2
+        try:
+            img = PIL.Image.open(filename)
+            img.thumbnail((COLOR_SIZE, COLOR_SIZE), PIL.Image.ANTIALIAS)
+            self._image = img
+            tk_img = PIL.ImageTk.PhotoImage(img)
+            self._tk_image = tk_img     # prevent garbage collection
+            self._canvas.delete(self._colorwheel_id)
+            self._canvas.create_image((100, 100), image=tk_img)
+            self.filename = filename
+            self._filename.config(text=os.path.basename(filename))
+            width, height = self._image.size
+            ratio = width / height
+            if ratio > 1:
+                self._x_min.set(COLOR_GEOMETRY[0])
+                self._x_max.set(COLOR_GEOMETRY[1])
+                self._y_min.set(COLOR_GEOMETRY[2] / ratio)
+                self._y_max.set(COLOR_GEOMETRY[3] / ratio)
+            else:
+                self._x_min.set(COLOR_GEOMETRY[0] * ratio)
+                self._x_max.set(COLOR_GEOMETRY[1] * ratio)
+                self._y_min.set(COLOR_GEOMETRY[2])
+                self._y_max.set(COLOR_GEOMETRY[3])
+        except Exception as e:
+            error("problem while opening {} for color image: {}".format(filename, e))
+    # >>>2
+
+    def choose_colorwheel(self):    # <<<2
+        filename = filedialog.askopenfilename(
+                title="Create Symmetry: choose color wheel image",
+                initialdir="./",
+                filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")])
+        self.change_colorwheel(filename)
+    # >>>2
+
+    def set_origin(self, event):        # <<<2
+        x, y = event.x, event.y
+        x_min, x_max, y_min, y_max = self.geometry
+        delta_x = x_max - x_min
+        delta_y = y_max - y_min
+
+        x_min = -x/COLOR_SIZE * delta_x
+        x_max = x_min + delta_x
+        y_max = y/COLOR_SIZE * delta_y
+        y_min = y_max - delta_y
+        self.__x_min.set(x_min)
+        self.__x_max.set(x_max)
+        self.__y_min.set(y_min)
+        self.__y_max.set(y_max)
+    # >>>2
+
+    def reset_geometry(self, *args):        # <<<2
+        if self.__filename is not None:
+            self.change_colorwheel(self.__filename)
+        else:
+            self.__x_min.set(COLOR_GEOMETRY[0])
+            self.__x_max.set(COLOR_GEOMETRY[1])
+            self.__y_min.set(COLOR_GEOMETRY[2])
+            self.__y_max.set(COLOR_GEOMETRY[3])
+    # >>>2
+# >>>1
+
+
+class GUI(Tk):      # <<<1
 
     colorwheel = {}     # form elements for the colorwheel:
     #  - tk_image to keep a reference to the TkImage object
@@ -679,6 +859,8 @@ class GUI(Tk):
         self.bind("<Control-p>", lambda _: self.make_preview())
         self.bind("<Control-s>", lambda _: self.make_result())
 
+        tmp = ColorWheel(self)
+        tmp.grid(row=0, column=5)
 
     # >>>2
 
@@ -1525,7 +1707,7 @@ $CREATE_SYM --color={color:} \\
         self.result["y_max"].set(middle_y + delta_y/2)
     # >>>2
 
-    def display_help(self):
+    def display_help(self):     # <<<2
         dialog = Toplevel(self)
         dialog.resizable(width=False, height=False)
 
@@ -1564,10 +1746,13 @@ Keyboard shortcuts:
         ok.pack(padx=10, pady=10)
         ok.focus_set()
         self.wait_window(dialog)
+    # >>>2
 
 # >>>1
 
 
+###
+# main
 def main():     # <<<1
     def display_help():
         print("""Usage: {} [flags]
