@@ -300,11 +300,13 @@ def make_world_numpy(                   # <<<1
         matrix=None,                        # the matrix of the transformation
         color_filename="",                  # image for the colorwheel image
         size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),     # size of the output image
+        modulus="1",
+        angle="0",
         geometry=(-2, 2, -2, 2),                # coordinates of the world
         color_geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
         color_modulus="1",
         color_angle="0",
-        lattice="",                     # "frieze", "rosette", "general",
+        lattice="plain",                # "frieze", "rosette", "general",
                                         # "rhombic", "rectangular", "square"
                                         # or "hexagonal"
         lattice_params=(),              # (xsi,eta) for "general", (b) for
@@ -316,7 +318,7 @@ def make_world_numpy(                   # <<<1
     assert matrix is not None
     assert color_filename != ""
     assert lattice in ["frieze", "rosette", "general", "rhombic",
-                       "rectangular", "square", "hexagonal"]
+                       "rectangular", "square", "hexagonal", "plain"]
 
     if lattice == "general":
         xsi, eta = lattice_params
@@ -361,16 +363,18 @@ def make_world_numpy(                   # <<<1
 
     xs = np.arange(width)
     xs = x_min + xs*delta_x
+    xs = xs / (modulus * complex(cos(angle*pi/180), sin(angle*pi/180)))
     # print("got xs")
 
     ys = np.arange(height)
     ys = y_max - ys*delta_y
+    ys = ys / (modulus * complex(cos(angle*pi/180), sin(angle*pi/180)))
     # print("got ys")
 
     res = np.zeros((width, height), complex)
     # print("initialized res")
     for (n, m) in matrix:
-        if lattice == "rosette":
+        if lattice == "rosette" or lattice == "plain":
             zs = xs[:, None] + 1j*ys
             zcs = np.conj(zs)
             res = res + matrix[(n, m)] * zs**n * zcs**m
@@ -398,7 +402,8 @@ def make_world_numpy(                   # <<<1
             res = res + matrix[(n, m)] * np.exp(2j*pi*zs)
     # print("computed res")
 
-    res = res / (color_modulus * complex(cos(color_angle), sin(color_angle)))
+    res = res / (color_modulus *
+                 complex(cos(color_angle*pi/180), sin(color_angle*pi/180)))
 
     xs = np.rint((res.real - color_x_min) / color_delta_x).astype(int)
     # print("xs to int")
@@ -439,8 +444,12 @@ def make_world_plain(                   # <<<1
         color_filename="",                  # image for the colorwheel image
         size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),     # size of the output image
         geometry=(-2, 2, -2, 2),                # coordinates of the world
+        modulus="1",
+        angle="0",
         color_geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
-        lattice="",                     # "frieze", "rosette", "general",
+        color_modulus="1",
+        color_angle="0",
+        lattice="plain",                # "frieze", "rosette", "general",
                                         # "rhombic", "rectangular", "square"
                                         # or "hexagonal"
         lattice_params=(),              # (xsi,eta) for "general", (b) for
@@ -452,7 +461,7 @@ def make_world_plain(                   # <<<1
     assert matrix is not None
     assert color_filename != ""
     assert lattice in ["frieze", "rosette", "general", "rhombic",
-                       "rectangular", "square", "hexagonal"]
+                       "rectangular", "square", "hexagonal", "plain"]
 
     if lattice == "general":
         xsi, eta = lattice_params
@@ -498,9 +507,11 @@ def make_world_plain(                   # <<<1
         for j in range(height):
             x = x_min + i*delta_x
             y = y_max - j*delta_y
+            x = x / (modulus * complex(cos(angle*pi/180), sin(angle*pi/180)))
+            y = y / (modulus * complex(cos(angle*pi/180), sin(angle*pi/180)))
             res = 0
             for (n, m) in matrix:
-                if lattice == "rosette":
+                if lattice == "rosette" or lattice == "plain":
                     z = complex(x, y)
                     zc = z.conjugate()
                     res = res + matrix[(n, m)] * z**n * zc**m
@@ -528,6 +539,9 @@ def make_world_plain(                   # <<<1
                             ))
                     res = res + matrix[(n, m)] * z
 
+            res = res / (color_modulus *
+                         complex(cos(color_angle*pi/180),
+                                 sin(color_angle*pi/180)))
             res_x = round((res.real - color_x_min) / color_delta_x)
             res_y = round((color_y_max - res.imag) / color_delta_y)
             try:
@@ -643,34 +657,49 @@ class GUI(Tk):
                  matrix=None,
                  color_filename=None,
                  size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),
+                 modulus=1.0,
+                 angle=0.0,
                  geometry=(-2, 2, -2, 2),
-                 E=None,
+                 color_modulus=1.0,
+                 color_angle=0.0,
                  color_geometry=COLOR_GEOMETRY,
                  default_color="black"):
 
         # tk interface
         Tk.__init__(self)
-        # self.resizable(width=False, height=False)
+        self.resizable(width=False, height=False)
         # self.geometry("1200x600")
         self.title("Create Symmetry")
 
         self.init_colorwheel(filename=color_filename,
                              geometry=color_geometry,
+                             modulus=color_modulus,
+                             angle=color_angle,
                              default_color=default_color)
-        self.init_result(geometry=geometry)
+        self.init_result(geometry=geometry,
+                         modulus=modulus,
+                         angle=angle)
         self.init_function(matrix=matrix)
 
         # keybindings
+        self.bind("<Control-h>", lambda _: self.display_help())
+
         self.bind("<Control-q>", lambda _: self.destroy())
+
         self.bind("<Control-p>", lambda _: self.make_preview())
+        self.bind("<Control-s>", lambda _: self.make_result())
+
+
     # >>>2
 
     def init_colorwheel(self,       # <<<2
                         filename=None,
                         geometry=(-1, 1, -1, 1),
+                        modulus=1.0,
+                        angle=0.0,
                         default_color="black"):
         frame = LabelFrame(self, text="Colorwheel")
-        frame.grid(row=0, column=0, padx=10, pady=10, sticky=N+S)
+        frame.grid(row=0, column=0, padx=10, pady=10)
 
         canvas = Canvas(frame, width=200, height=200, bg="white")
         canvas.pack(side=TOP, padx=10, pady=10)
@@ -768,13 +797,13 @@ class GUI(Tk):
         transformation_frame = LabelFrame(frame, text="transformation")
         transformation_frame.pack(padx=5, pady=5)
         modulus = LabelEntry(transformation_frame, label="modulus",
-                             value=float(1),
+                             value=float(modulus),
                              width=4)
         modulus.pack(padx=5, pady=5)
         self.colorwheel["modulus"] = modulus
 
         angle = LabelEntry(transformation_frame, label="angle (°)",
-                           value=float(0),
+                           value=float(angle),
                            width=4)
         angle.pack(padx=5, pady=5)
         self.colorwheel["angle"] = angle
@@ -797,10 +826,13 @@ class GUI(Tk):
         color.bind("<Enter>", update_defaultcolor)
         color.bind("<FocusOut>", update_defaultcolor)
         update_defaultcolor()
+        if filename is not None:
+            self.change_colorwheel(filename)
 
     # >>>2
 
-    def init_result(self, geometry=(-2, 2, -2, 2)):     # <<<2
+    def init_result(self, geometry=(-2, 2, -2, 2),     # <<<2
+                    modulus=1.0, angle=0.0):
         frame = LabelFrame(self, text="World")
         frame.grid(row=0, column=1, padx=10, pady=10)
 
@@ -844,12 +876,12 @@ class GUI(Tk):
         y_max.grid(row=1, column=1, padx=5, pady=5)
         self.result["y_max"] = y_max
 
-        Button(coord_frame, text="X to ratio",
-               command=self.adjust_preview_X).grid(row=2, column=0,
-                                                   padx=10, pady=10)
-        Button(coord_frame, text="Y to ratio",
-               command=self.adjust_preview_Y).grid(row=2, column=1,
-                                                   padx=10, pady=10)
+        # Button(coord_frame, text="X to ratio",
+        #        command=self.adjust_preview_X).grid(row=2, column=0,
+        #                                            padx=10, pady=10)
+        # Button(coord_frame, text="Y to ratio",
+        #        command=self.adjust_preview_Y).grid(row=2, column=1,
+        #                                            padx=10, pady=10)
 
         def zoom_out(*args):
             a = 2**0.1
@@ -860,6 +892,17 @@ class GUI(Tk):
             a = 2**0.1
             for c in ["x_min", "x_max", "y_min", "y_max"]:
                 self.result[c].set(self.result[c].get() / a)
+
+        def zoom_in_preview(*args):
+            zoom_in()
+            self.make_preview()
+
+        def zoom_out_preview(*args):
+            zoom_out()
+            self.make_preview()
+
+        self.bind("<Control-Key-minus>", zoom_out_preview)
+        self.bind("<Control-Key-plus>", zoom_in_preview)
 
         def reset_geometry(*args):
             self.result["x_min"].set(WORLD_GEOMETRY[0])
@@ -878,6 +921,20 @@ class GUI(Tk):
                command=zoom_in).grid(row=3, column=1,
                                      padx=10, pady=10)
 
+        transformation_frame = LabelFrame(frame, text="transformation")
+        transformation_frame.pack(padx=5, pady=5)
+        modulus = LabelEntry(transformation_frame, label="modulus",
+                             value=float(modulus),
+                             width=4)
+        modulus.pack(padx=5, pady=5)
+        self.result["modulus"] = modulus
+
+        angle = LabelEntry(transformation_frame, label="angle (°)",
+                           value=float(angle),
+                           width=4)
+        angle.pack(padx=5, pady=5)
+        self.result["angle"] = angle
+
         Button(coord_frame, text="reset",
                command=reset_geometry).grid(row=4, column=0, columnspan=2,
                                             padx=10, pady=10)
@@ -885,7 +942,7 @@ class GUI(Tk):
 
         # result settings       <<<3
         settings_frame = LabelFrame(frame, text="output")
-        settings_frame.pack(side=TOP, fill=X, padx=5, pady=5)
+        settings_frame.pack(side=TOP, padx=5, pady=5)
 
         width = LabelEntry(settings_frame,
                            label="width", value=OUTPUT_WIDTH,
@@ -906,10 +963,13 @@ class GUI(Tk):
         self.result["filename"] = output_filename
         # >>>3
 
-        Button(frame, text="preview",
+        tmp = LabelFrame(frame, text="image")
+        tmp.pack(padx=10, pady=10)
+
+        Button(tmp, text="preview",
                command=self.make_preview).pack(padx=10, pady=10)
 
-        Button(frame, text="generate and save",
+        Button(tmp, text="save",
                command=self.make_output).pack(side=TOP, padx=10, pady=10)
 
         if self.result["width"].get() > self.result["height"].get():
@@ -920,7 +980,7 @@ class GUI(Tk):
 
     def init_function(self, matrix=None):     # <<<2
         frame = LabelFrame(self, text="Function")
-        frame.grid(row=1, column=0, columnspan=2, sticky=W+E, padx=10, pady=10)
+        frame.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
 
         # display matrix    <<<3
         tmp = Frame(frame)
@@ -1020,7 +1080,14 @@ class GUI(Tk):
                 M[(n, m)] = z + modulus * complex(cos(angle), sin(angle))
             self.change_matrix()
 
+        def add_noise_preview(*args):
+            add_noise()
+            self.make_preview()
+
         noise_entry.bind("<Return>", add_noise)
+        self.bind("<Control-n>", add_noise)
+        self.bind("<Control-N>", add_noise_preview)
+
         Button(tmp, text="add noise",
                command=add_noise
                ).pack(side=LEFT, padx=5, pady=5)
@@ -1061,14 +1128,21 @@ class GUI(Tk):
                 M[(n, m)] = complex(uniform(a, b), uniform(a, b))
             self.change_matrix(M)
 
+        def random_matrix_preview(*args):
+            new_random_matrix()
+            self.make_matrix()
+            self.make_preview()
+
         Button(tmp, text="generate",
                command=new_random_matrix
                ).pack(side=TOP, padx=5, pady=5)
+        self.bind("<Control-g>", new_random_matrix)
+        self.bind("<Control-G>", random_matrix_preview)
         # >>>3
 
         # tabs for the different kinds of functions / symmetries
         tabs = Notebook(frame)
-        tabs.pack(side=LEFT, fill=Y, padx=10, pady=10)
+        tabs.pack(side=LEFT, padx=10, pady=10)
         self.function["tabs"] = tabs
 
         frieze_tab = Frame(tabs)
@@ -1200,6 +1274,7 @@ class GUI(Tk):
 
     def change_colorwheel(self, filename):  # <<<2
         try:
+            filename = os.path.abspath(filename)
             img = PIL.Image.open(filename)
             # img = img.resize((200, 200), PIL.Image.ANTIALIAS)
             img.thumbnail((200, 200), PIL.Image.ANTIALIAS)
@@ -1341,13 +1416,16 @@ class GUI(Tk):
         y_min = self.result["y_min"].get()
         y_max = self.result["y_max"].get()
 
+        modulus = self.result["modulus"].get()
+        angle = self.result["angle"].get()
+
         color_x_min = self.colorwheel["x_min"].get()
         color_x_max = self.colorwheel["x_max"].get()
         color_y_min = self.colorwheel["y_min"].get()
         color_y_max = self.colorwheel["y_max"].get()
 
         color_mod = self.colorwheel["modulus"].get()
-        color_ang = self.colorwheel["angle"].get() * pi / 180
+        color_ang = self.colorwheel["angle"].get()
 
         default_color = self.colorwheel["default_color"].get()
 
@@ -1387,6 +1465,8 @@ class GUI(Tk):
                     color_filename=self.colorwheel["full_filename"],
                     size=(width, height),
                     geometry=(x_min, x_max, y_min, y_max),
+                    modulus=modulus,
+                    angle=angle,
                     lattice=lattice,
                     lattice_params=lattice_params,
                     color_geometry=(color_x_min, color_x_max,
@@ -1396,27 +1476,34 @@ class GUI(Tk):
                     default_color=default_color)
 
         cmd = ("""#!/bin/sh
-WD={cwd:}
-CREATE_SYM=$WD/{prog:}
+CREATE_SYM={prog_path:}
 
 $CREATE_SYM --color={color:} \\
             --color-geometry={c_x_min:},{c_x_max:},{c_y_min:},{c_y_max:} \\
+            --color-modulus={color_mod:} \\
+            --color-angle={color_ang:} \\
             --geometry={x_min:},{x_max:},{y_min:},{y_max:} \\
+            --modulus={modulus:} \\
+            --angle={angle:} \\
             --size={width:},{height:} \\
             --matrix='{matrix:}' \\
-            --output={{output:}} \\
+            --output={output:} \\
             $@
 """.format(cwd=os.getcwd(),
-           prog=sys.argv[0],
+           prog_path=os.path.abspath(sys.argv[0]),
            color=self.colorwheel["full_filename"],
            c_x_min=color_x_min,
            c_x_max=color_x_max,
            c_y_min=color_y_min,
            c_y_max=color_y_max,
+           color_mod=color_mod,
+           color_ang=color_ang,
            x_min=x_min,
            x_max=x_max,
            y_min=y_min,
            y_max=y_max,
+           modulus=modulus,
+           angle=angle,
            width=width,
            height=height,
            matrix=str(self.function["matrix"]),
@@ -1447,6 +1534,44 @@ $CREATE_SYM --color={color:} \\
         self.result["y_max"].set(middle_y + delta_y/2)
     # >>>2
 
+    def display_help(self):
+        dialog = Toplevel(self)
+        dialog.resizable(width=False, height=False)
+
+        text = Text(dialog)
+        text.pack(padx=10, pady=10)
+        text.insert(END, """
+create_symmetry.py : a Python script to experiment with
+Frank Farris recipes from his book "Creating Symmetry"
+
+Keyboard shortcuts:
+
+  Control-h     this help message
+
+  Control-q     quit
+
+  Control-p     compute and display preview
+  Control-s     compute and save result to file
+
+  Control-n     add noise to matrix
+  Control-N     add noise to matrix and display preview
+
+  Control-g     generate random matrix
+  Control-G     generate random matrix, add symmetries and display preview
+
+  Control--     zoom out the result file and display preview
+  Control-+     zoom in the result file and display preview
+""")
+        text.config(state=DISABLED)
+
+        dialog.bind("<Escape>", lambda _: dialog.destroy())
+        dialog.bind("<Control-q>", lambda _: dialog.destroy())
+        ok = Button(dialog, text="OK",
+                    command=lambda: dialog.destroy())
+        ok.pack(padx=10, pady=10)
+        ok.focus_set()
+        self.wait_window(dialog)
+
 # >>>1
 
 
@@ -1458,7 +1583,9 @@ def main():     # <<<1
     -o FILE  /  --output=FILE           choose output file
     -s W,H  /  --size=W,H               choose width and height of output
     -g X,Y,X,Y  /  --geometry=X,Y,X,Y   choose "geometry of output"
+    --modulus  /  --angle               transformation to apply to the result
     --color-geometry=X,Y,X,Y            choose "geometry" of the color file
+    --color-modulus  /  --color-angle   transformation to apply to the colorwheel
     --no-numpy                          do not use numpy for computation (slow)
     --matrix=...                        transformation matrix
 
@@ -1471,8 +1598,12 @@ def main():     # <<<1
 
     # parsing the command line arguments
     short_options = "hc:o:s:g:v"
-    long_options = ["help", "color=", "color-geometry=", "output=", "size=",
-                    "geometry=", "verbose", "no-numpy", "matrix=", "gui"]
+    long_options = [
+            "help",
+            "color=", "color-geometry=", "color-modulus=", "color-angle=",
+            "output=", "size=", "geometry=", "modulus=", "angle=",
+            "matrix=",
+            "verbose", "no-numpy", "gui"]
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], short_options, long_options)
@@ -1488,7 +1619,11 @@ def main():     # <<<1
     color_filename = None
     width, height = 400, 400
     x_min, x_max, y_min, y_max = -2, 2, -2, 2
+    modulus=1
+    angle=0
     color_x_min, color_x_max, color_y_min, color_y_max = -1, 1, -1, 1
+    color_modulus=1
+    color_angle=0
     use_numpy = True
     matrix = {}
     gui = False
@@ -1516,6 +1651,16 @@ def main():     # <<<1
                 error("problem with geometry '{}' for output".format(a))
                 x_min, x_max, y_min, y_max = -2, 2, -2, 2
                 sys.exit(1)
+        elif o in ["--modulus"]:
+            try:
+                modulus = float(a)
+            except:
+                error("problem with modulus '{}'".format(a))
+        elif o in ["--angle"]:
+            try:
+                angle = float(a)
+            except:
+                error("problem with angle '{}'".format(a))
         elif o in ["--color-geometry"]:
             try:
                 tmp = map(float, a.split(","))
@@ -1524,6 +1669,16 @@ def main():     # <<<1
                 error("problem with geometry '{}' for color image".format(a))
                 color_x_min, color_x_max, color_y_min, color_y_max = -1, 1, -1, 1
                 sys.exit(1)
+        elif o in ["--color-modulus"]:
+            try:
+                color_modulus = float(a)
+            except:
+                error("problem with modulus '{}'".format(a))
+        elif o in ["--color-angle"]:
+            try:
+                color_angle = float(a)
+            except:
+                error("problem with angle '{}'".format(a))
         elif o in ["-v", "--verbose"]:
             verbose += 1
         elif o in ["--no-numpy"]:
@@ -1557,9 +1712,12 @@ def main():     # <<<1
             color_filename=color_filename,
             size=(width, height),
             geometry=(x_min, x_max, y_min, y_max),
-            E=None,     # "square", "hexagonal", [[1,0],[0,1]]
+            modulus=modulus,
+            angle=angle,
             color_geometry=(color_x_min, color_x_max,
                             color_y_min, color_y_max),
+            color_modulus=color_modulus,
+            color_angle=color_angle,
             default_color="black"
             ).mainloop()
 
@@ -1572,9 +1730,12 @@ def main():     # <<<1
                                   color_filename=color_filename,
                                   size=(width, height),
                                   geometry=(x_min, x_max, y_min, y_max),
-                                  E=None,
+                                  modulus=modulus,
+                                  angle=angle,
                                   color_geometry=(color_x_min, color_x_max,
                                                   color_y_min, color_y_max),
+                                  color_modulus=color_modulus,
+                                  color_angle=color_angle,
                                   default_color="black")
         output_image.save(output_filename)
         output_image.show()
