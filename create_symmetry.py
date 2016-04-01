@@ -9,6 +9,8 @@ import PIL
 import PIL.ImageTk
 from PIL.ImageColor import getrgb
 
+import numpy as np
+
 # Tkinter for GUI
 from tkinter import *
 from tkinter.ttk import *
@@ -282,7 +284,7 @@ patterns, in crystallographic convention or orbifold notation.
 
 ###
 # making an image from a transformation and a colorwheel
-def make_world_numpy(                   # <<<1
+def make_world(                   # <<<1
         matrix=None,                        # the matrix of the transformation
         color_filename="",                  # image for the colorwheel image
         size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),     # size of the output image
@@ -309,16 +311,21 @@ def make_world_numpy(                   # <<<1
     if lattice == "general":
         xsi, eta = lattice_params
         E = [[1, -xsi/eta], [0, 1/eta]]
+        p_rot = 1
     elif lattice == "rhombic":
         b = lattice_params
         E = [[1, 1/(2*b)], [1, -1/(2*b)]]
+        p_rot = 1
     elif lattice == "rectangular":
         L = lattice_params
         E = [[2, 0], [0, 1/L]]
-    # elif lattice == "square":
-    #     E = [[1, 0], [0, 1]]
-    # elif lattice == "hexagonal":
-    #     E = [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
+        p_rot = 1
+    elif lattice == "square":
+        E = [[1, 0], [0, 1]]
+        p_rot = 4
+    elif lattice == "hexagonal":
+        E = [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
+        p_rot = 3
     else:
         E = None
 
@@ -342,7 +349,6 @@ def make_world_numpy(                   # <<<1
     color_im.paste(tmp, (1, 1))
     # print("got color")
 
-    import numpy as np
     delta_x = (x_max-x_min) / (width-1)
     delta_y = (y_max-y_min) / (height-1)
 
@@ -378,38 +384,17 @@ def make_world_numpy(                   # <<<1
                 ezs = np.exp(1j * zs)
                 ezsc = np.conj(ezs)
             res = res + matrix[(n, m)] * ezs**n * ezsc**m
-        elif lattice == "square":
-            if xs is None or ys is None:
-                xs = zs.real
-                ys = zs.imag
-            ZS = (np.exp(2j*pi*(n*xs + m*ys)) +
-                  np.exp(2j*pi*(m*xs - n*ys)) +
-                  np.exp(2j*pi*(-n*xs - m*ys)) +
-                  np.exp(2j*pi*(-m*xs + n*ys))) / 4
-            # # TEST...
-            # ZS = np.exp(2j*pi*(n*xs + m*ys))
-            # p = 4
-            # for k in range(1, p):
-            #     ZS += np.exp(2j*pi*(n*xs + m*ys) *
-            #                  (cos(2*pi*k/p) + 1j*sin(2*pi*k/p)))
-            res = res + matrix[(n, m)] * ZS
-        elif lattice == "hexagonal":
-            if xs is None or ys is None or Xs is None or Ys is None:
-                xs = zs.real
-                ys = zs.imag
-                Xs = xs + ys/sqrt(3)
-                Ys = 2*ys / sqrt(3)
-            ZS = (np.exp(2j*pi*(n*Xs + m*Ys)) +
-                  np.exp(2j*pi*(m*Xs - (n+m)*Ys)) +
-                  np.exp(2j*pi*(-(n+m)*Xs + n*Ys))) / 3
-            res = res + matrix[(n, m)] * ZS
         else:   # E should be a 2x2 array
-            if xs is None or ys is None:
-                xs = zs.real
-                ys = zs.imag
-            ZS = (n*(E[0][0]*xs + E[0][1]*ys) +
-                  m*(E[1][0]*xs + E[1][1]*ys))
-            res = res + matrix[(n, m)] * np.exp(2j*pi*ZS)
+            ZS = np.zeros((width, height), complex)
+            for k in range(0, p_rot):
+                _tmp = zs * complex(cos(2*pi*k/p_rot), sin(2*pi*k/p_rot))
+                _xs = _tmp.real
+                _ys = _tmp.imag
+                _tmp = (n*(E[0][0]*_xs + E[0][1]*_ys) +
+                        m*(E[1][0]*_xs + E[1][1]*_ys))
+                ZS += np.exp(2j*pi*_tmp)
+            ZS = ZS / p_rot
+            res = res + matrix[(n, m)] * ZS
     # print("computed res")
 
     res = res / (color_modulus *
@@ -449,120 +434,6 @@ def make_world_numpy(                   # <<<1
     # print("transpose res")
 
     return PIL.Image.fromarray(res, "RGB")
-# >>>1
-
-
-def make_world_plain(                   # <<<1
-        matrix=None,                        # the matrix of the transformation
-        color_filename="",                  # image for the colorwheel image
-        size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),     # size of the output image
-        geometry=(-2, 2, -2, 2),                # coordinates of the world
-        modulus="1",
-        angle="0",
-        color_geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
-        color_modulus="1",
-        color_angle="0",
-        lattice="plain",                # "frieze", "rosette", "general",
-                                        # "rhombic", "rectangular", "square"
-                                        # or "hexagonal"
-        lattice_params=(),              # (xsi,eta) for "general", (b) for
-                                        # "rhombic", (L) for "rectangular",
-                                        # () for other lattices
-        default_color="black"
-        ):
-
-    assert matrix is not None
-    assert color_filename != ""
-    assert lattice in ["frieze", "rosette", "general", "rhombic",
-                       "rectangular", "square", "hexagonal", "plain"]
-
-    if lattice == "general":
-        xsi, eta = lattice_params
-        E = [[1, -xsi/eta], [0, 1/eta]]
-    elif lattice == "rhombic":
-        b = lattice_params
-        E = [[1, 1/(2*b)], [1, -1/(2*b)]]
-    elif lattice == "rectangular":
-        L = lattice_params
-        E = [[2, 0], [0, 1/L]]
-    # elif lattice == "square":
-    #     E = [[1, 0], [0, 1]]
-    # elif lattice == "hexagonal":
-    #     E = [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
-    else:
-        E = None
-
-    if isinstance(default_color, str):
-        default_color = getrgb(default_color)
-
-    x_min, x_max, y_min, y_max = geometry
-    color_x_min, color_x_max, color_y_min, color_y_max = color_geometry
-    width, height = size
-
-    tmp = PIL.Image.open(color_filename)
-    border_size = 1
-    color_im = PIL.Image.new("RGB",
-                             (tmp.size[0]+2*border_size,
-                              tmp.size[1]+2*border_size),
-                             color=default_color)
-    color_im.paste(tmp, (border_size, border_size))
-
-    delta_x = (x_max-x_min) / (width-1)
-    delta_y = (y_max-y_min) / (height-1)
-
-    color_width, color_height = color_im.width, color_im.height
-    color_delta_x = (color_x_max-color_x_min) / (color_width-1)
-    color_delta_y = (color_y_max-color_y_min) / (color_height-1)
-
-    out_im = PIL.Image.new("RGB", (width, height))
-    pixels = out_im.load()
-    for i in range(width):
-        for j in range(height):
-            x = x_min + i*delta_x
-            y = y_max - j*delta_y
-            x = x / (modulus * complex(cos(angle*pi/180), sin(angle*pi/180)))
-            y = y / (modulus * complex(cos(angle*pi/180), sin(angle*pi/180)))
-            res = 0
-            for (n, m) in matrix:
-                if lattice == "rosette" or lattice == "plain":
-                    z = complex(x, y)
-                    zc = z.conjugate()
-                    res = res + matrix[(n, m)] * z**n * zc**m
-                elif lattice == "frieze":
-                    z = exp(E * 1j * z)
-                    zc = z.conjugate()
-                    res = res + matrix[(n, m)] * z**n * zc**m
-                elif lattice == "square":
-                    z = (exp(2j*pi*(n*x + m*y)) +
-                         exp(2j*pi*(m*x - n*y)) +
-                         exp(2j*pi*(-n*x - m*y)) +
-                         exp(2j*pi*(-m*x + n*y))) / 4
-                    res = res + matrix[(n, m)] * z
-                elif lattice == "hexagonal":
-                    X = x + y/sqrt(3)
-                    Y = 2*y / sqrt(3)
-                    z = (exp(2j*pi*(n*X + m*Y)) +
-                         exp(2j*pi*(m*X - (n+m)*Y)) +
-                         exp(2j*pi*(-(n+m)*X + n*Y))) / 3
-                    res = res + matrix[(n, m)] * z
-                else:   # E should be a 2x2 array
-                    z = exp(2j*pi*(
-                            n*(E[0][0]*x + E[0][1]*y) +
-                            m*(E[1][0]*x + E[1][1]*y)
-                            ))
-                    res = res + matrix[(n, m)] * z
-
-            res = res / (color_modulus *
-                         complex(cos(color_angle*pi/180),
-                                 sin(color_angle*pi/180)))
-            res_x = round((res.real - color_x_min) / color_delta_x)
-            res_y = round((color_y_max - res.imag) / color_delta_y)
-            try:
-                c = color_im.getpixel((res_x, res_y))
-            except:
-                c = default_color
-            pixels[(i, j)] = c
-    return out_im
 # >>>1
 
 
@@ -1232,7 +1103,7 @@ class Function(LabelFrame):     # <<<1
         self.select_wallpaper()
         self.set_rosette()
 
-        self._wallpaper_combo.current(9)
+        # self._wallpaper_combo.current(9)
     # >>>2
 
     def change_matrix(self, M=None):    # <<<2
@@ -1541,7 +1412,7 @@ Keyboard shortcuts:
 
         matrix = self.function.matrix
 
-        image = make_world_numpy(
+        image = make_world(
                     matrix=matrix,
                     color_filename=self.colorwheel.filename,
                     size=(width, height),
@@ -1642,7 +1513,6 @@ def main():     # <<<1
     --modulus  /  --angle               transformation to apply to the result
     --color-geometry=X,Y,X,Y            choose "geometry" of the color file
     --color-modulus  /  --color-angle   transformation to apply to the colorwheel
-    --no-numpy                          do not use numpy for computation (slow)
     --matrix=...                        transformation matrix
 
     --gui                               use GUI instead of CLI
@@ -1659,7 +1529,7 @@ def main():     # <<<1
             "color=", "color-geometry=", "color-modulus=", "color-angle=",
             "output=", "size=", "geometry=", "modulus=", "angle=",
             "matrix=",
-            "verbose", "no-numpy", "gui"]
+            "verbose", "gui"]
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], short_options, long_options)
@@ -1681,7 +1551,6 @@ def main():     # <<<1
     color_x_min, color_x_max, color_y_min, color_y_max = -1, 1, -1, 1
     color_modulus=1
     color_angle=0
-    use_numpy = True
     matrix = {}
     gui = False
     global verbose
@@ -1738,8 +1607,6 @@ def main():     # <<<1
                 error("problem with angle '{}'".format(a))
         elif o in ["-v", "--verbose"]:
             verbose += 1
-        elif o in ["--no-numpy"]:
-            use_numpy = False
         elif o in ["--matrix"]:
             matrix = parse_matrix(a)
         elif o in ["--gui"]:
@@ -1780,10 +1647,6 @@ def main():     # <<<1
             ).mainloop()
 
     else:
-        if use_numpy:
-            make_world = make_world_numpy
-        else:
-            make_world = make_world_plain
         output_image = make_world(matrix=matrix,
                                   color_filename=color_filename,
                                   size=(width, height),
