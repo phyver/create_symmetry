@@ -48,24 +48,19 @@ FRIEZE_TYPES = [    # <<<1
 # >>>1
 
 WALLPAPER_TYPES = [     # <<<1
-        "-- general lattice",
-        "o (p1)",
+        "o (p1)" + "   -- general",
         "2222 (p2)",
-        "-- rhombic lattice",
-        "*× (cm)",
+        "*× (cm)" + "   -- rhombic",
         "2*22 (cmm)",
-        "-- rectangular lattice",
-        "** (pm)",
+        "** (pm)" + "   -- rectangular",
         "×× (pg)",
         "*2222 (pmm)",
         "22* (pmg)",
         "22× (pgg)",
-        "-- square lattice",
-        "442 (p4)",
+        "442 (p4)" + "   -- square",
         "*442 (p4m)",
         "4*2 (p4g)",
-        "-- hexagonal lattice",
-        "333 (p3)",
+        "333 (p3)" + "   -- hexagonal",
         "3*3 (p31m)",
         "*333 (p3m1)",
         "632 (p6)",
@@ -80,6 +75,13 @@ WALLPAPER_TYPES = [     # <<<1
 def error(s):
     """print string ``s`` on stderr"""
     print("*** " + s, file=sys.stderr)
+
+
+def sequence(*fs):
+    def res(*args):
+        for f in fs:
+            f()
+    return res
 # >>>1
 
 
@@ -986,6 +988,57 @@ class World(LabelFrame):     # <<<1
 
 class Function(LabelFrame):     # <<<1
 
+    @property
+    def current_tab(self):      # <<<2
+        if ("wallpaper" in self._tabs.tab(self._tabs.select(), "text")):
+            return "wallpaper"
+        elif ("frieze" in self._tabs.tab(self._tabs.select(), "text")):
+            return "frieze"
+        else:
+            assert False
+    # >>>2
+
+    @property
+    def rosette(self):          # <<<2
+        return self._rosette.get()
+    # >>>2
+
+    @property
+    def rotational_symmetry(self):      # <<<2
+        return int(self._rotational_symmetry.get())
+    # >>>2
+
+    @property
+    def pattern(self):          # <<<2
+        if self.current_tab == "frieze":
+            return self._frieze_type.get().split()[0]
+        if self.current_tab == "wallpaper":
+            return self._wallpaper_type.get().split()[0]
+        else:
+            assert False
+    # >>>2
+
+    @property
+    def lattice_parameters(self):       # <<<2
+        lattice = lattice_type(self.pattern)
+
+        s = self._lattice_params.get()
+        try:
+            if lattice == "general":
+                xsi, eta = s.split(",")
+                lattice_params = (float(xsi), float(eta))
+            elif lattice == "rhombic":
+                b = s
+                lattice_params = float(b)
+            elif lattice == "rectangular":
+                L = s
+                lattice_params = float(L)
+        except Exception as e:
+            error("error while getting lattice parameters '{}': {}"
+                  .format(s, e))
+        return lattice_params
+    # >>>2
+
     def __init__(self, root, matrix=None):      # <<<2
 
         LabelFrame.__init__(self, root)
@@ -1033,7 +1086,6 @@ class Function(LabelFrame):     # <<<1
         self._noise = LabelEntry(tmp, label="(%)", value=10, width=3)
         self._noise.pack(side=RIGHT)
         self._noise.bind("<Return>", self.add_noise)
-        self.bind("<Control-n>", self.add_noise)
 
         Button(tmp, text="add noise", command=self.add_noise).pack(side=LEFT)
         # >>>3
@@ -1063,92 +1115,89 @@ class Function(LabelFrame):     # <<<1
         self._random_max_coeff.pack()
 
         Button(tmp, text="generate", command=self.new_random_matrix).pack()
-        self.bind("<Control-g>", self.new_random_matrix)
         # >>>3
 
         # tabs for the different kinds of functions / symmetries
         self._tabs = Notebook(self)
         self._tabs.pack(side=LEFT)
 
-        frieze_tab = Frame(self._tabs)
         wallpaper_tab = Frame(self._tabs)
+        self._tabs.add(wallpaper_tab, text="wallpaper")
 
-        # # symmetries for rosettes and frieze patterns   <<<3
-        # tabs.add(frieze_tab, text="frieze")
-        # tabs.add(wallpaper_tab, text="wallpaper")
-        # tabs.select(1)  # select wallpaper tab
+        frieze_tab = Frame(self._tabs)
+        self._tabs.add(frieze_tab, text="frieze")
 
-        # frieze_type = StringVar()
+        raw_tab = Frame(self._tabs)
+        self._tabs.add(raw_tab, text="raw")
 
-        # frieze_combo = Combobox(frieze_tab, width=15, exportselection=0,
-        #                         textvariable=frieze_type,
-        #                         state="readonly",
-        #                         values=FRIEZE_TYPES
-        #                         )
-        # # make sure the stringvar isn't garbage collected
-        # frieze_combo.stringvar = frieze_type
-        # frieze_combo.pack(side=TOP, padx=5, pady=5)
-        # frieze_combo.current(0)
-        # self.function["frieze_type"] = frieze_combo.stringvar.get()
+        self._tabs.select(0)  # select wallpaper tab
 
-        # frieze_combo.bind("<<ComboboxSelected>>", set_frieze_type)
+        # wallpaper tab      <<<3
+        self._wallpaper_type = StringVar()
 
-        # rosette = BooleanVar()
-        # rosette.set(False)
-        # self.function["rosette"] = rosette.get()
+        self._wallpaper_combo = Combobox(
+                wallpaper_tab, width=20, exportselection=0,
+                textvariable=self._wallpaper_type,
+                state="readonly",
+                values=WALLPAPER_TYPES
+                )
+        self._wallpaper_combo.pack(side=TOP)
+        self._wallpaper_combo.current(0)
 
-        # rosette_button = Checkbutton(frieze_tab, text="rosette",
-        #                              variable=rosette,
-        #                              onvalue=True, offvalue=False,
-        #                              )
-        # rosette_button.pack(side=TOP, padx=5, pady=5)
+        self._lattice_params = LabelEntry(wallpaper_tab,
+                                          label="lattice parameters",
+                                          value="1,1", width=7)
+        self._lattice_params.pack()
 
-        # nb_fold = LabelEntry(frieze_tab, label="symmetries", value=5, width=2)
-        # nb_fold.pack(side=TOP, padx=5, pady=5)
-        # self.function["nb_fold"] = nb_fold
+        self._wallpaper_combo.bind("<<ComboboxSelected>>",
+                                   self.select_wallpaper)
 
-        # rosette_button.config(command=set_rosette)
-        # set_rosette()
-
-        # Button(frieze_tab, text="make matrix",
-        #        command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=5)
+        Button(wallpaper_tab, text="make matrix",
+               command=self.make_matrix).pack(side=BOTTOM)
         # # >>>3
 
-        # # symmetries for wallpaper
-        # wallpaper_type = StringVar()
+        # frieze / rosette tab   <<<3
+        self._frieze_type = StringVar()
+        self._frieze_combo = Combobox(frieze_tab, width=15, exportselection=0,
+                                      textvariable=self._frieze_type,
+                                      state="readonly",
+                                      values=FRIEZE_TYPES)
+        self._frieze_combo.pack()
+        self._frieze_combo.current(0)
 
-        # wallpaper_combo = Combobox(
-        #         wallpaper_tab, width=18, exportselection=0,
-        #         textvariable=wallpaper_type,
-        #         state="readonly",
-        #         values=WALLPAPER_TYPES
-        #         )
-        # # make sure the stringvar isn't garbage collected
-        # wallpaper_combo.stringvar = wallpaper_type
-        # wallpaper_combo.pack(side=TOP, padx=5, pady=5)
-        # wallpaper_combo.current(1)
-        # self.function["wallpaper_type"] = wallpaper_combo.stringvar.get()
+        self._rosette = BooleanVar()
+        self._rosette.set(False)
 
-        # lattice_params = LabelEntry(wallpaper_tab,
-        #                             label="lattice parameters",
-        #                             value="1,1", width=7)
-        # lattice_params.pack(side=TOP, padx=5, pady=5)
-        # self.function["lattice_params"] = lattice_params
+        rosette_button = Checkbutton(frieze_tab, text="rosette",
+                                     variable=self._rosette,
+                                     onvalue=True, offvalue=False,
+                                     command=self.set_rosette)
+        rosette_button.pack()
 
-        # self.select_wallpaper()
+        self._rotational_symmetry = LabelEntry(frieze_tab,
+                                               label="symmetries",
+                                               value=5,
+                                               width=2)
+        self._rotational_symmetry.pack()
 
-        # wallpaper_combo.bind("<<ComboboxSelected>>", select_wallpaper)
-
-        # Button(wallpaper_tab, text="make matrix",
-        #        command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=5)
+        Button(frieze_tab, text="make matrix",
+               command=self.make_matrix).pack(side=BOTTOM)
         # # >>>3
+
+        # raw tab   <<<3
+        Label(raw_tab, text="TODO").pack()
+        # >>>3
+
+        # make sure the layout reflects the selected options
+        self.select_wallpaper()
+        self.set_rosette()
     # >>>2
 
     def change_matrix(self, M=None):    # <<<2
         if M is None:
-            M = self._matrix
+            M = self.matrix
         else:
-            self._matrix = M
+            self.matrix = M
         self._display_matrix.delete(0, END)
         keys = list(M.keys())
         keys.sort()
@@ -1191,9 +1240,9 @@ class Function(LabelFrame):     # <<<1
             z = z.replace("i", "j")
             z = complex(z)
             if z == 0:
-                del self._matrix[(n, m)]
+                del self.matrix[(n, m)]
             else:
-                self._matrix[(n, m)] = z
+                self.matrix[(n, m)] = z
             self.change_matrix()
             self._change_entry.set("")
         except Exception as err:
@@ -1206,7 +1255,7 @@ class Function(LabelFrame):     # <<<1
         for e in entries:
             tmp = self._display_matrix.get(e-p)
             n, m, _ = re.split("\s*(?:[,;:]|(?:[-=]>))\s*", tmp)
-            self._matrix.pop((int(n), int(m)))
+            self.matrix.pop((int(n), int(m)))
             self._display_matrix.delete(e-p, e-p)
             p += 1
     # >>>2
@@ -1216,7 +1265,7 @@ class Function(LabelFrame):     # <<<1
             e = self._noise.get()/100
         except:
             e = 0.1
-        M = self._matrix
+        M = self.matrix
         for n, m in M:
             z = M[(n, m)]
             modulus = abs(z) * uniform(0, e)
@@ -1240,65 +1289,301 @@ class Function(LabelFrame):     # <<<1
         self.change_matrix(M)
     # >>>2
 
-    def random_matrix_preview(self, *args):     # <<<2
-        new_random_matrix()
-        self.make_matrix()
-        self.make_preview()
-    # >>>2
-
     def set_frieze_type(self, *args):       # <<<2
         frieze_combo.select_clear()
         self.function["frieze_type"] = frieze_combo.stringvar.get()
     # >>>2
 
     def set_rosette(self, *args):     # <<<2
-        b = rosette.get()
-        self.function["rosette"] = b
-        if b:
-            self.function["nb_fold"].config(state=NORMAL)
-            self.function["nb_fold"].label_widget.config(state=NORMAL)
+        if self.rosette:
+            self._rotational_symmetry.config(state=NORMAL)
+            self._rotational_symmetry.label_widget.config(state=NORMAL)
         else:
-            self.function["nb_fold"].config(state=DISABLED)
-            self.function["nb_fold"].label_widget.config(state=DISABLED)
+            self._rotational_symmetry.config(state=DISABLED)
+            self._rotational_symmetry.label_widget.config(state=DISABLED)
     # >>>2
 
     def select_wallpaper(self, *args):        # <<<2
-        old = self.function["wallpaper_type"]
-        s = wallpaper_combo.stringvar.get()
-        if s.startswith("-- "):
-            wallpaper_combo.stringvar.set(old)
-        else:
-            self.function["wallpaper_type"] = s
-        wallpaper_combo.select_clear()
-        pattern = self.function["wallpaper_type"].split()[0]
+        pattern = self.pattern
         lattice = lattice_type(pattern)
         if lattice == "general":
-            lattice_params.config(state=NORMAL)
-            lattice_params.set("1, 2")
-            lattice_params.label_widget.config(state=NORMAL)
-            lattice_params.label_widget.config(text="xsi, eta")
+            self._lattice_params.config(state=NORMAL)
+            self._lattice_params.set("1, 2")
+            self._lattice_params.label_widget.config(state=NORMAL)
+            self._lattice_params.label_widget.config(text="xsi, eta")
         elif lattice == "rhombic":
-            lattice_params.config(state=NORMAL)
-            lattice_params.set("2")
-            lattice_params.label_widget.config(state=NORMAL)
-            lattice_params.label_widget.config(text="b")
+            self._lattice_params.config(state=NORMAL)
+            self._lattice_params.set("2")
+            self._lattice_params.label_widget.config(state=NORMAL)
+            self._lattice_params.label_widget.config(text="b")
         elif lattice == "rectangular":
-            lattice_params.config(state=NORMAL)
-            lattice_params.set("2")
-            lattice_params.label_widget.config(state=NORMAL)
-            lattice_params.label_widget.config(text="L")
+            self._lattice_params.config(state=NORMAL)
+            self._lattice_params.set("2")
+            self._lattice_params.label_widget.config(state=NORMAL)
+            self._lattice_params.label_widget.config(text="L")
         elif lattice == "square":
-            lattice_params.config(state=DISABLED, width=3)
-            lattice_params.set("")
-            lattice_params.label_widget.config(state=DISABLED)
-            lattice_params.label_widget.config(text="lattice parameters")
+            self._lattice_params.config(state=DISABLED, width=3)
+            self._lattice_params.set("")
+            self._lattice_params.label_widget.config(state=DISABLED)
+            self._lattice_params.label_widget.config(text="lattice parameters")
         elif lattice == "hexagonal":
-            lattice_params.config(state=DISABLED, width=3)
-            lattice_params.set("")
-            lattice_params.label_widget.config(state=DISABLED)
-            lattice_params.label_widget.config(text="lattice parameters")
+            self._lattice_params.config(state=DISABLED, width=3)
+            self._lattice_params.set("")
+            self._lattice_params.label_widget.config(state=DISABLED)
+            self._lattice_params.label_widget.config(text="lattice parameters")
+        elif lattice == "frieze":
+            pass
         else:
             assert False
+    # >>>2
+
+    def make_matrix(self):       # <<<2
+        M = self.matrix
+
+        if (self.current_tab == "frieze" and self.rosette):
+            p = self.rotational_symmetry
+            try:
+                keys = list(M.keys())
+                for (n, m) in keys:
+                    if (n-m) % p != 0 or n == m:
+                        del M[(n, m)]
+            except Exception as err:
+                error("problem while adding '{}'-fold symmetry "
+                      "to the matrix: {}"
+                      .format(p, err))
+                return
+
+        M = add_symmetries_to_matrix(M, self.pattern)
+        self.change_matrix(M)
+    # >>>2
+# >>>1
+
+
+class CreateSymmetry(Tk):      # <<<1
+
+    def __init__(self,      # <<<2
+                 matrix=None,
+                 color_filename=None,
+                 size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),
+                 output_filename="output-{:03}",
+                 modulus=1.0,
+                 angle=0.0,
+                 geometry=(-2, 2, -2, 2),
+                 color_modulus=1.0,
+                 color_angle=0.0,
+                 color_geometry=COLOR_GEOMETRY,
+                 default_color="black"):
+
+        # tk interface
+        Tk.__init__(self)
+        self.resizable(width=False, height=False)
+        # self.geometry("1200x600")
+        self.title("Create Symmetry")
+
+        # components    <<<3
+        self.colorwheel = ColorWheel(self,
+                                     filename=color_filename,
+                                     geometry=color_geometry,
+                                     modulus=color_modulus,
+                                     angle=color_angle,
+                                     default_color=default_color)
+
+        self.world = World(self,
+                           geometry=geometry,
+                           modulus=modulus,
+                           angle=angle,
+                           filename_template=output_filename)
+
+        self.function = Function(self, matrix=matrix)
+
+        self.colorwheel.grid(row=0, column=0, padx=10, pady=10,
+                             # ipadx=10, ipady=10
+                             )
+        self.world.grid(row=0, column=1, padx=10, pady=10,
+                        # ipadx=10, ipady=10
+                        )
+        self.function.grid(row=1, column=0, columnspan=2, padx=10, pady=10,
+                           # ipadx=10, ipady=10
+                           )
+        # >>>3
+
+        # keybindings       <<<3
+        self.bind("<Control-h>", sequence(self.display_help))
+        self.bind("?", sequence(self.display_help))
+        self.bind("<F1>", sequence(self.display_help))
+
+        self.bind("<Control-q>", sequence(self.destroy))
+
+        self.bind("<Control-p>", sequence(self.make_preview))
+        self.bind("<Control-s>", sequence(self.make_output))
+
+        self.bind("<Control-n>", sequence(self.function.add_noise))
+        self.bind("<Control-N>", sequence())
+
+        self.bind("<Control-g>", sequence(self.function.new_random_matrix))
+        self.bind("<Control-G>", sequence(self.function.new_random_matrix,
+                                          self.function.make_matrix,
+                                          self.make_preview))
+
+        self.bind("<Control-Key-minus>", sequence(self.world.zoom_out,
+                                                  self.make_preview))
+        self.bind("<Control-Key-plus>", sequence(self.world.zoom_in,
+                                                 self.make_preview))
+        # >>>3
+    # >>>2
+
+    def display_help(self):     # <<<2
+        dialog = Toplevel(self)
+        dialog.resizable(width=False, height=False)
+
+        text = Text(dialog)
+        text.pack(padx=10, pady=10)
+        text.insert(END, """
+create_symmetry.py : a Python script to experiment with
+Frank Farris recipes from his book "Creating Symmetry"
+
+Keyboard shortcuts:
+
+  Control-h     this help message
+  F1            this help message
+  ?             this help message
+
+  Control-q     quit
+
+  Control-p     compute and display preview
+  Control-s     compute and save result to file
+
+  Control-n     add noise to matrix
+  Control-N     add noise to matrix and display preview
+
+  Control-g     generate random matrix
+  Control-G     generate random matrix, add symmetries and display preview
+
+  Control--     zoom out the result file and display preview
+  Control-+     zoom in the result file and display preview
+""")
+        text.config(state=DISABLED)
+
+        dialog.bind("<Escape>", lambda _: dialog.destroy())
+        dialog.bind("<Control-q>", lambda _: dialog.destroy())
+        ok = Button(dialog, text="OK",
+                    command=lambda: dialog.destroy())
+        ok.pack(padx=10, pady=10)
+        ok.focus_set()
+        self.wait_window(dialog)
+    # >>>2
+
+    def make_image(self, width, height, filename="output.jpg"):      # <<<2
+        geometry = self.world.geometry
+        modulus = self.world.modulus
+        angle = self.world.angle
+
+        color_geometry = self.colorwheel.geometry
+        color_mod = self.colorwheel.modulus
+        color_ang = self.colorwheel.angle
+
+        default_color = self.colorwheel.color
+
+        if self.function.current_tab == "frieze":
+            pattern = self.function["frieze_type"].split()[0]
+            if self.function.rosette:
+                lattice = "rosette"
+            else:
+                lattice = "frieze"
+        elif self.function.current_tab == "wallpaper":
+            pattern = self.function.pattern
+            lattice = lattice_type(pattern)
+        else:
+            assert False
+
+        lattice_params = self.function.lattice_parameters
+
+        matrix = self.function.matrix
+
+        image = make_world_numpy(
+                    matrix=matrix,
+                    color_filename=self.colorwheel.filename,
+                    size=(width, height),
+                    geometry=geometry,
+                    modulus=modulus,
+                    angle=angle,
+                    lattice=lattice,
+                    lattice_params=lattice_params,
+                    color_geometry=color_geometry,
+                    color_modulus=color_mod,
+                    color_angle=color_ang,
+                    default_color=default_color)
+
+        cmd = ("""#!/bin/sh
+CREATE_SYM={prog_path:}
+
+$CREATE_SYM --color={color:} \\
+            --color-geometry={color_geometry:} \\
+            --color-modulus={color_mod:} \\
+            --color-angle={color_ang:} \\
+            --geometry={geometry:} \\
+            --modulus={modulus:} \\
+            --angle={angle:} \\
+            --size={width:},{height:} \\
+            --matrix='{matrix:}' \\
+            --output={output:} \\
+            $@
+""".format(cwd=os.getcwd(),
+           prog_path=os.path.abspath(sys.argv[0]),
+           color=self.colorwheel.filename,
+           color_geometry=str(color_geometry).strip("()"),
+           color_mod=color_mod,
+           color_ang=color_ang,
+           geometry=str(geometry).strip("()"),
+           modulus=modulus,
+           angle=angle,
+           width=width,
+           height=height,
+           matrix=str(self.function.matrix),
+           output=filename
+           ))
+        return image, cmd
+    # >>>2
+
+    def make_preview(self, *args):      # <<<2
+
+        ratio = self.world.width / self.world.height
+        if ratio > 1:
+            width = PREVIEW_SIZE
+            height = round(PREVIEW_SIZE / ratio)
+        else:
+            width = round(PREVIEW_SIZE * ratio)
+            height = PREVIEW_SIZE
+
+        preview_image, _ = self.make_image(width, height)
+
+        # FIXME: methode change_preview in World class
+        self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(preview_image)
+        self.world._canvas.delete(self.world._image_id)
+        self.world._image_id = self.world._canvas.create_image(
+                        (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
+                        image=self.world._canvas.tk_img)
+    # >>>2
+
+    def make_output(self, *args):      # <<<2
+        width = self.world.width
+        height = self.world.height
+
+        filename_template = self.result.filename_template
+        nb = 1
+        while True:
+            filename = filename_template.format(nb)
+            if (not os.path.exists(filename+".jpg") and
+                    not os.path.exists(filename+".sh")):
+                break
+            nb += 1
+
+        output_image, cmd = self.make_image(width, height, filename + ".jpg")
+
+        output_image.save(filename + ".jpg")
+        cs = open(filename + ".sh", mode="w")
+        cs.write(cmd)
+        cs.close()
     # >>>2
 # >>>1
 
@@ -1588,9 +1873,6 @@ class GUI(Tk):      # <<<1
         def zoom_out_preview(*args):
             zoom_out()
             self.make_preview()
-
-        self.bind("<Control-Key-minus>", zoom_out_preview)
-        self.bind("<Control-Key-plus>", zoom_in_preview)
 
         def reset_geometry(*args):
             self.result["x_min"].set(WORLD_GEOMETRY[0])
@@ -2305,7 +2587,8 @@ def main():     # <<<1
         sys.exit(-1)
 
     if len(sys.argv) == 1:
-        GUI().mainloop()
+        CreateSymmetry().mainloop()
+        # GUI().mainloop()
         return
 
     output_filename = "output.jpg"
@@ -2401,7 +2684,8 @@ def main():     # <<<1
     # assert M == parse_matrix(str(M))
 
     if gui:
-        GUI(matrix=matrix,
+        CreateSymmetry(matrix=matrix,
+        # GUI(matrix=matrix,
             color_filename=color_filename,
             size=(width, height),
             geometry=(x_min, x_max, y_min, y_max),
