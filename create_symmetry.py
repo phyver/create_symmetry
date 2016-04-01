@@ -351,42 +351,57 @@ def make_world_numpy(                   # <<<1
 
     xs = np.arange(width)
     xs = x_min + xs*delta_x
-    xs = xs / (modulus * complex(cos(angle*pi/180), sin(angle*pi/180)))
     # print("got xs")
 
     ys = np.arange(height)
     ys = y_max - ys*delta_y
-    ys = ys / (modulus * complex(cos(angle*pi/180), sin(angle*pi/180)))
     # print("got ys")
+
+    xs = np.arange(width)
+    xs = x_min + xs*delta_x
+    # xs = xs / (modulus * complex(cos(angle*pi/180), sin(angle*pi/180)))
+    # print("got xs")
+
+    ys = np.arange(height)
+    ys = y_max - ys*delta_y
+    # ys = ys / (modulus * complex(cos(angle*pi/180), sin(angle*pi/180)))
+    # print("got ys")
+
+    zs = xs[:, None] + 1j*ys
+    zs = zs / (modulus * complex(cos(angle*pi/180), sin(angle*pi/180)))
 
     res = np.zeros((width, height), complex)
     # print("initialized res")
     for (n, m) in matrix:
         if lattice == "rosette" or lattice == "plain":
-            zs = xs[:, None] + 1j*ys
             zcs = np.conj(zs)
             res = res + matrix[(n, m)] * zs**n * zcs**m
         elif lattice == "frieze":
-            zs = xs[:, None] + 1j*ys
             zs = np.exp(1j * zs)
             zcs = np.conj(zs)
             res = res + matrix[(n, m)] * zs**n * zcs**m
         elif lattice == "square":
-            zs = (np.exp(2j*pi*(n*xs[:, None] + m*ys)) +
-                  np.exp(2j*pi*(m*xs[:, None] - n*ys)) +
-                  np.exp(2j*pi*(-n*xs[:, None] - m*ys)) +
-                  np.exp(2j*pi*(-m*xs[:, None] + n*ys))) / 4
+            xs = zs.real
+            ys = zs.imag
+            zs = (np.exp(2j*pi*(n*xs + m*ys)) +
+                  np.exp(2j*pi*(m*xs - n*ys)) +
+                  np.exp(2j*pi*(-n*xs - m*ys)) +
+                  np.exp(2j*pi*(-m*xs + n*ys))) / 4
             res = res + matrix[(n, m)] * zs
         elif lattice == "hexagonal":
-            Xs = xs[:, None] + ys/sqrt(3)
+            xs = zs.real
+            ys = zs.imag
+            Xs = xs + ys/sqrt(3)
             Ys = 2*ys / sqrt(3)
             zs = (np.exp(2j*pi*(n*Xs + m*Ys)) +
                   np.exp(2j*pi*(m*Xs - (n+m)*Ys)) +
                   np.exp(2j*pi*(-(n+m)*Xs + n*Ys))) / 3
             res = res + matrix[(n, m)] * zs
         else:   # E should be a 2x2 array
-            zs = (n*(E[0][0]*xs[:, None] + E[0][1]*ys) +
-                  m*(E[1][0]*xs[:, None] + E[1][1]*ys))
+            xs = zs.real
+            ys = zs.imag
+            zs = (n*(E[0][0]*xs + E[0][1]*ys) +
+                  m*(E[1][0]*xs + E[1][1]*ys))
             res = res + matrix[(n, m)] * np.exp(2j*pi*zs)
     # print("computed res")
 
@@ -731,6 +746,8 @@ class ColorWheel(LabelFrame):   # <<<1
 
         if filename is not None:
             self.change_colorwheel(filename)
+        elif os.path.exists("./colorwheel.jpg"):
+            self.change_colorwheel("colorwheel.jpg")
         else:
             self.filename = None
     # >>>2
@@ -1040,6 +1057,7 @@ class Function(LabelFrame):     # <<<1
     @property
     def lattice_parameters(self):       # <<<2
         lattice = lattice_type(self.pattern)
+        lattice_params = ()
 
         s = self._lattice_params.get()
         try:
@@ -1206,6 +1224,8 @@ class Function(LabelFrame):     # <<<1
         # make sure the layout reflects the selected options
         self.select_wallpaper()
         self.set_rosette()
+
+        self._wallpaper_combo.current(9)
     # >>>2
 
     def change_matrix(self, M=None):    # <<<2
@@ -1499,7 +1519,7 @@ Keyboard shortcuts:
         default_color = self.colorwheel.color
 
         if self.function.current_tab == "frieze":
-            pattern = self.function["frieze_type"].split()[0]
+            pattern = self.function.pattern
             if self.function.rosette:
                 lattice = "rosette"
             else:
