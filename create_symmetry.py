@@ -351,58 +351,65 @@ def make_world_numpy(                   # <<<1
 
     xs = np.arange(width)
     xs = x_min + xs*delta_x
-    # print("got xs")
-
-    ys = np.arange(height)
-    ys = y_max - ys*delta_y
-    # print("got ys")
-
-    xs = np.arange(width)
-    xs = x_min + xs*delta_x
-    # xs = xs / (modulus * complex(cos(angle*pi/180), sin(angle*pi/180)))
-    # print("got xs")
-
-    ys = np.arange(height)
-    ys = y_max - ys*delta_y
     # ys = ys / (modulus * complex(cos(angle*pi/180), sin(angle*pi/180)))
+    # print("got xs")
+
+    ys = np.arange(height)
+    ys = y_max - ys*delta_y
+    # xs = xs / (modulus * complex(cos(angle*pi/180), sin(angle*pi/180)))
     # print("got ys")
 
     zs = xs[:, None] + 1j*ys
     zs = zs / (modulus * complex(cos(angle*pi/180), sin(angle*pi/180)))
+    zsc = None
+    ezs = None
+    ezsc = None
+    xs, ys = None, None
 
     res = np.zeros((width, height), complex)
     # print("initialized res")
     for (n, m) in matrix:
         if lattice == "rosette" or lattice == "plain":
-            zcs = np.conj(zs)
-            res = res + matrix[(n, m)] * zs**n * zcs**m
+            if zsc is None:
+                zsc = np.conj(zs)
+            res = res + matrix[(n, m)] * zs**n * zsc**m
         elif lattice == "frieze":
-            zs = np.exp(1j * zs)
-            zcs = np.conj(zs)
-            res = res + matrix[(n, m)] * zs**n * zcs**m
+            if ezs is None or ezsc is None:
+                ezs = np.exp(1j * zs)
+                ezsc = np.conj(ezs)
+            res = res + matrix[(n, m)] * ezs**n * ezsc**m
         elif lattice == "square":
-            xs = zs.real
-            ys = zs.imag
-            zs = (np.exp(2j*pi*(n*xs + m*ys)) +
+            if xs is None or ys is None:
+                xs = zs.real
+                ys = zs.imag
+            ZS = (np.exp(2j*pi*(n*xs + m*ys)) +
                   np.exp(2j*pi*(m*xs - n*ys)) +
                   np.exp(2j*pi*(-n*xs - m*ys)) +
                   np.exp(2j*pi*(-m*xs + n*ys))) / 4
-            res = res + matrix[(n, m)] * zs
+            # # TEST...
+            # ZS = np.exp(2j*pi*(n*xs + m*ys))
+            # p = 4
+            # for k in range(1, p):
+            #     ZS += np.exp(2j*pi*(n*xs + m*ys) *
+            #                  (cos(2*pi*k/p) + 1j*sin(2*pi*k/p)))
+            res = res + matrix[(n, m)] * ZS
         elif lattice == "hexagonal":
-            xs = zs.real
-            ys = zs.imag
-            Xs = xs + ys/sqrt(3)
-            Ys = 2*ys / sqrt(3)
-            zs = (np.exp(2j*pi*(n*Xs + m*Ys)) +
+            if xs is None or ys is None or Xs is None or Ys is None:
+                xs = zs.real
+                ys = zs.imag
+                Xs = xs + ys/sqrt(3)
+                Ys = 2*ys / sqrt(3)
+            ZS = (np.exp(2j*pi*(n*Xs + m*Ys)) +
                   np.exp(2j*pi*(m*Xs - (n+m)*Ys)) +
                   np.exp(2j*pi*(-(n+m)*Xs + n*Ys))) / 3
-            res = res + matrix[(n, m)] * zs
+            res = res + matrix[(n, m)] * ZS
         else:   # E should be a 2x2 array
-            xs = zs.real
-            ys = zs.imag
-            zs = (n*(E[0][0]*xs + E[0][1]*ys) +
+            if xs is None or ys is None:
+                xs = zs.real
+                ys = zs.imag
+            ZS = (n*(E[0][0]*xs + E[0][1]*ys) +
                   m*(E[1][0]*xs + E[1][1]*ys))
-            res = res + matrix[(n, m)] * np.exp(2j*pi*zs)
+            res = res + matrix[(n, m)] * np.exp(2j*pi*ZS)
     # print("computed res")
 
     res = res / (color_modulus *
