@@ -742,7 +742,7 @@ class World(LabelFrame):     # <<<1
 
     @property
     def filename_template(self):    # <<<2
-        return self._filename_template()
+        return self._filename_template.get()
     # >>>2
 
     def __init__(self,              # <<<2
@@ -1481,7 +1481,7 @@ $CREATE_SYM --color={color:} \\
         width = self.world.width
         height = self.world.height
 
-        filename_template = self.result.filename_template
+        filename_template = self.world.filename_template
         nb = 1
         while True:
             filename = filename_template.format(nb)
