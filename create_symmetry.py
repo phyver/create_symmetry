@@ -36,6 +36,7 @@ COLOR_SIZE = 200
 COLOR_GEOMETRY = (-1., 1., -1., 1.)
 WORLD_GEOMETRY = (-2., 2., -2., 2.)
 
+
 FRIEZE_TYPES = [    # <<<1
         "∞∞ (p111)",
         "22∞ (p211)",
@@ -609,6 +610,16 @@ class LabelEntry(Frame):  # <<<1
     def delete(self):  # <<<3
         self.content.set("")
     # >>>3
+
+    def disable(self):  # <<<3
+        self.entry_widget.config(state=DISABLED)
+        self.label_widget.config(state=DISABLED)
+    # >>>3
+
+    def enable(self):  # <<<3
+        self.entry_widget.config(state=NORMAL)
+        self.label_widget.config(state=NORMAL)
+    # >>>3
 # >>>1
 
 
@@ -656,15 +667,15 @@ class ColorWheel(LabelFrame):   # <<<1
                                  label="default color",
                                  value=default_color,
                                  width=10)
-        self._color.pack()
+        self._color.grid(row=0, column=0, padx=5, pady=5)
         self._color.bind("<Enter>", self.update_defaultcolor)
         self._color.bind("<FocusOut>", self.update_defaultcolor)
 
         self._filename = Label(self, text="...")
-        self._filename.pack()
+        self._filename.grid(row=1, column=0, padx=5, pady=5)
 
         self._canvas = Canvas(self, width=200, height=200, bg="white")
-        self._canvas.pack()
+        self._canvas.grid(row=2, column=0, padx=5, pady=5)
         for i in range(5, COLOR_SIZE, 10):
             for j in range(5, COLOR_SIZE, 10):
                 self._canvas.create_line(i-1, j, i+2, j, fill="gray")
@@ -673,10 +684,12 @@ class ColorWheel(LabelFrame):   # <<<1
         self._canvas.bind("<Button-3>", self.set_origin)
 
         Button(self, text="choose file",
-               command=self.choose_colorwheel).pack()
+               command=self.choose_colorwheel).grid(row=3, column=0, padx=5, pady=5)
 
         coord_frame = LabelFrame(self, text="coordinates")
-        coord_frame.pack()
+        coord_frame.grid(row=4, column=0, sticky=E+W, padx=5, pady=5)
+        coord_frame.columnconfigure(0, weight=1)
+        coord_frame.columnconfigure(1, weight=1)
 
         self._x_min = LabelEntry(coord_frame, label="x min",
                                  value=float(geometry[0]),
@@ -700,24 +713,26 @@ class ColorWheel(LabelFrame):   # <<<1
 
         Button(coord_frame, text="reset",
                command=self.reset_geometry).grid(row=2, column=0, columnspan=2,
-                                                 padx=10, pady=10)
+                                                 padx=5, pady=5)
 
         transformation_frame = LabelFrame(self, text="transformation")
-        transformation_frame.pack()
+        transformation_frame.grid(row=5, column=0, sticky=E+W, padx=5, pady=5)
         self._modulus = LabelEntry(transformation_frame, label="modulus",
                                    value=float(modulus),
                                    width=4)
-        self._modulus.pack()
+        self._modulus.pack(padx=5, pady=5)
 
         self._angle = LabelEntry(transformation_frame, label="angle (°)",
                                  value=float(angle),
                                  width=4)
-        self._angle.pack()
+        self._angle.pack(padx=5, pady=5)
 
         self.update_defaultcolor()
 
         if filename is not None:
             self.change_colorwheel(filename)
+        else:
+            self.filename = None
     # >>>2
 
     def update_defaultcolor(self, *args):     # <<<2
@@ -783,7 +798,7 @@ class ColorWheel(LabelFrame):   # <<<1
     # >>>2
 
     def reset_geometry(self, *args):        # <<<2
-        if self._filename is not None:
+        if self.filename is not None:
             self.change_colorwheel(self._filename)
         else:
             self._x_min.set(COLOR_GEOMETRY[0])
@@ -853,13 +868,17 @@ class World(LabelFrame):     # <<<1
             for j in range(5, PREVIEW_SIZE, 10):
                 self._canvas.create_line(i-1, j, i+2, j, fill="gray")
                 self._canvas.create_line(i, j-1, i, j+2, fill="gray")
-        self._canvas.pack(side=LEFT)
+        # self._canvas.pack(side=LEFT)
+        self._canvas.grid(row=0, column=0, rowspan=4, padx=5, pady=5)
         self._image_id = None
         # >>>3
 
         # geometry of result    <<<3
         coord_frame = LabelFrame(self, text="coordinates")
-        coord_frame.pack()
+        # coord_frame.pack()
+        coord_frame.grid(row=0, column=1, sticky=E+W, padx=5, pady=5)
+        coord_frame.columnconfigure(0, weight=1)
+        coord_frame.columnconfigure(1, weight=1)
 
         self._x_min = LabelEntry(coord_frame, label="x min",
                                  value=float(geometry[0]),
@@ -883,56 +902,56 @@ class World(LabelFrame):     # <<<1
 
         Button(coord_frame, text="zoom -",
                command=self.zoom_out).grid(row=3, column=0,
-                                           padx=10, pady=10)
+                                           padx=5, pady=5)
         Button(coord_frame, text="zoom +",
                command=self.zoom_in).grid(row=3, column=1,
-                                          padx=10, pady=10)
+                                          padx=5, pady=5)
 
         transformation_frame = LabelFrame(self, text="transformation")
-        transformation_frame.pack(padx=5, pady=5)
+        transformation_frame.grid(row=1, column=1, sticky=E+W, padx=5, pady=5)
         self._modulus = LabelEntry(transformation_frame, label="modulus",
                                    value=float(modulus),
                                    width=4)
-        self._modulus.pack()
+        self._modulus.pack(padx=5, pady=5)
 
         self._angle = LabelEntry(transformation_frame, label="angle (°)",
                                  value=float(angle),
                                  width=4)
-        self._angle.pack()
+        self._angle.pack(padx=5, pady=5)
 
         Button(coord_frame, text="reset",
                command=self.reset_geometry).grid(row=4, column=0, columnspan=2,
-                                                 padx=10, pady=10)
+                                                 padx=5, pady=5)
         # >>>3
 
         # result settings       <<<3
         settings_frame = LabelFrame(self, text="output")
-        settings_frame.pack(side=TOP, padx=5, pady=5)
+        settings_frame.grid(row=2, column=1, sticky=E+W, padx=5, pady=5)
 
         self._width = LabelEntry(settings_frame,
                                  label="width", value=OUTPUT_WIDTH,
                                  width=6, justify=RIGHT)
-        self._width.pack()
+        self._width.pack(padx=5, pady=5)
 
         self._height = LabelEntry(settings_frame,
                                   label="height", value=OUTPUT_HEIGHT,
                                   width=6, justify=RIGHT)
-        self._height.pack()
+        self._height.pack(padx=5, pady=5)
 
         self._filename_template = LabelEntry(settings_frame, label=None,
                                              value=filename_template,
                                              width=15)
-        self._filename_template.pack()
+        self._filename_template.pack(padx=5, pady=5)
         # >>>3
 
         tmp = LabelFrame(self, text="image")
-        tmp.pack(padx=10, pady=10)
+        tmp.grid(row=3, column=1, sticky=E+W, padx=5, pady=5)
 
-        self.preview_button = Button(tmp, text="preview", command=None)
-        self.preview_button.pack()
+        self._preview_button = Button(tmp, text="preview", command=None)
+        self._preview_button.pack(padx=5, pady=5)
 
-        self.save_button = Button(tmp, text="save", command=None)
-        self.save_button.pack()
+        self._save_button = Button(tmp, text="save", command=None)
+        self._save_button.pack(padx=5, pady=5)
 
         width, height = self.size
         if width > height:
@@ -1045,14 +1064,14 @@ class Function(LabelFrame):     # <<<1
         self.configure(text="Function")
 
         # display matrix    <<<3
-        tmp = Frame(self)
-        tmp.pack(side=LEFT)
-        Label(tmp, text="matrix").pack()
+        tmp = LabelFrame(self, text="matrix")
+        tmp.grid(row=0, column=0, rowspan=2, sticky=N+S,  padx=5, pady=5)
 
         tmp2 = Frame(tmp)
-        tmp2.pack(padx=5, pady=5)
+        tmp2.pack()
         self._display_matrix = Listbox(tmp2, selectmode=MULTIPLE,
-                                       width=30, height=15)
+                                       font="TkFixedFont",
+                                       width=28, height=12)
         self._display_matrix.pack(side=LEFT)
 
         scrollbar = Scrollbar(tmp2)
@@ -1070,56 +1089,52 @@ class Function(LabelFrame):     # <<<1
         # >>>3
 
         # change entries <<<3
-        change_frame = Frame(self)
-        change_frame.pack(side=LEFT)
-
-        tmp = LabelFrame(change_frame, text="Change entry")
-        tmp.pack(side=TOP, padx=5, pady=5)
-        self._change_entry = LabelEntry(tmp, label="", value="", width=10)
-        self._change_entry.pack()
+        self._change_entry = LabelEntry(tmp, label="change entry", value="", width=17, font="TkFixedFont")
+        self._change_entry.pack(padx=5, pady=5)
         self._change_entry.bind("<Return>", self.add_entry)
-        # >>>3
-
-        # add noise <<<3
-        tmp = LabelFrame(change_frame, text="random noise")
-        tmp.pack()
-        self._noise = LabelEntry(tmp, label="(%)", value=10, width=3)
-        self._noise.pack(side=RIGHT)
-        self._noise.bind("<Return>", self.add_noise)
-
-        Button(tmp, text="add noise", command=self.add_noise).pack(side=LEFT)
         # >>>3
 
         # random matrix     <<<3
         tmp = LabelFrame(self, text="random matrix")
-        tmp.pack(side=LEFT)
+        tmp.grid(row=0, column=1, sticky=N+S, padx=5, pady=5)
 
         self._random_nb_coeff = LabelEntry(tmp, label="nb coefficients",
                                            value=3, width=4)
-        self._random_nb_coeff.pack()
+        self._random_nb_coeff.pack(padx=5, pady=5)
 
         self._random_min_degre = LabelEntry(tmp, label="min degre",
                                             value=-6, width=4)
-        self._random_min_degre.pack()
+        self._random_min_degre.pack(padx=5, pady=5)
 
         self._random_max_degre = LabelEntry(tmp, label="max degre",
                                             value=6, width=4)
-        self._random_max_degre.pack()
+        self._random_max_degre.pack(padx=5, pady=5)
 
         self._random_min_coeff = LabelEntry(tmp, label="min coefficient",
                                             value=float(-.1), width=4)
-        self._random_min_coeff.pack()
+        self._random_min_coeff.pack(padx=5, pady=5)
 
         self._random_max_coeff = LabelEntry(tmp, label="max coefficient",
                                             value=float(.1), width=4)
-        self._random_max_coeff.pack()
+        self._random_max_coeff.pack(padx=5, pady=5)
 
-        Button(tmp, text="generate", command=self.new_random_matrix).pack()
+        Button(tmp, text="generate", command=self.new_random_matrix).pack(padx=5, pady=5)
         # >>>3
+
+        # add noise <<<3
+        tmp3 = Frame(tmp)
+        tmp3.pack(padx=5, pady=5)
+        self._noise = LabelEntry(tmp3, label="(%)", value=10, width=3)
+        self._noise.pack(side=RIGHT, padx=5, pady=5)
+        self._noise.bind("<Return>", self.add_noise)
+
+        Button(tmp3, text="random noise", command=self.add_noise).pack(side=LEFT, padx=5, pady=5)
+        # >>>3
+
 
         # tabs for the different kinds of functions / symmetries
         self._tabs = Notebook(self)
-        self._tabs.pack(side=LEFT)
+        self._tabs.grid(row=0, column=2, rowspan=2, sticky=N+S, padx=5, pady=5)
 
         wallpaper_tab = Frame(self._tabs)
         self._tabs.add(wallpaper_tab, text="wallpaper")
@@ -1141,19 +1156,19 @@ class Function(LabelFrame):     # <<<1
                 state="readonly",
                 values=WALLPAPER_TYPES
                 )
-        self._wallpaper_combo.pack(side=TOP)
+        self._wallpaper_combo.pack(padx=5, pady=5)
         self._wallpaper_combo.current(0)
 
         self._lattice_params = LabelEntry(wallpaper_tab,
                                           label="lattice parameters",
                                           value="1,1", width=7)
-        self._lattice_params.pack()
+        self._lattice_params.pack(padx=5, pady=5)
 
         self._wallpaper_combo.bind("<<ComboboxSelected>>",
                                    self.select_wallpaper)
 
         Button(wallpaper_tab, text="make matrix",
-               command=self.make_matrix).pack(side=BOTTOM)
+               command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=5)
         # # >>>3
 
         # frieze / rosette tab   <<<3
@@ -1162,7 +1177,7 @@ class Function(LabelFrame):     # <<<1
                                       textvariable=self._frieze_type,
                                       state="readonly",
                                       values=FRIEZE_TYPES)
-        self._frieze_combo.pack()
+        self._frieze_combo.pack(padx=5, pady=5)
         self._frieze_combo.current(0)
 
         self._rosette = BooleanVar()
@@ -1172,20 +1187,20 @@ class Function(LabelFrame):     # <<<1
                                      variable=self._rosette,
                                      onvalue=True, offvalue=False,
                                      command=self.set_rosette)
-        rosette_button.pack()
+        rosette_button.pack(padx=5, pady=5)
 
         self._rotational_symmetry = LabelEntry(frieze_tab,
                                                label="symmetries",
                                                value=5,
                                                width=2)
-        self._rotational_symmetry.pack()
+        self._rotational_symmetry.pack(padx=5, pady=5)
 
         Button(frieze_tab, text="make matrix",
-               command=self.make_matrix).pack(side=BOTTOM)
+               command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=5)
         # # >>>3
 
         # raw tab   <<<3
-        Label(raw_tab, text="TODO").pack()
+        Label(raw_tab, text="TODO").pack(padx=5, pady=5)
         # >>>3
 
         # make sure the layout reflects the selected options
@@ -1214,11 +1229,12 @@ class Function(LabelFrame):     # <<<1
                 y = y.rstrip(".") + "i"
                 return y
             else:
+                sign = "+" if z.imag > 0 else "-"
                 x = "{:.4f}".format(z.real).rstrip("0")
-                y = "{:.4f}".format(z.imag).rstrip("0")
-                x = x.rstrip(".")
+                y = "{:.4f}".format(abs(z.imag)).rstrip("0")
+                x = x.rstrip(".").rjust(7)
                 y = y.rstrip(".")
-                return "{} + {}i".format(x, y)
+                return "{} {} {}i".format(x, sign, y)
 
         for (n, m) in keys:
             self._display_matrix.insert(END, "{:2}, {:2} : {}"
@@ -1296,41 +1312,34 @@ class Function(LabelFrame):     # <<<1
 
     def set_rosette(self, *args):     # <<<2
         if self.rosette:
-            self._rotational_symmetry.config(state=NORMAL)
-            self._rotational_symmetry.label_widget.config(state=NORMAL)
+            self._rotational_symmetry.enable()
         else:
-            self._rotational_symmetry.config(state=DISABLED)
-            self._rotational_symmetry.label_widget.config(state=DISABLED)
+            self._rotational_symmetry.disable()
     # >>>2
 
     def select_wallpaper(self, *args):        # <<<2
         pattern = self.pattern
         lattice = lattice_type(pattern)
         if lattice == "general":
-            self._lattice_params.config(state=NORMAL)
+            self._lattice_params.enable()
             self._lattice_params.set("1, 2")
-            self._lattice_params.label_widget.config(state=NORMAL)
             self._lattice_params.label_widget.config(text="xsi, eta")
         elif lattice == "rhombic":
-            self._lattice_params.config(state=NORMAL)
+            self._lattice_params.enable()
             self._lattice_params.set("2")
-            self._lattice_params.label_widget.config(state=NORMAL)
             self._lattice_params.label_widget.config(text="b")
         elif lattice == "rectangular":
-            self._lattice_params.config(state=NORMAL)
+            self._lattice_params.enable()
             self._lattice_params.set("2")
-            self._lattice_params.label_widget.config(state=NORMAL)
             self._lattice_params.label_widget.config(text="L")
         elif lattice == "square":
-            self._lattice_params.config(state=DISABLED, width=3)
             self._lattice_params.set("")
-            self._lattice_params.label_widget.config(state=DISABLED)
             self._lattice_params.label_widget.config(text="lattice parameters")
+            self._lattice_params.disable()
         elif lattice == "hexagonal":
-            self._lattice_params.config(state=DISABLED, width=3)
             self._lattice_params.set("")
-            self._lattice_params.label_widget.config(state=DISABLED)
             self._lattice_params.label_widget.config(text="lattice parameters")
+            self._lattice_params.disable()
         elif lattice == "frieze":
             pass
         else:
@@ -1380,6 +1389,12 @@ class CreateSymmetry(Tk):      # <<<1
         # self.geometry("1200x600")
         self.title("Create Symmetry")
 
+        # s = Style()
+        # s.configure("TFrame", background="red")
+        # s.configure("TLabel", background="green")
+        # s.configure("TEntry", background="yellow")
+        # s.configure("TButton", background="blue")
+
         # components    <<<3
         self.colorwheel = ColorWheel(self,
                                      filename=color_filename,
@@ -1396,15 +1411,14 @@ class CreateSymmetry(Tk):      # <<<1
 
         self.function = Function(self, matrix=matrix)
 
-        self.colorwheel.grid(row=0, column=0, padx=10, pady=10,
-                             # ipadx=10, ipady=10
-                             )
-        self.world.grid(row=0, column=1, padx=10, pady=10,
-                        # ipadx=10, ipady=10
-                        )
-        self.function.grid(row=1, column=0, columnspan=2, padx=10, pady=10,
-                           # ipadx=10, ipady=10
-                           )
+        self.colorwheel.grid(row=0, column=0, sticky=N+S, padx=10, pady=10)
+        self.world.grid(row=0, column=1, sticky=N+S, padx=10, pady=10)
+        self.function.grid(row=1, column=0, columnspan=2, sticky=E+W, padx=10, pady=10)
+        # >>>3
+
+        # attach appropriate actions to buttons     <<<3
+        self.world._preview_button.config(command=sequence(self.make_preview))
+        self.world._save_button.config(command=sequence(self.make_output))
         # >>>3
 
         # keybindings       <<<3
@@ -1585,966 +1599,6 @@ $CREATE_SYM --color={color:} \\
         cs.write(cmd)
         cs.close()
     # >>>2
-# >>>1
-
-
-class GUI(Tk):      # <<<1
-
-    colorwheel = {}     # form elements for the colorwheel:
-    #  - tk_image to keep a reference to the TkImage object
-    #  - image for the corresponding Image
-    #  - display for the corresponding Canvas showing the image
-    #  - x_min, x_max, y_min, y_max for the geometry of the image
-    #  - default_color for the default color
-    #  - filename for the displayed filename
-    #  - full_filename for the real filename
-
-    result = {}     # form elements for the result
-    #  - tk_image to keep a reference to the TkImage object
-    #  - image for the corresponding Image
-    #  - display for the corresponding Canvas showing the image
-    #  - x_min, x_max, y_min, y_max for the geometry of the image
-    #  - width, height for the size of the final image
-    #  - filename for the filename of saved images
-
-    function = {}   # form element for the function
-    #  - matrix for the matrix (dict) of coefficients
-    #  - display for displaying the matrix
-    #  - frieze_type for the frieze pattern type
-    #  - rosette for the rosette boolean
-    #  - nb_fold for the number of rotational symmetries for rosettes
-    #  - wallpaper_type for the wallpaper pattern type
-    #  - tabs for the notebook frieze / wallpaper
-
-    def __init__(self,      # <<<2
-                 matrix=None,
-                 color_filename=None,
-                 size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),
-                 output_filename="output-{:03}",
-                 modulus=1.0,
-                 angle=0.0,
-                 geometry=(-2, 2, -2, 2),
-                 color_modulus=1.0,
-                 color_angle=0.0,
-                 color_geometry=COLOR_GEOMETRY,
-                 default_color="black"):
-
-        # tk interface
-        Tk.__init__(self)
-        self.resizable(width=False, height=False)
-        # self.geometry("1200x600")
-        self.title("Create Symmetry")
-
-        self.init_colorwheel(filename=color_filename,
-                             geometry=color_geometry,
-                             modulus=color_modulus,
-                             angle=color_angle,
-                             default_color=default_color)
-        self.init_result(geometry=geometry,
-                         modulus=modulus,
-                         angle=angle,
-                         filename=output_filename)
-        self.init_function(matrix=matrix)
-
-        # keybindings
-        self.bind("<Control-h>", lambda _: self.display_help())
-        self.bind("?", lambda _: self.display_help())
-        self.bind("<F1>", lambda _: self.display_help())
-
-        self.bind("<Control-q>", lambda _: self.destroy())
-
-        self.bind("<Control-p>", lambda _: self.make_preview())
-        self.bind("<Control-s>", lambda _: self.make_result())
-
-        # tmp = ColorWheel(self)
-        # tmp.grid(row=0, column=5)
-        # tmp = World(self)
-        # tmp.grid(row=0, column=6)
-        # tmp = Function(self)
-        # tmp.grid(row=0, column=7)
-    # >>>2
-
-    def init_colorwheel(self,       # <<<2
-                        filename=None,
-                        geometry=(-1, 1, -1, 1),
-                        modulus=1.0,
-                        angle=0.0,
-                        default_color="black"):
-        frame = LabelFrame(self, text="Colorwheel")
-        frame.grid(row=0, column=0, padx=10, pady=10)
-
-        color = LabelEntry(frame, label="default color", value=default_color,
-                           width=10)
-        color.pack(padx=5, pady=10)
-        self.colorwheel["default_color"] = color
-
-        short_filename = Label(frame, text="...")
-        short_filename.pack(side=TOP)
-        self.colorwheel["filename"] = short_filename
-        self.colorwheel["full_filename"] = ""
-
-        canvas = Canvas(frame, width=200, height=200, bg="white")
-        canvas.pack(side=TOP, padx=10, pady=10)
-        for i in range(5, COLOR_SIZE, 10):
-            for j in range(5, COLOR_SIZE, 10):
-                canvas.create_line(i-1, j, i+2, j, fill="gray")
-                canvas.create_line(i, j-1, i, j+2, fill="gray")
-        self.colorwheel["display"] = canvas
-        self.colorwheel["colorwheel_id"] = None
-
-        Button(frame, text="choose file",
-               command=self.choose_colorwheel).pack(side=TOP)
-
-        coord_frame = LabelFrame(frame, text="coordinates")
-        coord_frame.pack(side=TOP, padx=5, pady=20)
-
-        x_min = LabelEntry(coord_frame, label="x min",
-                           value=float(geometry[0]),
-                           width=4, justify=RIGHT)
-        x_min.grid(row=0, column=0, padx=5, pady=5)
-        self.colorwheel["x_min"] = x_min
-
-        x_max = LabelEntry(coord_frame, label="x max",
-                           value=float(geometry[1]),
-                           width=4, justify=RIGHT)
-        x_max.grid(row=0, column=1, padx=5, pady=5)
-        self.colorwheel["x_max"] = x_max
-
-        y_min = LabelEntry(coord_frame, label="y min",
-                           value=float(geometry[2]),
-                           width=4, justify=RIGHT)
-        y_min.grid(row=1, column=0, padx=5, pady=5)
-        self.colorwheel["y_min"] = y_min
-
-        y_max = LabelEntry(coord_frame, label="y max",
-                           value=float(geometry[3]),
-                           width=4, justify=RIGHT)
-        y_max.grid(row=1, column=1, padx=5, pady=5)
-        self.colorwheel["y_max"] = y_max
-
-        def set_origin(event):
-            x, y = event.x, event.y
-            x_min = self.colorwheel["x_min"].get()
-            x_max = self.colorwheel["x_max"].get()
-            y_min = self.colorwheel["y_min"].get()
-            y_max = self.colorwheel["y_max"].get()
-            delta_x = x_max - x_min
-            delta_y = y_max - y_min
-
-            x_min = -x/COLOR_SIZE * delta_x
-            x_max = x_min + delta_x
-            y_max = y/COLOR_SIZE * delta_y
-            y_min = y_max - delta_y
-            self.colorwheel["x_min"].set(x_min)
-            self.colorwheel["x_max"].set(x_max)
-            self.colorwheel["y_min"].set(y_min)
-            self.colorwheel["y_max"].set(y_max)
-        canvas.bind("<Button-3>", set_origin)
-
-        def zoom_out(*args):
-            a = 2**0.1
-            for c in ["x_min", "x_max", "y_min", "y_max"]:
-                self.colorwheel[c].set(self.colorwheel[c].get() * a)
-
-        def zoom_in(*args):
-            a = 2**0.1
-            for c in ["x_min", "x_max", "y_min", "y_max"]:
-                self.colorwheel[c].set(self.colorwheel[c].get() / a)
-
-        def reset_geometry(*args):
-            if self.colorwheel["full_filename"] != "":
-                self.change_colorwheel(self.colorwheel["full_filename"])
-            else:
-                self.colorwheel["x_min"].set(COLOR_GEOMETRY[0])
-                self.colorwheel["x_max"].set(COLOR_GEOMETRY[1])
-                self.colorwheel["y_min"].set(COLOR_GEOMETRY[2])
-                self.colorwheel["y_max"].set(COLOR_GEOMETRY[3])
-
-        # Button(coord_frame, text="zoom -",
-        #        command=zoom_out).grid(row=2, column=0,
-        #                               padx=10, pady=10)
-        # Button(coord_frame, text="zoom +",
-        #        command=zoom_in).grid(row=2, column=1,
-        #                              padx=10, pady=10)
-
-        Button(coord_frame, text="reset",
-               command=reset_geometry).grid(row=2, column=0, columnspan=2,
-                                            padx=10, pady=10)
-
-        transformation_frame = LabelFrame(frame, text="transformation")
-        transformation_frame.pack(padx=5, pady=5)
-        modulus = LabelEntry(transformation_frame, label="modulus",
-                             value=float(modulus),
-                             width=4)
-        modulus.pack(padx=5, pady=5)
-        self.colorwheel["modulus"] = modulus
-
-        angle = LabelEntry(transformation_frame, label="angle (°)",
-                           value=float(angle),
-                           width=4)
-        angle.pack(padx=5, pady=5)
-        self.colorwheel["angle"] = angle
-
-        def update_defaultcolor(*args):
-            try:
-                c = getrgb(self.colorwheel["default_color"].get())
-                self.colorwheel["display"].config(bg="#{:02x}{:02x}{:02x}"
-                                                     .format(*c))
-                self.colorwheel["default_color"].config(foreground="black")
-            except Exception as e:
-                error("error: '{}'".format(e))
-                self.colorwheel["default_color"].config(foreground="red")
-
-        color.bind("<Enter>", update_defaultcolor)
-        color.bind("<FocusOut>", update_defaultcolor)
-        update_defaultcolor()
-        if filename is not None:
-            self.change_colorwheel(filename)
-
-    # >>>2
-
-    def init_result(self, geometry=(-2, 2, -2, 2),     # <<<2
-                    modulus=1.0, angle=0.0,
-                    filename="output-{03:}"):
-        frame = LabelFrame(self, text="World")
-        frame.grid(row=0, column=1, padx=10, pady=10)
-
-        # the preview image     <<<3
-        canvas = Canvas(frame, width=PREVIEW_SIZE, height=PREVIEW_SIZE,
-                        bg="white")
-        for i in range(5, PREVIEW_SIZE, 10):
-            for j in range(5, PREVIEW_SIZE, 10):
-                canvas.create_line(i-1, j, i+2, j, fill="gray")
-                canvas.create_line(i, j-1, i, j+2, fill="gray")
-        canvas.pack(side=LEFT, padx=10, pady=10)
-        self.result["display"] = canvas
-        self.result["preview_id"] = None
-        # >>>3
-
-        # geometry of result    <<<3
-        coord_frame = LabelFrame(frame, text="coordinates")
-        coord_frame.pack(side=TOP, padx=5, pady=5)
-
-        x_min = LabelEntry(coord_frame, label="x min",
-                           value=float(geometry[0]),
-                           width=4, justify=RIGHT)
-        x_min.grid(row=0, column=0, padx=5, pady=5)
-        self.result["x_min"] = x_min
-
-        x_max = LabelEntry(coord_frame, label="x max",
-                           value=float(geometry[1]),
-                           width=4, justify=RIGHT)
-        x_max.grid(row=0, column=1, padx=5, pady=5)
-        self.result["x_max"] = x_max
-
-        y_min = LabelEntry(coord_frame, label="y min",
-                           value=float(geometry[2]),
-                           width=4, justify=RIGHT)
-        y_min.grid(row=1, column=0, padx=5, pady=5)
-        self.result["y_min"] = y_min
-
-        y_max = LabelEntry(coord_frame, label="y max",
-                           value=float(geometry[3]),
-                           width=4, justify=RIGHT)
-        y_max.grid(row=1, column=1, padx=5, pady=5)
-        self.result["y_max"] = y_max
-
-        # Button(coord_frame, text="X to ratio",
-        #        command=self.adjust_preview_X).grid(row=2, column=0,
-        #                                            padx=10, pady=10)
-        # Button(coord_frame, text="Y to ratio",
-        #        command=self.adjust_preview_Y).grid(row=2, column=1,
-        #                                            padx=10, pady=10)
-
-        def zoom_out(*args):
-            a = 2**0.1
-            for c in ["x_min", "x_max", "y_min", "y_max"]:
-                self.result[c].set(self.result[c].get() * a)
-
-        def zoom_in(*args):
-            a = 2**0.1
-            for c in ["x_min", "x_max", "y_min", "y_max"]:
-                self.result[c].set(self.result[c].get() / a)
-
-        def zoom_in_preview(*args):
-            zoom_in()
-            self.make_preview()
-
-        def zoom_out_preview(*args):
-            zoom_out()
-            self.make_preview()
-
-        def reset_geometry(*args):
-            self.result["x_min"].set(WORLD_GEOMETRY[0])
-            self.result["x_max"].set(WORLD_GEOMETRY[1])
-            self.result["y_min"].set(WORLD_GEOMETRY[2])
-            self.result["y_max"].set(WORLD_GEOMETRY[3])
-            if self.result["width"].get() > self.result["height"].get():
-                self.adjust_preview_X()
-            else:
-                self.adjust_preview_X()
-
-        Button(coord_frame, text="zoom -",
-               command=zoom_out).grid(row=3, column=0,
-                                      padx=10, pady=10)
-        Button(coord_frame, text="zoom +",
-               command=zoom_in).grid(row=3, column=1,
-                                     padx=10, pady=10)
-
-        transformation_frame = LabelFrame(frame, text="transformation")
-        transformation_frame.pack(padx=5, pady=5)
-        modulus = LabelEntry(transformation_frame, label="modulus",
-                             value=float(modulus),
-                             width=4)
-        modulus.pack(padx=5, pady=5)
-        self.result["modulus"] = modulus
-
-        angle = LabelEntry(transformation_frame, label="angle (°)",
-                           value=float(angle),
-                           width=4)
-        angle.pack(padx=5, pady=5)
-        self.result["angle"] = angle
-
-        Button(coord_frame, text="reset",
-               command=reset_geometry).grid(row=4, column=0, columnspan=2,
-                                            padx=10, pady=10)
-        # >>>3
-
-        # result settings       <<<3
-        settings_frame = LabelFrame(frame, text="output")
-        settings_frame.pack(side=TOP, padx=5, pady=5)
-
-        width = LabelEntry(settings_frame,
-                           label="width", value=OUTPUT_WIDTH,
-                           width=6, justify=RIGHT)
-        width.pack(side=TOP, anchor=E, padx=5, pady=5)
-        self.result["width"] = width
-
-        height = LabelEntry(settings_frame,
-                            label="height", value=OUTPUT_HEIGHT,
-                            width=6, justify=RIGHT)
-        height.pack(side=TOP, anchor=E, padx=5, pady=5)
-        self.result["height"] = height
-
-        output_filename = LabelEntry(settings_frame,
-                                     label=None, value=filename,
-                                     width=15)
-        output_filename.pack(side=TOP, anchor=E, padx=5, pady=5)
-        self.result["filename"] = output_filename
-        # >>>3
-
-        tmp = LabelFrame(frame, text="image")
-        tmp.pack(padx=10, pady=10)
-
-        Button(tmp, text="preview",
-               command=self.make_preview).pack(padx=10, pady=10)
-
-        Button(tmp, text="save",
-               command=self.make_output).pack(side=TOP, padx=10, pady=10)
-
-        if self.result["width"].get() > self.result["height"].get():
-            self.adjust_preview_X()
-        else:
-            self.adjust_preview_X()
-    # >>>2
-
-    def init_function(self, matrix=None):     # <<<2
-        frame = LabelFrame(self, text="Function")
-        frame.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
-
-        # display matrix    <<<3
-        tmp = Frame(frame)
-        tmp.pack(side=LEFT)
-        Label(tmp, text="matrix").pack(side=TOP)
-
-        tmp2 = Frame(tmp)
-        tmp2.pack(padx=5, pady=5)
-        display = Listbox(tmp2, selectmode=MULTIPLE, width=30, height=15)
-        display.pack(side=LEFT)
-        self.function["display"] = display
-        scrollbar = Scrollbar(tmp2)
-        scrollbar.pack(side=RIGHT, fill=Y)
-        display.config(yscrollcommand=scrollbar.set)
-        scrollbar.config(command=display.yview)
-
-        def remove_entries(*args):
-            entries = display.curselection()
-            p = 0
-            for e in entries:
-                tmp = display.get(e-p)
-                n, m, _ = re.split("\s*(?:[,;:]|(?:[-=]>))\s*", tmp)
-                self.function["matrix"].pop((int(n), int(m)))
-                display.delete(e-p, e-p)
-                p += 1
-
-        display.bind("<BackSpace>", remove_entries)
-        display.bind("<Delete>", remove_entries)
-
-        if matrix is not None:
-            self.change_matrix(matrix)
-        else:
-            self.change_matrix({})
-        # >>>3
-
-        # change entries <<<3
-        change_frame = Frame(frame)
-        change_frame.pack(side=LEFT)
-
-        tmp = LabelFrame(change_frame, text="Change entry")
-        tmp.pack(side=TOP, padx=5, pady=5)
-        new_entry = LabelEntry(tmp, label="", value="", width=10)
-        new_entry.pack(side=TOP, padx=5, pady=5)
-
-        def add_entry(*args):
-            e = new_entry.get().strip()
-            if e == "":
-                return
-            try:
-                tmp = re.split("\s*(?:[,;:]|(?:[-=]>))\s*", e)
-                n, m, z = tmp
-                n = n.strip(" ()")
-                m = m.strip(" ()")
-                n = int(n)
-                m = int(m)
-                z = re.sub("\s*", "", z)
-                z = z.replace("i", "j")
-                z = complex(z)
-                if z == 0:
-                    del self.function["matrix"][(n, m)]
-                else:
-                    self.function["matrix"][(n, m)] = z
-                self.change_matrix()
-                new_entry.set("")
-            except Exception as err:
-                error("cannot parse matrix entry '{}': {}".format(e, err))
-
-        new_entry.bind("<Return>", add_entry)
-        # Button(tmp, text="update",
-        #        command=add_entry
-        #        ).pack(side=TOP, padx=5, pady=5)
-
-        # def clear_matrix(*args):
-        #     self.change_matrix({})
-
-        # Button(tmp, text="clear",
-        #        command=clear_matrix
-        #        ).pack(side=TOP, padx=5, pady=5)
-        # >>>3
-
-        # add noise <<<3
-        tmp = LabelFrame(change_frame, text="random noise")
-        tmp.pack(side=TOP, padx=5, pady=5)
-        noise_entry = LabelEntry(tmp, label="(%)", value=10, width=3)
-        noise_entry.pack(side=RIGHT, padx=5, pady=5)
-
-        def add_noise(*args):
-            try:
-                e = noise_entry.get()/100
-            except:
-                e = 0.1
-            M = self.function["matrix"]
-            for n, m in M:
-                z = M[(n, m)]
-                modulus = abs(z) * uniform(0, e)
-                angle = uniform(0, 2*pi)
-                M[(n, m)] = z + modulus * complex(cos(angle), sin(angle))
-            self.change_matrix()
-
-        def add_noise_preview(*args):
-            add_noise()
-            self.make_preview()
-
-        noise_entry.bind("<Return>", add_noise)
-        self.bind("<Control-n>", add_noise)
-        self.bind("<Control-N>", add_noise_preview)
-
-        Button(tmp, text="add noise",
-               command=add_noise
-               ).pack(side=LEFT, padx=5, pady=5)
-        # >>>3
-
-        # random matrix     <<<3
-        tmp = LabelFrame(frame, text="random matrix")
-        tmp.pack(side=LEFT, padx=5, pady=5)
-
-        nb_coeff = LabelEntry(tmp, label="nb coefficients", value=3, width=4)
-        nb_coeff.pack(side=TOP, anchor=E, padx=5, pady=5)
-
-        min_degre = LabelEntry(tmp, label="min degre", value=-6, width=4)
-        min_degre.pack(side=TOP, anchor=E, padx=5, pady=5)
-
-        max_degre = LabelEntry(tmp, label="max degre", value=6, width=4)
-        max_degre.pack(side=TOP, anchor=E, padx=5, pady=5)
-
-        min_coeff = LabelEntry(tmp, label="min coefficient", value=float(-.1),
-                               width=4)
-        min_coeff.pack(side=TOP, anchor=E, padx=5, pady=5)
-
-        max_coeff = LabelEntry(tmp, label="max coefficient", value=float(.1),
-                               width=4)
-        max_coeff.pack(side=TOP, anchor=E, padx=5, pady=5)
-
-        def new_random_matrix(*args):
-            a = min_degre.get()
-            b = max_degre.get()
-            coeffs = list(product(range(a, b+1), range(a, b+1)))
-            shuffle(coeffs)
-            n = nb_coeff.get()
-            coeffs = coeffs[:n]
-            a = min_coeff.get()
-            b = max_coeff.get()
-            M = {}
-            for (n, m) in coeffs:
-                M[(n, m)] = complex(uniform(a, b), uniform(a, b))
-            self.change_matrix(M)
-
-        def random_matrix_preview(*args):
-            new_random_matrix()
-            self.make_matrix()
-            self.make_preview()
-
-        Button(tmp, text="generate",
-               command=new_random_matrix
-               ).pack(side=TOP, padx=5, pady=5)
-        self.bind("<Control-g>", new_random_matrix)
-        self.bind("<Control-G>", random_matrix_preview)
-        # >>>3
-
-        # tabs for the different kinds of functions / symmetries
-        tabs = Notebook(frame)
-        tabs.pack(side=LEFT, padx=10, pady=10)
-        self.function["tabs"] = tabs
-
-        frieze_tab = Frame(tabs)
-        wallpaper_tab = Frame(tabs)
-
-        # symmetries for rosettes and frieze patterns   <<<3
-        tabs.add(frieze_tab, text="frieze")
-        tabs.add(wallpaper_tab, text="wallpaper")
-        tabs.select(1)  # select wallpaper tab
-
-        frieze_type = StringVar()
-
-        frieze_combo = Combobox(frieze_tab, width=15, exportselection=0,
-                                textvariable=frieze_type,
-                                state="readonly",
-                                values=FRIEZE_TYPES
-                                )
-        # make sure the stringvar isn't garbage collected
-        frieze_combo.stringvar = frieze_type
-        frieze_combo.pack(side=TOP, padx=5, pady=5)
-        frieze_combo.current(0)
-        self.function["frieze_type"] = frieze_combo.stringvar.get()
-
-        def set_frieze_type(*args):
-            frieze_combo.select_clear()
-            self.function["frieze_type"] = frieze_combo.stringvar.get()
-
-        frieze_combo.bind("<<ComboboxSelected>>", set_frieze_type)
-
-        rosette = BooleanVar()
-        rosette.set(False)
-        self.function["rosette"] = rosette.get()
-
-        def set_rosette(*args):
-            b = rosette.get()
-            self.function["rosette"] = b
-            if b:
-                self.function["nb_fold"].config(state=NORMAL)
-                self.function["nb_fold"].label_widget.config(state=NORMAL)
-            else:
-                self.function["nb_fold"].config(state=DISABLED)
-                self.function["nb_fold"].label_widget.config(state=DISABLED)
-
-        rosette_button = Checkbutton(frieze_tab, text="rosette",
-                                     variable=rosette,
-                                     onvalue=True, offvalue=False,
-                                     )
-        rosette_button.pack(side=TOP, padx=5, pady=5)
-
-        nb_fold = LabelEntry(frieze_tab, label="symmetries", value=5, width=2)
-        nb_fold.pack(side=TOP, padx=5, pady=5)
-        self.function["nb_fold"] = nb_fold
-
-        rosette_button.config(command=set_rosette)
-        set_rosette()
-
-        Button(frieze_tab, text="make matrix",
-               command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=5)
-        # >>>3
-
-        # symmetries for wallpaper
-        wallpaper_type = StringVar()
-
-        wallpaper_combo = Combobox(
-                wallpaper_tab, width=18, exportselection=0,
-                textvariable=wallpaper_type,
-                state="readonly",
-                values=WALLPAPER_TYPES
-                )
-        # make sure the stringvar isn't garbage collected
-        wallpaper_combo.stringvar = wallpaper_type
-        wallpaper_combo.pack(side=TOP, padx=5, pady=5)
-        wallpaper_combo.current(1)
-        self.function["wallpaper_type"] = wallpaper_combo.stringvar.get()
-
-        lattice_params = LabelEntry(wallpaper_tab,
-                                    label="lattice parameters",
-                                    value="1,1", width=7)
-        lattice_params.pack(side=TOP, padx=5, pady=5)
-        self.function["lattice_params"] = lattice_params
-
-        def select_wallpaper(*args):
-            old = self.function["wallpaper_type"]
-            s = wallpaper_combo.stringvar.get()
-            if s.startswith("-- "):
-                wallpaper_combo.stringvar.set(old)
-            else:
-                self.function["wallpaper_type"] = s
-            wallpaper_combo.select_clear()
-            pattern = self.function["wallpaper_type"].split()[0]
-            lattice = lattice_type(pattern)
-            if lattice == "general":
-                lattice_params.config(state=NORMAL)
-                lattice_params.set("1, 2")
-                lattice_params.label_widget.config(state=NORMAL)
-                lattice_params.label_widget.config(text="xsi, eta")
-            elif lattice == "rhombic":
-                lattice_params.config(state=NORMAL)
-                lattice_params.set("2")
-                lattice_params.label_widget.config(state=NORMAL)
-                lattice_params.label_widget.config(text="b")
-            elif lattice == "rectangular":
-                lattice_params.config(state=NORMAL)
-                lattice_params.set("2")
-                lattice_params.label_widget.config(state=NORMAL)
-                lattice_params.label_widget.config(text="L")
-            elif lattice == "square":
-                lattice_params.config(state=DISABLED, width=3)
-                lattice_params.set("")
-                lattice_params.label_widget.config(state=DISABLED)
-                lattice_params.label_widget.config(text="lattice parameters")
-            elif lattice == "hexagonal":
-                lattice_params.config(state=DISABLED, width=3)
-                lattice_params.set("")
-                lattice_params.label_widget.config(state=DISABLED)
-                lattice_params.label_widget.config(text="lattice parameters")
-            else:
-                assert False
-
-        select_wallpaper()
-
-        wallpaper_combo.bind("<<ComboboxSelected>>", select_wallpaper)
-
-        Button(wallpaper_tab, text="make matrix",
-               command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=5)
-        # >>>3
-
-    # >>>2
-
-    def change_colorwheel(self, filename):  # <<<2
-        try:
-            filename = os.path.abspath(filename)
-            img = PIL.Image.open(filename)
-            # img = img.resize((200, 200), PIL.Image.ANTIALIAS)
-            img.thumbnail((200, 200), PIL.Image.ANTIALIAS)
-            self.colorwheel["image"] = img
-            tk_img = PIL.ImageTk.PhotoImage(img)
-            self.colorwheel["tk_image"] = tk_img
-            self.colorwheel["display"].delete(self.colorwheel["colorwheel_id"])
-            self.colorwheel["display"].create_image((100, 100), image=tk_img)
-            self.colorwheel["full_filename"] = filename
-            self.colorwheel["filename"].config(text=os.path.basename(filename))
-            width, height = self.colorwheel["image"].size
-            ratio = width / height
-            if ratio > 1:
-                self.colorwheel["x_min"].set(COLOR_GEOMETRY[0])
-                self.colorwheel["x_max"].set(COLOR_GEOMETRY[1])
-                self.colorwheel["y_min"].set(COLOR_GEOMETRY[2] / ratio)
-                self.colorwheel["y_max"].set(COLOR_GEOMETRY[3] / ratio)
-            else:
-                self.colorwheel["x_min"].set(COLOR_GEOMETRY[0] * ratio)
-                self.colorwheel["x_max"].set(COLOR_GEOMETRY[1] * ratio)
-                self.colorwheel["y_min"].set(COLOR_GEOMETRY[2])
-                self.colorwheel["y_max"].set(COLOR_GEOMETRY[3])
-        except:
-            error("problem while opening {} for color image".format(filename))
-    # >>>2
-
-    def choose_colorwheel(self):    # <<<2
-        filename = filedialog.askopenfilename(
-                title="Create Symmetry: choose color wheel image",
-                initialdir="./",
-                filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")])
-        self.change_colorwheel(filename)
-    # >>>2
-
-    def change_matrix(self, M=None):    # <<<2
-        if M is None:
-            M = self.function["matrix"]
-        else:
-            self.function["matrix"] = M
-        display = self.function["display"]
-        display.delete(0, END)
-        keys = list(M.keys())
-        keys.sort()
-
-        def show(z):
-            if z == 0:
-                return "0"
-            elif z == z.real:
-                x = "{:.4f}".format(z.real).rstrip("0")
-                x = x.rstrip(".")
-                return x
-            elif z == z - z.real:
-                y = "{:.4f}".format(z.imag).rstrip("0")
-                y = y.rstrip(".") + "i"
-                return y
-            else:
-                x = "{:.4f}".format(z.real).rstrip("0")
-                y = "{:.4f}".format(z.imag).rstrip("0")
-                x = x.rstrip(".")
-                y = y.rstrip(".")
-                return "{} + {}i".format(x, y)
-
-        for (n, m) in keys:
-            display.insert(END, "{:2}, {:2} : {}"
-                                .format(n, m, show(M[(n, m)])))
-    # >>>2
-
-    def make_matrix(self):       # <<<2
-        tabs = self.function["tabs"]
-        M = self.function["matrix"]
-
-        if ("frieze" in tabs.tab(tabs.select(), "text") and
-                self.function["rosette"]):
-            p = self.function["nb_fold"].get()
-            try:
-                keys = list(M.keys())
-                for (n, m) in keys:
-                    if (n-m) % p != 0 or n == m:
-                        del M[(n, m)]
-            except Exception as err:
-                error("problem while adding '{}'-fold symmetry "
-                      "to the matrix: {}"
-                      .format(p, err))
-                return
-
-        if "frieze" in tabs.tab(tabs.select(), "text"):
-            pattern = self.function["frieze_type"].split()[0]
-        elif "wallpaper" in tabs.tab(tabs.select(), "text"):
-            pattern = self.function["wallpaper_type"].split()[0]
-        else:
-            assert False
-
-        M = add_symmetries_to_matrix(M, pattern)
-        self.change_matrix(M)
-    # >>>2
-
-    def make_preview(self, *args):      # <<<2
-
-        ratio = self.result["width"].get() / self.result["height"].get()
-        if ratio > 1:
-            width = PREVIEW_SIZE
-            height = round(PREVIEW_SIZE / ratio)
-        else:
-            width = round(PREVIEW_SIZE * ratio)
-            height = PREVIEW_SIZE
-
-        preview_image, _ = self.make_image(width, height)
-
-        tk_img = PIL.ImageTk.PhotoImage(preview_image)
-        self.result["display"].tk_img = tk_img
-        self.result["display"].delete(self.result["preview_id"])
-        self.result["preview_id"] = self.result["display"].create_image((PREVIEW_SIZE//2, PREVIEW_SIZE//2), image=tk_img)
-    # >>>2
-
-    def make_output(self, *args):      # <<<2
-        width = self.result["width"].get()
-        height = self.result["height"].get()
-
-        filename_template = self.result["filename"].get()
-        nb = 1
-        while True:
-            filename = filename_template.format(nb)
-            if (not os.path.exists(filename+".jpg") and
-                    not os.path.exists(filename+".sh")):
-                break
-            nb += 1
-
-        output_image, cmd = self.make_image(width, height, filename + ".jpg")
-
-        output_image.save(filename + ".jpg")
-        cs = open(filename + ".sh", mode="w")
-        cs.write(cmd)
-        cs.close()
-    # >>>2
-
-    def make_image(self, width, height, filename="output.jpg"):      # <<<2
-        x_min = self.result["x_min"].get()
-        x_max = self.result["x_max"].get()
-        y_min = self.result["y_min"].get()
-        y_max = self.result["y_max"].get()
-
-        modulus = self.result["modulus"].get()
-        angle = self.result["angle"].get()
-
-        color_x_min = self.colorwheel["x_min"].get()
-        color_x_max = self.colorwheel["x_max"].get()
-        color_y_min = self.colorwheel["y_min"].get()
-        color_y_max = self.colorwheel["y_max"].get()
-
-        color_mod = self.colorwheel["modulus"].get()
-        color_ang = self.colorwheel["angle"].get()
-
-        default_color = self.colorwheel["default_color"].get()
-
-        tabs = self.function["tabs"]
-        if "frieze" in tabs.tab(tabs.select(), "text"):
-            pattern = self.function["frieze_type"].split()[0]
-            if self.function["rosette"]:
-                lattice = "rosette"
-            else:
-                lattice = "frieze"
-        elif "wallpaper" in tabs.tab(tabs.select(), "text"):
-            pattern = self.function["wallpaper_type"].split()[0]
-            lattice = lattice_type(pattern)
-        else:
-            assert False
-
-        lattice_params = ()
-        s = self.function["lattice_params"].get()
-        try:
-            if lattice == "general":
-                xsi, eta = s.split(",")
-                lattice_params = (float(xsi), float(eta))
-            elif lattice == "rhombic":
-                b = s
-                lattice_params = float(b)
-            elif lattice == "rectangular":
-                L = s
-                lattice_params = float(L)
-        except Exception as e:
-            error("error while getting lattice parameters '{}': {}"
-                  .format(s, e))
-
-        matrix = self.function["matrix"]
-
-        image = make_world_numpy(
-                    matrix=matrix,
-                    color_filename=self.colorwheel["full_filename"],
-                    size=(width, height),
-                    geometry=(x_min, x_max, y_min, y_max),
-                    modulus=modulus,
-                    angle=angle,
-                    lattice=lattice,
-                    lattice_params=lattice_params,
-                    color_geometry=(color_x_min, color_x_max,
-                                    color_y_min, color_y_max),
-                    color_modulus=color_mod,
-                    color_angle=color_ang,
-                    default_color=default_color)
-
-        cmd = ("""#!/bin/sh
-CREATE_SYM={prog_path:}
-
-$CREATE_SYM --color={color:} \\
-            --color-geometry={c_x_min:},{c_x_max:},{c_y_min:},{c_y_max:} \\
-            --color-modulus={color_mod:} \\
-            --color-angle={color_ang:} \\
-            --geometry={x_min:},{x_max:},{y_min:},{y_max:} \\
-            --modulus={modulus:} \\
-            --angle={angle:} \\
-            --size={width:},{height:} \\
-            --matrix='{matrix:}' \\
-            --output={output:} \\
-            $@
-""".format(cwd=os.getcwd(),
-           prog_path=os.path.abspath(sys.argv[0]),
-           color=self.colorwheel["full_filename"],
-           c_x_min=color_x_min,
-           c_x_max=color_x_max,
-           c_y_min=color_y_min,
-           c_y_max=color_y_max,
-           color_mod=color_mod,
-           color_ang=color_ang,
-           x_min=x_min,
-           x_max=x_max,
-           y_min=y_min,
-           y_max=y_max,
-           modulus=modulus,
-           angle=angle,
-           width=width,
-           height=height,
-           matrix=str(self.function["matrix"]),
-           output=filename
-           ))
-        return image, cmd
-    # >>>2
-
-    def adjust_preview_X(self, *args):      # <<<2
-        ratio = self.result["width"].get() / self.result["height"].get()
-        x_min = self.result["x_min"].get()
-        x_max = self.result["x_max"].get()
-        delta_y = self.result["y_max"].get() - self.result["y_min"].get()
-        delta_x = delta_y * ratio
-        middle_x = (x_min+x_max) / 2
-        self.result["x_min"].set(middle_x - delta_x/2)
-        self.result["x_max"].set(middle_x + delta_x/2)
-    # >>>2
-
-    def adjust_preview_Y(self, *args):      # <<<2
-        ratio = self.result["height"].get() / self.result["width"].get()
-        y_min = self.result["y_min"].get()
-        y_max = self.result["y_max"].get()
-        delta_x = self.result["x_max"].get() - self.result["x_min"].get()
-        delta_y = delta_x * ratio
-        middle_y = (y_min+y_max) / 2
-        self.result["y_min"].set(middle_y - delta_y/2)
-        self.result["y_max"].set(middle_y + delta_y/2)
-    # >>>2
-
-    def display_help(self):     # <<<2
-        dialog = Toplevel(self)
-        dialog.resizable(width=False, height=False)
-
-        text = Text(dialog)
-        text.pack(padx=10, pady=10)
-        text.insert(END, """
-create_symmetry.py : a Python script to experiment with
-Frank Farris recipes from his book "Creating Symmetry"
-
-Keyboard shortcuts:
-
-  Control-h     this help message
-  F1            this help message
-  ?             this help message
-
-  Control-q     quit
-
-  Control-p     compute and display preview
-  Control-s     compute and save result to file
-
-  Control-n     add noise to matrix
-  Control-N     add noise to matrix and display preview
-
-  Control-g     generate random matrix
-  Control-G     generate random matrix, add symmetries and display preview
-
-  Control--     zoom out the result file and display preview
-  Control-+     zoom in the result file and display preview
-""")
-        text.config(state=DISABLED)
-
-        dialog.bind("<Escape>", lambda _: dialog.destroy())
-        dialog.bind("<Control-q>", lambda _: dialog.destroy())
-        ok = Button(dialog, text="OK",
-                    command=lambda: dialog.destroy())
-        ok.pack(padx=10, pady=10)
-        ok.focus_set()
-        self.wait_window(dialog)
-    # >>>2
-
 # >>>1
 
 
