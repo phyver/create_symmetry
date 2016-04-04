@@ -85,6 +85,12 @@ def sequence(*fs):
         for f in fs:
             f()
     return res
+
+
+def invert22(M):
+    d = M[0][0] * M[1][1] - M[1][0] * M[0][1]
+    return [[M[1][1]/d, M[0][0]/d],
+            [-M[0][1]/d, -M[1][0]/d]]
 # >>>1
 
 
@@ -117,7 +123,9 @@ from the dictionnary M"""
 
 
 def lattice_type(pattern):      # <<<2
-    if pattern in ["o", "p1", "2222", "p2"]:
+    if pattern is None:
+        return "raw"
+    elif pattern in ["o", "p1", "2222", "p2"]:
         return "general"
     elif pattern in ["*×", "cm", "2*22", "cmm"]:
         return "rhombic"
@@ -133,7 +141,7 @@ def lattice_type(pattern):      # <<<2
                      "*22∞", "p2mm", "∞×", "p11g", "2*∞", "p2mg"]:
         return "frieze"
     else:
-        error("unkwnow pattern type: '{}'".format(pattern))
+        error("unkwnown pattern type: '{}'".format(pattern))
 
 # >>>2
 
@@ -143,7 +151,9 @@ def add_symmetries_to_matrix(M, pattern):     # <<<2
 ``pattern`` can be any of the seven types of pattern patterns or wallpaper
 patterns, in crystallographic convention or orbifold notation.
 """
-    if pattern in ["p111", "∞∞", "o", "p1", "333", "p3", "442", "p4"]:
+    if pattern is None:     # for the "raw" functions
+        return M
+    elif pattern in ["p111", "∞∞", "o", "p1", "333", "p3", "442", "p4"]:
         return M
     elif pattern in ["p211", "22∞", "2222", "p2", "632", "p6"]:
         R = {}
@@ -294,40 +304,14 @@ def make_world(                   # <<<1
         color_geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
         color_modulus="1",
         color_angle="0",
-        lattice="plain",                # "frieze", "rosette", "general",
-                                        # "rhombic", "rectangular", "square"
-                                        # or "hexagonal"
-        lattice_params=(),              # (xsi,eta) for "general", (b) for
-                                        # "rhombic", (L) for "rectangular",
-                                        # () for other lattices
+        lattice_matrix=None,
+        lattice="",
+        rotational_symmetry=1,
         default_color="black"
         ):
 
     assert matrix is not None
     assert color_filename != ""
-    assert lattice in ["frieze", "rosette", "general", "rhombic",
-                       "rectangular", "square", "hexagonal", "plain"]
-
-    if lattice == "general":
-        xsi, eta = lattice_params
-        E = [[1, -xsi/eta], [0, 1/eta]]
-        p_rot = 1
-    elif lattice == "rhombic":
-        b = lattice_params
-        E = [[1, 1/(2*b)], [1, -1/(2*b)]]
-        p_rot = 1
-    elif lattice == "rectangular":
-        L = lattice_params
-        E = [[2, 0], [0, 1/L]]
-        p_rot = 1
-    elif lattice == "square":
-        E = [[1, 0], [0, 1]]
-        p_rot = 4
-    elif lattice == "hexagonal":
-        E = [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
-        p_rot = 3
-    else:
-        E = None
 
     x_min, x_max, y_min, y_max = geometry
     color_x_min, color_x_max, color_y_min, color_y_max = color_geometry
@@ -374,6 +358,7 @@ def make_world(                   # <<<1
 
     res = np.zeros((width, height), complex)
     # print("initialized res")
+    w1, w2 = 1, len(matrix)
     for (n, m) in matrix:
         if lattice == "rosette" or lattice == "plain":
             if zsc is None:
@@ -384,17 +369,21 @@ def make_world(                   # <<<1
                 ezs = np.exp(1j * zs)
                 ezsc = np.conj(ezs)
             res = res + matrix[(n, m)] * ezs**n * ezsc**m
-        else:   # E should be a 2x2 array
+        else:   # lattice_matrix should be a 2x2 array
             ZS = np.zeros((width, height), complex)
-            for k in range(0, p_rot):
-                _tmp = zs * complex(cos(2*pi*k/p_rot), sin(2*pi*k/p_rot))
+            for k in range(0, rotational_symmetry):
+                _tmp = zs * complex(cos(2*pi*k/rotational_symmetry),
+                                    sin(2*pi*k/rotational_symmetry))
                 _xs = _tmp.real
                 _ys = _tmp.imag
-                _tmp = (n*(E[0][0]*_xs + E[0][1]*_ys) +
-                        m*(E[1][0]*_xs + E[1][1]*_ys))
+                _tmp = (n*(lattice_matrix[0][0]*_xs + lattice_matrix[0][1]*_ys) +
+                        m*(lattice_matrix[1][0]*_xs + lattice_matrix[1][1]*_ys))
                 ZS += np.exp(2j*pi*_tmp)
-            ZS = ZS / p_rot
+                print(".", end="", flush=True)
+            ZS = ZS / rotational_symmetry
             res = res + matrix[(n, m)] * ZS
+        print("wave {}/{}".format(w1, w2))
+        w1 += 1
     # print("computed res")
 
     res = res / (color_modulus *
@@ -433,6 +422,7 @@ def make_world(                   # <<<1
     res = res.transpose(1, 0, 2)
     # print("transpose res")
 
+    # print("end")
     return PIL.Image.fromarray(res, "RGB")
 # >>>1
 
@@ -908,6 +898,8 @@ class Function(LabelFrame):     # <<<1
             return "wallpaper"
         elif ("frieze" in self._tabs.tab(self._tabs.select(), "text")):
             return "frieze"
+        elif ("raw" in self._tabs.tab(self._tabs.select(), "text")):
+            return "raw"
         else:
             assert False
     # >>>2
@@ -919,15 +911,34 @@ class Function(LabelFrame):     # <<<1
 
     @property
     def rotational_symmetry(self):      # <<<2
-        return int(self._rotational_symmetry.get())
+        if self.current_tab == "frieze":
+            if self.rosette:
+                return int(self._rotational_symmetry.get())
+            else:
+                return None
+        elif self.current_tab == "raw":
+            return self._raw_center_symmetry.get()
+        elif self.current_tab == "wallpaper":
+            lattice = lattice_type(self.pattern)
+
+            if lattice == "square":
+                return 4
+            elif lattice == "hexagonal":
+                return 3
+            else:
+                return 1
+        else:
+            assert False
     # >>>2
 
     @property
     def pattern(self):          # <<<2
         if self.current_tab == "frieze":
             return self._frieze_type.get().split()[0]
-        if self.current_tab == "wallpaper":
+        elif self.current_tab == "wallpaper":
             return self._wallpaper_type.get().split()[0]
+        elif self.current_tab == "raw":
+            return None
         else:
             assert False
     # >>>2
@@ -952,6 +963,38 @@ class Function(LabelFrame):     # <<<1
             error("error while getting lattice parameters '{}': {}"
                   .format(s, e))
         return lattice_params
+    # >>>2
+
+    @property
+    def lattice_matrix(self):       # <<<2
+        if self.current_tab == "wallpaper":
+            lattice = lattice_type(self.pattern)
+
+            if lattice == "general":
+                xsi, eta = self.lattice_parameters
+                return [[1, -xsi/eta], [0, 1/eta]]
+            elif lattice == "rhombic":
+                b = self.lattice_parameters
+                return [[1, 1/(2*b)], [1, -1/(2*b)]]
+            elif lattice == "rectangular":
+                L = self.lattice_parameters
+                return [[2, 0], [0, 1/L]]
+            elif lattice == "square":
+                return [[1, 0], [0, 1]]
+            elif lattice == "hexagonal":
+                return [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
+            else:
+                assert False
+        elif self.current_tab == "raw":
+            v1 = self._basis_matrix1.get().split(",")
+            v2 = self._basis_matrix2.get().split(",")
+            v1 = [float(v1[0]), float(v1[1])]
+            v2 = [float(v2[0]), float(v2[1])]
+            return [v1, v2]
+        elif self.function.current_tab == "frieze":
+            return None
+        else:
+            assert False
     # >>>2
 
     def __init__(self, root, matrix=None):      # <<<2
@@ -1096,7 +1139,25 @@ class Function(LabelFrame):     # <<<1
         # # >>>3
 
         # raw tab   <<<3
-        Label(raw_tab, text="TODO").pack(padx=5, pady=5)
+        self._basis_matrix1 = LabelEntry(raw_tab,
+                                         label="first vector",
+                                         value="1, 0",
+                                         width=10)
+        self._basis_matrix2 = LabelEntry(raw_tab,
+                                         label="second vector",
+                                         value="0, 1",
+                                         width=10)
+        self._basis_matrix1.grid(row=0, column=0, sticky=E, padx=5, pady=5)
+        self._basis_matrix2.grid(row=1, column=0, sticky=E, padx=5, pady=5)
+
+        self._raw_center_symmetry = LabelEntry(raw_tab,
+                                               label="rotational symmetry",
+                                               value=1,
+                                               width=3)
+        self._raw_center_symmetry.grid(row=2, column=0, padx=5, pady=5)
+
+        # -> base matrix + rotation
+
         # >>>3
 
         # make sure the layout reflects the selected options
@@ -1311,7 +1372,7 @@ class CreateSymmetry(Tk):      # <<<1
 
         self.colorwheel.grid(row=0, column=0, sticky=N+S, padx=10, pady=10)
         self.world.grid(row=0, column=1, sticky=N+S, padx=10, pady=10)
-        self.function.grid(row=1, column=0, columnspan=2, sticky=E+W, padx=10, pady=10)
+        self.function.grid(row=1, column=0, columnspan=2, sticky=W, padx=10, pady=10)
         # >>>3
 
         # attach appropriate actions to buttons     <<<3
@@ -1330,7 +1391,9 @@ class CreateSymmetry(Tk):      # <<<1
         self.bind("<Control-s>", sequence(self.make_output))
 
         self.bind("<Control-n>", sequence(self.function.add_noise))
-        self.bind("<Control-N>", sequence())
+        self.bind("<Control-N>", sequence(self.function.add_noise,
+                                          self.function.make_matrix,
+                                          self.make_preview))
 
         self.bind("<Control-g>", sequence(self.function.new_random_matrix))
         self.bind("<Control-G>", sequence(self.function.new_random_matrix,
@@ -1405,6 +1468,9 @@ Keyboard shortcuts:
         elif self.function.current_tab == "wallpaper":
             pattern = self.function.pattern
             lattice = lattice_type(pattern)
+        elif self.function.current_tab == "raw":
+            pattern = lattice = None
+
         else:
             assert False
 
@@ -1419,8 +1485,8 @@ Keyboard shortcuts:
                     geometry=geometry,
                     modulus=modulus,
                     angle=angle,
-                    lattice=lattice,
-                    lattice_params=lattice_params,
+                    lattice_matrix=self.function.lattice_matrix,
+                    rotational_symmetry=self.function.rotational_symmetry,
                     color_geometry=color_geometry,
                     color_modulus=color_mod,
                     color_angle=color_ang,
@@ -1443,10 +1509,10 @@ $CREATE_SYM --color={color:} \\
 """.format(cwd=os.getcwd(),
            prog_path=os.path.abspath(sys.argv[0]),
            color=self.colorwheel.filename,
-           color_geometry=str(color_geometry).strip("()"),
+           color_geometry=str(color_geometry).strip("()").replace(" ",""),
            color_mod=color_mod,
            color_ang=color_ang,
-           geometry=str(geometry).strip("()"),
+           geometry=str(geometry).strip("()").replace(" ", ""),
            modulus=modulus,
            angle=angle,
            width=width,
@@ -1514,6 +1580,7 @@ def main():     # <<<1
     --color-geometry=X,Y,X,Y            choose "geometry" of the color file
     --color-modulus  /  --color-angle   transformation to apply to the colorwheel
     --matrix=...                        transformation matrix
+    --rotation-symmetry=P               p-fold symmetry around the origin
 
     --gui                               use GUI instead of CLI
                                         (default when no flag is present)
@@ -1528,7 +1595,7 @@ def main():     # <<<1
             "help",
             "color=", "color-geometry=", "color-modulus=", "color-angle=",
             "output=", "size=", "geometry=", "modulus=", "angle=",
-            "matrix=",
+            "matrix=", "rotation-symmetry=",
             "verbose", "gui"]
 
     try:
@@ -1553,6 +1620,7 @@ def main():     # <<<1
     color_angle=0
     matrix = {}
     gui = False
+    rotational_symmetry = 1
     global verbose
     for o, a in opts:
         if o in ["-h", "--help"]:
@@ -1577,6 +1645,11 @@ def main():     # <<<1
                 error("problem with geometry '{}' for output".format(a))
                 x_min, x_max, y_min, y_max = -2, 2, -2, 2
                 sys.exit(1)
+        elif o in ["--rotation-symmetry"]:
+            try:
+                rotational_symmetry = int(a)
+            except:
+                error("problem with rotational symmetry '{}'".format(a))
         elif o in ["--modulus"]:
             try:
                 modulus = float(a)
@@ -1653,6 +1726,7 @@ def main():     # <<<1
                                   geometry=(x_min, x_max, y_min, y_max),
                                   modulus=modulus,
                                   angle=angle,
+                                  rotational_symmetry=rotational_symmetry,
                                   color_geometry=(color_x_min, color_x_max,
                                                   color_y_min, color_y_max),
                                   color_modulus=color_modulus,
