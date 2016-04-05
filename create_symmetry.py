@@ -107,12 +107,17 @@ def invert22(M):
             [-M[0][1]/d, -M[1][0]/d]]
 
 
-def convert_list_float(s):
+def str_to_floats(s):
     if s.strip() == "":
         return []
     else:
         return list(map(float, s.split(",")))
 
+
+def floats_to_str(l):
+    l = map(str, l)
+    l = map(lambda s: re.sub("\.0*\s*$", "", s), l)
+    return ", ".join(l)
 # >>>1
 
 
@@ -1011,7 +1016,7 @@ class Function(LabelFrame):     # <<<1
     @property
     def rotational_symmetry(self):      # <<<2
         if self.current_tab == "rosette":
-            return int(self._rosette_rotation.get())
+            return self._rosette_rotation.get()
         elif self.current_tab == "raw":
             return self._raw_rotation.get()
         elif self.current_tab == "wallpaper":
@@ -1137,7 +1142,7 @@ class Function(LabelFrame):     # <<<1
         self._lattice_params = LabelEntry(wallpaper_tab,
                                           label="lattice parameters",
                                           value="1,1",
-                                          convert=convert_list_float,
+                                          convert=str_to_floats,
                                           width=7)
         self._lattice_params.pack(padx=5, pady=5)
 
@@ -1181,12 +1186,12 @@ class Function(LabelFrame):     # <<<1
         self._basis_matrix1 = LabelEntry(raw_tab,
                                          label="first vector",
                                          value="1, 0",
-                                         convert=convert_list_float,
+                                         convert=str_to_floats,
                                          width=10)
         self._basis_matrix2 = LabelEntry(raw_tab,
                                          label="second vector",
                                          value="0, 1",
-                                         convert=convert_list_float,
+                                         convert=str_to_floats,
                                          width=10)
         self._basis_matrix1.grid(row=0, column=0, sticky=E, padx=5, pady=5)
         self._basis_matrix2.grid(row=1, column=0, sticky=E, padx=5, pady=5)
@@ -1482,13 +1487,69 @@ class Function(LabelFrame):     # <<<1
     # >>>2
 
     def get_config(self):           # <<<2
-        # TODO
-        return {}
+        return {
+                "matrix": str(self.matrix).replace(" ", ""),
+                "random_nb_coeff": self._random_nb_coeff.get(),
+                "random_degre": (self._random_min_degre.get(),
+                                 self._random_max_degre.get()),
+                "random_coeff": (self._random_min_coeff.get(),
+                                 self._random_max_coeff.get()),
+                "random_noise": self._noise.get(),
+                "tab": self.current_tab,
+                "wallpaper_type": self._wallpaper_type.get(),
+                "lattice_parameters": self._lattice_params.get(),
+                "frieze_type": self._frieze_type.get(),
+                "rosette": self.rosette,
+                "rosette_rotation": self._rosette_rotation.get(),
+                "raw_basis": [self._basis_matrix1.get(),
+                              self._basis_matrix2.get()],
+                "raw_rotation": self._raw_rotation.get(),
+                }
     # >>>2
 
     def set_config(self, cfg):      # <<<2
-        # TODO
-        return
+        if "matrix" in cfg:
+            self.matrix = parse_matrix(cfg["matrix"])
+        if "random_nb_coeff" in cfg:
+            self._random_nb_coeff.set(cfg["random_nb_coeff"])
+        if "random_degre" in cfg:
+            self._random_min_degre.set(cfg["random_degre"][0])
+            self._random_max_degre.set(cfg["random_degre"][1])
+        if "random_coeff" in cfg:
+            self._random_min_coeff.set(cfg["random_coeff"][0])
+            self._random_max_coeff.set(cfg["random_coeff"][1])
+        if "random_noise" in cfg:
+            self._noise.set(cfg["random_noise"])
+        if "tab" in cfg:
+            if cfg["tab"] == "wallpaper":
+                self._tabs.select(0)
+            elif cfg["tab"] == "frieze":
+                self._tabs.select(1)
+            elif cfg["tab"] == "raw":
+                self._tabs.select(2)
+            else:
+                self._tabs.select(0)
+        if "wallpaper_type" in cfg:
+            for i in range(len(WALLPAPER_TYPES)):
+                if re.search("\\b{}\\b".format(cfg["wallpaper_type"]),
+                             WALLPAPER_TYPES[i]):
+                    self._wallpaper_combo.current(i)
+        if "lattice_parameters" in cfg:
+            self._lattice_params.set(floats_to_str(cfg["lattice_parameters"]))
+        if "frieze_type" in cfg:
+            for i in range(len(FRIEZE_TYPES)):
+                if re.search("\\b{}\\b".format(cfg["frieze_type"]),
+                             FRIEZE_TYPES[i]):
+                    self._frieze_combo.current(i)
+        if "rosette" in cfg:
+            self._rosette.set(cfg["rosette"])
+        if "rosette_rotation" in cfg:
+            self._rosette_rotation.set(cfg["rosette_rotation"])
+        if "raw_basis" in cfg:
+            self._basis_matrix1.set(floats_to_str(cfg["raw_basis"][0]))
+            self._basis_matrix2.set(floats_to_str(cfg["raw_basis"][1]))
+        if "raw_rotation" in cfg:
+            self._raw_rotation.set(cfg["raw_rotation"])
     # >>>2
 # >>>1
 
@@ -1554,6 +1615,11 @@ class CreateSymmetry(Tk):      # <<<1
         self._console.config(state=DISABLED)
         self._nb_pending = Label(self)
         self._nb_pending.grid(row=1, column=0, sticky=E+S, padx=10, pady=10)
+
+        # self.function.new_random_matrix()
+        # cfg = self.function.get_config()
+        # import json
+        # print(json.dumps(cfg, separators=(",", ":")))
         # >>>3
 
         # attach appropriate actions to buttons     <<<3
