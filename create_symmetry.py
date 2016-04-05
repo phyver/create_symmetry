@@ -23,11 +23,19 @@ import os.path
 from itertools import product
 import re
 import json
+import time
 
 # math
 from cmath import exp
 from math import sqrt, pi, sin, cos
 from random import randint, uniform, shuffle
+
+# multiprocessing
+import multiprocessing
+import threading
+from queue import Queue
+
+
 # >>>1
 
 verbose = 0
@@ -1405,7 +1413,33 @@ class CreateSymmetry(Tk):      # <<<1
         self.bind("<Control-Key-plus>", sequence(self.world.zoom_in,
                                                  self.make_preview))
         # >>>3
+
+        self.output_queue = Queue()
+        self.output_running = False
     # >>>2
+
+    def show_args(self, *args):
+        import os
+        n = os.nice(200)
+        t = time.time()
+        print("SHOW,", t)
+        time.sleep(1)
+        print("END,", t)
+
+    def process_output(self):
+        """thread to create background processes for the output"""
+        if not self.output_running:
+            threading.Thread(target=self.process_pending_jobs).start()
+
+    def process_pending_jobs(self):
+        """generate background processes for the pending image generation"""
+        self.output_running = True
+        while not self.output_queue.empty():
+            params = self.output_queue.get(0)
+            p = multiprocessing.Process(target=self.background_output, kwargs=params)
+            p.start()
+            p.join()
+        self.output_running = False
 
     def display_help(self):     # <<<2
         dialog = Toplevel(self)
@@ -1448,7 +1482,7 @@ Keyboard shortcuts:
         self.wait_window(dialog)
     # >>>2
 
-    def make_image(self, width, height, filename="output.jpg"):      # <<<2
+    def get_image_parameters(self):      # <<<2
         geometry = self.world.geometry
         modulus = self.world.modulus
         angle = self.world.angle
@@ -1478,49 +1512,19 @@ Keyboard shortcuts:
 
         matrix = self.function.matrix
 
-        image = make_world(
-                    matrix=matrix,
-                    color_filename=self.colorwheel.filename,
-                    size=(width, height),
-                    geometry=geometry,
-                    modulus=modulus,
-                    angle=angle,
-                    lattice_matrix=self.function.lattice_matrix,
-                    rotational_symmetry=self.function.rotational_symmetry,
-                    color_geometry=color_geometry,
-                    color_modulus=color_mod,
-                    color_angle=color_ang,
-                    default_color=default_color)
-
-        cmd = ("""#!/bin/sh
-CREATE_SYM={prog_path:}
-
-$CREATE_SYM --color={color:} \\
-            --color-geometry={color_geometry:} \\
-            --color-modulus={color_mod:} \\
-            --color-angle={color_ang:} \\
-            --geometry={geometry:} \\
-            --modulus={modulus:} \\
-            --angle={angle:} \\
-            --size={width:},{height:} \\
-            --matrix='{matrix:}' \\
-            --output={output:} \\
-            $@
-""".format(cwd=os.getcwd(),
-           prog_path=os.path.abspath(sys.argv[0]),
-           color=self.colorwheel.filename,
-           color_geometry=str(color_geometry).strip("()").replace(" ",""),
-           color_mod=color_mod,
-           color_ang=color_ang,
-           geometry=str(geometry).strip("()").replace(" ", ""),
-           modulus=modulus,
-           angle=angle,
-           width=width,
-           height=height,
-           matrix=str(self.function.matrix),
-           output=filename
-           ))
-        return image, cmd
+        return {
+                "matrix": matrix,
+                "color_filename": self.colorwheel.filename,
+                "geometry": geometry,
+                "modulus": modulus,
+                "angle": angle,
+                "lattice_matrix": self.function.lattice_matrix,
+                "rotational_symmetry": self.function.rotational_symmetry,
+                "color_geometry": color_geometry,
+                "color_modulus": color_mod,
+                "color_angle": color_ang,
+                "default_color": default_color,
+                }
     # >>>2
 
     def make_preview(self, *args):      # <<<2
@@ -1533,10 +1537,13 @@ $CREATE_SYM --color={color:} \\
             width = round(PREVIEW_SIZE * ratio)
             height = PREVIEW_SIZE
 
-        preview_image, _ = self.make_image(width, height)
+        params = self.get_image_parameters()
+        params["size"] = (width, height)
+
+        image = make_world(**params)
 
         # FIXME: methode change_preview in World class
-        self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(preview_image)
+        self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
         self.world._canvas.delete(self.world._image_id)
         self.world._image_id = self.world._canvas.create_image(
                         (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
@@ -1547,7 +1554,19 @@ $CREATE_SYM --color={color:} \\
         width = self.world.width
         height = self.world.height
 
-        filename_template = self.world.filename_template
+        params = self.get_image_parameters()
+        params["size"] = (width, height)
+        params["filename_template"] = self.world.filename_template
+
+        self.output_queue.put(params)
+        self.process_output()
+
+    def background_output(self, **params):
+
+        filename_template = params.pop("filename_template")
+
+        image = make_world(**params)
+
         nb = 1
         while True:
             filename = filename_template.format(nb)
@@ -1555,10 +1574,30 @@ $CREATE_SYM --color={color:} \\
                     not os.path.exists(filename+".sh")):
                 break
             nb += 1
+        image.save(filename + ".jpg")
 
-        output_image, cmd = self.make_image(width, height, filename + ".jpg")
+        for k in params:
+            params[k] = str(params[k]).strip("()").replace(" ", "")
+        cmd = ("""#!/bin/sh
+CREATE_SYM={prog_path:}
 
-        output_image.save(filename + ".jpg")
+$CREATE_SYM --color={color_filename:} \\
+            --color-geometry={color_geometry:} \\
+            --color-modulus={color_modulus:} \\
+            --color-angle={color_angle:} \\
+            --geometry={geometry:} \\
+            --modulus={modulus:} \\
+            --angle={angle:} \\
+            --size={size:} \\
+            --matrix='{matrix:}' \\
+            --output={output:} \\
+            $@
+""".format(
+           prog_path=os.path.abspath(sys.argv[0]),
+           output=filename,
+           **params
+           ))
+
         cs = open(filename + ".sh", mode="w")
         cs.write(cmd)
         cs.close()
