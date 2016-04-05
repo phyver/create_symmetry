@@ -487,7 +487,6 @@ class LabelEntry(Frame):  # <<<1
         if self.convert is not None:
             self.bind("<Enter>", self.validate)
             self.bind("<FocusOut>", self.validate)
-            self.validate()
     # >>>2
 
     def validate(self, *args):     # <<<2
@@ -505,6 +504,8 @@ class LabelEntry(Frame):  # <<<1
             self.content.set("")
         else:
             self.content.set(s)
+            if self.convert is not None:
+                self.validate()
     # >>>2
 
     def get(self):  # <<<2
