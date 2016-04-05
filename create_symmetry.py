@@ -726,6 +726,34 @@ class ColorWheel(LabelFrame):   # <<<1
             self._y_min.set(COLOR_GEOMETRY[2])
             self._y_max.set(COLOR_GEOMETRY[3])
     # >>>2
+
+    def get_config(self):           # <<<2
+        return {
+                "filename": self.filename,
+                "color": self._color.entry_widget.get(),    # don't use _color.get to avoid conversion to rgb
+                "geometry": self.geometry,
+                "modulus": self.modulus,
+                "angle": self.angle,
+                }
+    # >>>2
+
+    def set_config(self, cfg):      # <<<2
+        if "filename" in cfg:
+            self.change_colorwheel(cfg["filename"])
+        if "color" in cfg:
+            self._color.set(cfg["color"])
+            self.update_defaultcolor()
+        if "geometry" in cfg:
+            g = cfg["geometry"]
+            self._x_min.set(g[0])
+            self._x_max.set(g[1])
+            self._y_min.set(g[2])
+            self._y_max.set(g[3])
+        if "modulus" in cfg:
+            self._modulus.set(cfg["modulus"])
+        if "angle" in cfg:
+            self._angle.set(cfg["angle"])
+    # >>>2
 # >>>1
 
 
@@ -929,6 +957,16 @@ class World(LabelFrame):     # <<<1
         middle_y = (y_min+y_max) / 2
         self._y_min.set(middle_y - delta_y/2)
         self._y_max.set(middle_y + delta_y/2)
+    # >>>2
+
+    def get_config(self):           # <<<2
+        # TODO
+        return {}
+    # >>>2
+
+    def set_config(self, cfg):      # <<<2
+        # TODO
+        return
     # >>>2
 # >>>1
 
@@ -1427,6 +1465,16 @@ class Function(LabelFrame):     # <<<1
         M = add_symmetries_to_matrix(M, self.pattern)
         self.change_matrix(M)
     # >>>2
+
+    def get_config(self):           # <<<2
+        # TODO
+        return {}
+    # >>>2
+
+    def set_config(self, cfg):      # <<<2
+        # TODO
+        return
+    # >>>2
 # >>>1
 
 
@@ -1534,7 +1582,7 @@ class CreateSymmetry(Tk):      # <<<1
         self.show_messages()
     # >>>2
 
-    def show_messages(self):
+    def show_messages(self):        # <<<2
         self._console.config(state=NORMAL)
         while not self.message_queue.empty():
             self._console.insert(END, self.message_queue.get(0) + "\n")
@@ -1547,13 +1595,15 @@ class CreateSymmetry(Tk):      # <<<1
                                          .format(1+self.output_queue.qsize()))
         else:
             self._nb_pending.grid_remove()
+    # >>>2
 
-    def process_output(self):
+    def process_output(self):       # <<<2
         """thread to create background processes for the output"""
         if not self.output_running:
             threading.Thread(target=self.process_pending_jobs).start()
+    # >>>2
 
-    def process_pending_jobs(self):
+    def process_pending_jobs(self):     # <<<2
         """generate background processes for the pending image generation"""
         self.output_running = True
         while not self.output_queue.empty():
@@ -1565,6 +1615,7 @@ class CreateSymmetry(Tk):      # <<<1
             p.join()
         message("output queue empty")
         self.output_running = False
+    # >>>2
 
     def display_help(self):     # <<<2
         dialog = Toplevel(self)
