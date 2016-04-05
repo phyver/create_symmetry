@@ -105,6 +105,14 @@ def invert22(M):
     d = M[0][0] * M[1][1] - M[1][0] * M[0][1]
     return [[M[1][1]/d, M[0][0]/d],
             [-M[0][1]/d, -M[1][0]/d]]
+
+
+def convert_list_float(s):
+    if s.strip() == "":
+        return []
+    else:
+        return list(map(float, s.split(",")))
+
 # >>>1
 
 
@@ -155,7 +163,7 @@ def lattice_type(pattern):      # <<<2
                      "*22∞", "p2mm", "∞×", "p11g", "2*∞", "p2mg"]:
         return "frieze"
     else:
-        error("unkwnown pattern type: '{}'".format(pattern))
+        error("unknown pattern type: '{}'".format(pattern))
 
 # >>>2
 
@@ -165,9 +173,7 @@ def add_symmetries_to_matrix(M, pattern):     # <<<2
 ``pattern`` can be any of the seven types of pattern patterns or wallpaper
 patterns, in crystallographic convention or orbifold notation.
 """
-    if pattern is None:     # for the "raw" functions
-        return M
-    elif pattern in ["p111", "∞∞", "o", "p1", "333", "p3", "442", "p4"]:
+    if pattern in ["p111", "∞∞", "o", "p1", "333", "p3", "442", "p4"]:
         return M
     elif pattern in ["p211", "22∞", "2222", "p2", "632", "p6"]:
         R = {}
@@ -300,8 +306,7 @@ patterns, in crystallographic convention or orbifold notation.
                 S[(m, n)] = coeff
         return S
     else:
-        error("Unknown pattern type: {}".format(pattern))
-        sys.exit(1)
+        return M
 # >>>2
 # >>>1
 
@@ -322,7 +327,7 @@ def make_world(                   # <<<1
         lattice="",
         rotational_symmetry=1,
         default_color="black",
-        queue=None,
+        message_queue=None,
         **_
         ):
 
@@ -395,12 +400,10 @@ def make_world(                   # <<<1
                 _tmp = (n*(lattice_matrix[0][0]*_xs+lattice_matrix[0][1]*_ys) +
                         m*(lattice_matrix[1][0]*_xs+lattice_matrix[1][1]*_ys))
                 ZS += np.exp(2j*pi*_tmp)
-                message(".", end="", flush=True)
             ZS = ZS / rotational_symmetry
             res = res + matrix[(n, m)] * ZS
-        message("wave {}/{}".format(w1, w2))
-        if queue is not None:
-            queue.put("wave {}/{}".format(w1, w2))
+        if message_queue is not None:
+            message_queue.put("wave {}/{}".format(w1, w2))
         w1 += 1
     # print("computed res")
 
@@ -510,8 +513,8 @@ class LabelEntry(Frame):  # <<<1
             try:
                 return self.convert(s)
             except Exception as e:
-                raise Error("cannot convert value of field '{}': {}"
-                            .format(s, e))
+                raise Error("{}: cannot convert value of field '{}': {}"
+                            .format(self.label_widget.cget("text"), s, e))
         else:
             return s
     # >>>2
@@ -587,6 +590,7 @@ class ColorWheel(LabelFrame):   # <<<1
                 self._canvas.create_line(i, j-1, i, j+2, fill="gray")
         self._colorwheel_id = None
         self._canvas.bind("<Button-3>", self.set_origin)
+        self._canvas.bind("<Double-Button-1>", self.choose_colorwheel)
 
         Button(self, text="choose file",
                command=self.choose_colorwheel).grid(row=3, column=0,
@@ -687,12 +691,13 @@ class ColorWheel(LabelFrame):   # <<<1
                   .format(filename, e))
     # >>>2
 
-    def choose_colorwheel(self):    # <<<2
+    def choose_colorwheel(self, *args):    # <<<2
         filename = filedialog.askopenfilename(
                 title="Create Symmetry: choose color wheel image",
                 initialdir="./",
                 filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")])
-        self.change_colorwheel(filename)
+        if filename:
+            self.change_colorwheel(filename)
     # >>>2
 
     def set_origin(self, event):        # <<<2
@@ -952,11 +957,9 @@ class Function(LabelFrame):     # <<<1
     @property
     def rotational_symmetry(self):      # <<<2
         if self.current_tab == "rosette":
-            return int(self._rotational_symmetry.get())
-        elif self.current_tab == "frieze":
-            return 1
+            return int(self._rosette_rotation.get())
         elif self.current_tab == "raw":
-            return self._raw_center_symmetry.get()
+            return self._raw_rotation.get()
         elif self.current_tab == "wallpaper":
             lattice = lattice_type(self.pattern)
             if lattice == "square":
@@ -965,6 +968,8 @@ class Function(LabelFrame):     # <<<1
                 return 3
             else:
                 return 1
+        elif self.current_tab == "frieze":
+            return 1
         else:
             assert False
     # >>>2
@@ -976,38 +981,41 @@ class Function(LabelFrame):     # <<<1
         elif self.current_tab == "wallpaper":
             return self._wallpaper_type.get().split()[0]
         elif self.current_tab == "raw":
-            return None
+            return self._raw_rotation.get()
         else:
             assert False
     # >>>2
 
     @property
     def lattice_parameters(self):       # <<<2
-        lattice = lattice_type(self.pattern)
-        lattice_params = ()
-
         s = self._lattice_params.get()
-        try:
-            if lattice == "general":
-                xsi, eta = s.split(",")
-                lattice_params = (float(xsi), float(eta))
-            elif lattice == "rhombic":
-                b = s
-                lattice_params = float(b)
-            elif lattice == "rectangular":
-                L = s
-                lattice_params = float(L)
-        except Exception as e:
-            error("error while getting lattice parameters '{}': {}"
-                  .format(s, e))
-        return lattice_params
+
+        if self.current_tab == "raw":
+            return s
+        else:
+            lattice = lattice_type(self.pattern)
+            lattice_params = ()
+
+            try:
+                if lattice == "general":
+                    xsi, eta = s
+                    lattice_params = (xsi, eta)
+                elif lattice == "rhombic":
+                    b = s
+                    lattice_params = b
+                elif lattice == "rectangular":
+                    L = s
+                    lattice_params = L
+            except Exception as e:
+                raise Error("error while getting lattice parameters '{}': {}"
+                            .format(s, e))
+            return lattice_params
     # >>>2
 
     @property
     def lattice_matrix(self):       # <<<2
         if self.current_tab == "wallpaper":
             lattice = lattice_type(self.pattern)
-
             if lattice == "general":
                 xsi, eta = self.lattice_parameters
                 return [[1, -xsi/eta], [0, 1/eta]]
@@ -1024,10 +1032,10 @@ class Function(LabelFrame):     # <<<1
             else:
                 assert False
         elif self.current_tab == "raw":
-            v1 = self._basis_matrix1.get().split(",")
-            v2 = self._basis_matrix2.get().split(",")
-            v1 = [float(v1[0]), float(v1[1])]
-            v2 = [float(v2[0]), float(v2[1])]
+            v1 = self._basis_matrix1.get()
+            v2 = self._basis_matrix2.get()
+            v1 = [v1[0], v1[1]]
+            v2 = [v2[0], v2[1]]
             return [v1, v2]
         elif self.current_tab == "frieze":
             return None
@@ -1038,9 +1046,9 @@ class Function(LabelFrame):     # <<<1
     # >>>2
 
     def __init__(self, root, matrix=None,      # <<<2
-                 tab=None,
-                 pattern=None,
-                 pattern_params=None
+                 tab=None,      # which tab to select ("wallpaper", "frieze", "rosette", "raw")
+                 pattern=None,  # which pattern to select (group name, or rotation symmetry for "raw")
+                 pattern_params=None    # additional parameters (lattice parameters, rotation symmetry for rosettes)
                  ):
 
         LabelFrame.__init__(self, root)
@@ -1075,7 +1083,7 @@ class Function(LabelFrame):     # <<<1
         self._lattice_params = LabelEntry(wallpaper_tab,
                                           label="lattice parameters",
                                           value="1,1",
-                                          convert=lambda s: list(map(float, s.split(","))),
+                                          convert=convert_list_float,
                                           width=7)
         self._lattice_params.pack(padx=5, pady=5)
 
@@ -1104,12 +1112,12 @@ class Function(LabelFrame):     # <<<1
                                      command=self.set_rosette)
         rosette_button.pack(padx=5, pady=5)
 
-        self._rotational_symmetry = LabelEntry(frieze_tab,
+        self._rosette_rotation = LabelEntry(frieze_tab,
                                                label="symmetries",
                                                value=5,
                                                convert=int,
                                                width=2)
-        self._rotational_symmetry.pack(padx=5, pady=5)
+        self._rosette_rotation.pack(padx=5, pady=5)
 
         Button(frieze_tab, text="make matrix",
                command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=5)
@@ -1119,22 +1127,22 @@ class Function(LabelFrame):     # <<<1
         self._basis_matrix1 = LabelEntry(raw_tab,
                                          label="first vector",
                                          value="1, 0",
-                                         convert=lambda s: list(map(float, s.split(","))),
+                                         convert=convert_list_float,
                                          width=10)
         self._basis_matrix2 = LabelEntry(raw_tab,
                                          label="second vector",
                                          value="0, 1",
-                                         convert=lambda s: list(map(float, s.split(","))),
+                                         convert=convert_list_float,
                                          width=10)
         self._basis_matrix1.grid(row=0, column=0, sticky=E, padx=5, pady=5)
         self._basis_matrix2.grid(row=1, column=0, sticky=E, padx=5, pady=5)
 
-        self._raw_center_symmetry = LabelEntry(raw_tab,
+        self._raw_rotation = LabelEntry(raw_tab,
                                                label="rotational symmetry",
                                                value=1,
                                                convert=int,
                                                width=3)
-        self._raw_center_symmetry.grid(row=2, column=0, padx=5, pady=5)
+        self._raw_rotation.grid(row=2, column=0, padx=5, pady=5)
         # >>>3
 
         # display matrix    <<<3
@@ -1221,7 +1229,7 @@ class Function(LabelFrame):     # <<<1
         random_noise.pack(side=LEFT, padx=5, pady=5)
         # >>>3
 
-        # make sure the layout reflects the selected options
+        # make sure the layout reflects the selected options    <<<3
         self.select_wallpaper()
         self.set_rosette()
 
@@ -1244,7 +1252,7 @@ class Function(LabelFrame):     # <<<1
                 self._rosette.set(True)
                 self.set_rosette()
             if pattern_params:
-                self._rotational_symmetry.set(pattern_params)
+                self._rosette_rotation.set(pattern_params)
 
         elif tab == "raw":
             self._tabs.select(2)
@@ -1253,15 +1261,12 @@ class Function(LabelFrame):     # <<<1
                     params = pattern_params.split(",")
                     self._basis_matrix1.set(", ".join(params[0:2]))
                     self._basis_matrix2.set(", ".join(params[2:4]))
-                    self._raw_center_symmetry.set(pattern)
+                    self._raw_rotation.set(pattern)
                 except:
                     self._basis_matrix1.set("1, 0")
                     self._basis_matrix2.set("0, 1")
-                    self._raw_center_symmetry.set(1)
-
-
-
-        # self._wallpaper_combo.current(9)
+                    self._raw_rotation.set(1)
+        # >>>3
     # >>>2
 
     def change_matrix(self, M=None):    # <<<2
@@ -1368,9 +1373,9 @@ class Function(LabelFrame):     # <<<1
 
     def set_rosette(self, *args):     # <<<2
         if self.rosette:
-            self._rotational_symmetry.enable()
+            self._rosette_rotation.enable()
         else:
-            self._rotational_symmetry.disable()
+            self._rosette_rotation.disable()
     # >>>2
 
     def select_wallpaper(self, *args):        # <<<2
@@ -1613,17 +1618,7 @@ Keyboard shortcuts:
         default_color = self.colorwheel.color
 
         lattice = self.function.current_tab
-        if self.function.current_tab == "frieze":
-            pattern = self.function.pattern
-        elif self.function.current_tab == "rosette":
-            pattern = self.function.pattern
-        elif self.function.current_tab == "wallpaper":
-            pattern = self.function.pattern
-        elif self.function.current_tab == "raw":
-            pattern = None
-        else:
-            assert False
-
+        pattern = self.function.pattern
         lattice_params = self.function.lattice_parameters
 
         matrix = self.function.matrix
@@ -1633,23 +1628,15 @@ Keyboard shortcuts:
         if not self.colorwheel.filename:
             raise Error("missing parameter: colorwheel")
 
-        tab = self.function.current_tab
-        pattern = ""
+        pattern = self.function.pattern
         params = ""
-        if tab == "wallpaper":
-            pattern = self.function.pattern
+        if lattice == "wallpaper":
             params = self.function.lattice_parameters
-
-        elif tab == "frieze":
-            pattern = self.function.pattern
+        elif lattice == "frieze":
             params = self.function.rotational_symmetry
-            if self.function.rosette:
-                tab = "rosette"
-
-        elif tab == "raw":
-            pattern = self.function.rotational_symmetry
-            B = ",".join([self.function._basis_matrix1.get(),
-                          self.function._basis_matrix2.get()]).replace(" ", "")
+        elif lattice == "raw":
+            B = ",".join(map(str, self.function._basis_matrix1.get() +
+                                  self.function._basis_matrix2.get()))
             params = B
 
         return {
@@ -1665,7 +1652,6 @@ Keyboard shortcuts:
                 "color_modulus": color_mod,
                 "color_angle": color_ang,
                 "default_color": default_color,
-                "tab": tab,
                 "pattern": pattern,
                 "params": params
                 }
@@ -1726,7 +1712,7 @@ Keyboard shortcuts:
             message_queue.put("saved file {}".format(filename+".jpg"))
 
         style = "--{}={} \\\n            --params={}".format(
-                params["tab"],
+                params["lattice"],
                 params["pattern"],
                 str(params["params"]).strip("()").replace(" ", "")
                 )
@@ -1778,6 +1764,15 @@ def main():     # <<<1
 
     --matrix=...                        transformation matrix
     --rotation-symmetry=P               p-fold symmetry around the origin
+
+    --wallpaper=...                     name of wallpaper group
+    --frieze=...                        name of frieze group
+    --rosette=...                       name of frieze group
+    --raw=...                           rotation for arbitrary function
+    --params=...                        additional parameters:
+                                           basis for lattice (for wallpaper)
+                                           nb of rotations for rosettes
+                                           basis for lattice (for raw)
 
     -v  /  -verbose                     add information messages
     -h  /  --help                       this message
