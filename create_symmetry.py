@@ -43,8 +43,8 @@ PREVIEW_SIZE = 500
 OUTPUT_WIDTH = 1280
 OUTPUT_HEIGHT = 960
 COLOR_SIZE = 200
-COLOR_GEOMETRY = (-1., 1., -1., 1.)
-WORLD_GEOMETRY = (-2., 2., -2., 2.)
+COLOR_GEOMETRY = (-1, 1, -1, 1)
+WORLD_GEOMETRY = (-2, 2, -2, 2)
 
 
 FRIEZE_TYPES = [    # <<<1
@@ -457,74 +457,78 @@ class LabelEntry(Frame):  # <<<1
     """
     entry_widget = None  # the Entry widget
     label_widget = None  # the Label widget
-    content = None  # the corresponding StringVar / IntVar / BoolVar
-    __init = ""
+    content = None       # the corresponding StringVar
+    convert = None       # the conversion function used for validation
 
-    def __init__(self, parent, label, on_click=None,  # <<<3
+    def __init__(self, parent, label, on_click=None,  # <<<2
                  value="",
+                 convert=None,
                  state=NORMAL, **kwargs):
         Frame.__init__(self, parent)
+
+        self.convert = convert
 
         if label:
             self.label_widget = Label(self, text=label)
             self.label_widget.pack(side=LEFT, padx=(0, 5))
 
-        self.__init = value
-        if isinstance(value, int):
-            self.content = IntVar()
-            self.content.set(value)
-        elif isinstance(value, float):
-            self.content = StringVar()
-            self.content.set(float(value))
-        elif isinstance(value, bool):
-            self.content = BoolVar()
-            self.content.set(value)
-        else:
-            self.content = StringVar("")
-            self.content.set(value)
+        self.content = StringVar("")
+        self.content.set(value)
         self.entry_widget = Entry(self, textvar=self.content,
                                   state=state, **kwargs)
         self.entry_widget.pack(side=LEFT)
 
         for method in ["config", "configure", "bind", "focus_set"]:
             setattr(self, method, getattr(self.entry_widget, method))
-    # >>>3
 
-    def set(self, s):  # <<<3
+        if self.convert is not None:
+            self.bind("<Enter>", self.validate)
+            self.bind("<FocusOut>", self.validate)
+            self.validate()
+    # >>>2
+
+    def validate(self, *args):     # <<<2
+        if self.convert is None:
+            return
+        else:
+            try:
+                self.convert(self.content.get())
+            except Exception as e:
+                self.entry_widget.config(foreground="red")
+    # >>>2
+
+    def set(self, s):  # <<<2
         if s is None:
             self.content.set("")
         else:
             self.content.set(s)
-    # >>>3
+    # >>>2
 
-    def get(self):  # <<<3
+    def get(self):  # <<<2
         s = self.content.get()
-        try:
-            if isinstance(self.__init, int):
-                return int(s)
-            elif isinstance(self.__init, float):
-                return float(s)
-            elif isinstance(self.__init, bool):
-                return bool(s)
-            else:
-                return s
-        except Exception as e:
-            error("cannot convert value of field '{}': {}".format(s, e))
-    # >>>3
+        if self.convert is not None:
+            try:
+                return self.convert(s)
+            except Exception as e:
+                raise Error("cannot convert value of field '{}': {}"
+                            .format(s, e))
+        else:
+            return s
+    # >>>2
 
-    def delete(self):  # <<<3
+    def delete(self):  # <<<2
         self.content.set("")
-    # >>>3
+    # >>>2
 
-    def disable(self):  # <<<3
+    def disable(self):  # <<<2
         self.entry_widget.config(state=DISABLED)
         self.label_widget.config(state=DISABLED)
-    # >>>3
+    # >>>2
 
-    def enable(self):  # <<<3
+    def enable(self):  # <<<2
         self.entry_widget.config(state=NORMAL)
         self.label_widget.config(state=NORMAL)
-    # >>>3
+    # >>>2
 # >>>1
 
 
@@ -551,10 +555,7 @@ class ColorWheel(LabelFrame):   # <<<1
 
     @property
     def color(self):    # <<<2
-        try:
-            return getrgb(self._color.get())
-        except Exception as e:
-            error("'{}' is not a color".format(e))
+        return self._color.get()
     # >>>2
 
     def __init__(self,              # <<<2
@@ -571,10 +572,9 @@ class ColorWheel(LabelFrame):   # <<<1
         self._color = LabelEntry(self,
                                  label="default color",
                                  value=default_color,
-                                 width=10)
+                                 width=10,
+                                 convert=getrgb)
         self._color.grid(row=0, column=0, padx=5, pady=5)
-        self._color.bind("<Enter>", self.update_defaultcolor)
-        self._color.bind("<FocusOut>", self.update_defaultcolor)
 
         self._filename = Label(self, text="...")
         self._filename.grid(row=1, column=0, padx=5, pady=5)
@@ -598,22 +598,26 @@ class ColorWheel(LabelFrame):   # <<<1
         coord_frame.columnconfigure(1, weight=1)
 
         self._x_min = LabelEntry(coord_frame, label="x min",
-                                 value=float(geometry[0]),
+                                 value=geometry[0],
+                                 convert=float,
                                  width=4, justify=RIGHT)
         self._x_min.grid(row=0, column=0, padx=5, pady=5)
 
         self._x_max = LabelEntry(coord_frame, label="x max",
-                                 value=float(geometry[1]),
+                                 value=geometry[1],
+                                 convert=float,
                                  width=4, justify=RIGHT)
         self._x_max.grid(row=0, column=1, padx=5, pady=5)
 
         self._y_min = LabelEntry(coord_frame, label="y min",
-                                 value=float(geometry[2]),
+                                 value=geometry[2],
+                                 convert=float,
                                  width=4, justify=RIGHT)
         self._y_min.grid(row=1, column=0, padx=5, pady=5)
 
         self._y_max = LabelEntry(coord_frame, label="y max",
-                                 value=float(geometry[3]),
+                                 value=geometry[3],
+                                 convert=float,
                                  width=4, justify=RIGHT)
         self._y_max.grid(row=1, column=1, padx=5, pady=5)
 
@@ -624,12 +628,14 @@ class ColorWheel(LabelFrame):   # <<<1
         transformation_frame = LabelFrame(self, text="transformation")
         transformation_frame.grid(row=5, column=0, sticky=E+W, padx=5, pady=5)
         self._modulus = LabelEntry(transformation_frame, label="modulus",
-                                   value=float(modulus),
+                                   value=modulus,
+                                   convert=float,
                                    width=4)
         self._modulus.pack(padx=5, pady=5)
 
         self._angle = LabelEntry(transformation_frame, label="angle (°)",
-                                 value=float(angle),
+                                 value=angle,
+                                 convert=float,
                                  width=4)
         self._angle.pack(padx=5, pady=5)
 
@@ -789,22 +795,26 @@ class World(LabelFrame):     # <<<1
         coord_frame.columnconfigure(1, weight=1)
 
         self._x_min = LabelEntry(coord_frame, label="x min",
-                                 value=float(geometry[0]),
+                                 value=geometry[0],
+                                 convert=float,
                                  width=4, justify=RIGHT)
         self._x_min.grid(row=0, column=0, padx=5, pady=5)
 
         self._x_max = LabelEntry(coord_frame, label="x max",
-                                 value=float(geometry[1]),
+                                 value=geometry[1],
+                                 convert=float,
                                  width=4, justify=RIGHT)
         self._x_max.grid(row=0, column=1, padx=5, pady=5)
 
         self._y_min = LabelEntry(coord_frame, label="y min",
-                                 value=float(geometry[2]),
+                                 value=geometry[2],
+                                 convert=float,
                                  width=4, justify=RIGHT)
         self._y_min.grid(row=1, column=0, padx=5, pady=5)
 
         self._y_max = LabelEntry(coord_frame, label="y max",
-                                 value=float(geometry[3]),
+                                 value=geometry[3],
+                                 convert=float,
                                  width=4, justify=RIGHT)
         self._y_max.grid(row=1, column=1, padx=5, pady=5)
 
@@ -818,12 +828,14 @@ class World(LabelFrame):     # <<<1
         transformation_frame = LabelFrame(self, text="transformation")
         transformation_frame.grid(row=1, column=1, sticky=E+W, padx=5, pady=5)
         self._modulus = LabelEntry(transformation_frame, label="modulus",
-                                   value=float(modulus),
+                                   value=modulus,
+                                   convert=float,
                                    width=4)
         self._modulus.pack(padx=5, pady=5)
 
         self._angle = LabelEntry(transformation_frame, label="angle (°)",
-                                 value=float(angle),
+                                 value=angle,
+                                 convert=float,
                                  width=4)
         self._angle.pack(padx=5, pady=5)
 
@@ -838,11 +850,13 @@ class World(LabelFrame):     # <<<1
 
         self._width = LabelEntry(settings_frame,
                                  label="width", value=OUTPUT_WIDTH,
+                                 convert=int,
                                  width=6, justify=RIGHT)
         self._width.pack(padx=5, pady=5)
 
         self._height = LabelEntry(settings_frame,
                                   label="height", value=OUTPUT_HEIGHT,
+                                  convert=int,
                                   width=6, justify=RIGHT)
         self._height.pack(padx=5, pady=5)
 
@@ -1060,7 +1074,9 @@ class Function(LabelFrame):     # <<<1
 
         self._lattice_params = LabelEntry(wallpaper_tab,
                                           label="lattice parameters",
-                                          value="1,1", width=7)
+                                          value="1,1",
+                                          convert=lambda s: list(map(float, s.split(","))),
+                                          width=7)
         self._lattice_params.pack(padx=5, pady=5)
 
         self._wallpaper_combo.bind("<<ComboboxSelected>>",
@@ -1091,6 +1107,7 @@ class Function(LabelFrame):     # <<<1
         self._rotational_symmetry = LabelEntry(frieze_tab,
                                                label="symmetries",
                                                value=5,
+                                               convert=int,
                                                width=2)
         self._rotational_symmetry.pack(padx=5, pady=5)
 
@@ -1102,10 +1119,12 @@ class Function(LabelFrame):     # <<<1
         self._basis_matrix1 = LabelEntry(raw_tab,
                                          label="first vector",
                                          value="1, 0",
+                                         convert=lambda s: list(map(float, s.split(","))),
                                          width=10)
         self._basis_matrix2 = LabelEntry(raw_tab,
                                          label="second vector",
                                          value="0, 1",
+                                         convert=lambda s: list(map(float, s.split(","))),
                                          width=10)
         self._basis_matrix1.grid(row=0, column=0, sticky=E, padx=5, pady=5)
         self._basis_matrix2.grid(row=1, column=0, sticky=E, padx=5, pady=5)
@@ -1113,6 +1132,7 @@ class Function(LabelFrame):     # <<<1
         self._raw_center_symmetry = LabelEntry(raw_tab,
                                                label="rotational symmetry",
                                                value=1,
+                                               convert=int,
                                                width=3)
         self._raw_center_symmetry.grid(row=2, column=0, padx=5, pady=5)
         # >>>3
@@ -1154,23 +1174,33 @@ class Function(LabelFrame):     # <<<1
         tmp.grid(row=0, column=2, sticky=N+S, padx=5, pady=5)
 
         self._random_nb_coeff = LabelEntry(tmp, label="nb coefficients",
-                                           value=3, width=4)
+                                           value=3,
+                                           convert=int,
+                                           width=4)
         self._random_nb_coeff.pack(padx=5, pady=5)
 
         self._random_min_degre = LabelEntry(tmp, label="min degre",
-                                            value=-6, width=4)
+                                            value=-6,
+                                            convert=int,
+                                            width=4)
         self._random_min_degre.pack(padx=5, pady=5)
 
         self._random_max_degre = LabelEntry(tmp, label="max degre",
-                                            value=6, width=4)
+                                            value=6,
+                                            convert=int,
+                                            width=4)
         self._random_max_degre.pack(padx=5, pady=5)
 
         self._random_min_coeff = LabelEntry(tmp, label="min coefficient",
-                                            value=float(-.1), width=4)
+                                            value=-.1,
+                                            convert=float,
+                                            width=4)
         self._random_min_coeff.pack(padx=5, pady=5)
 
         self._random_max_coeff = LabelEntry(tmp, label="max coefficient",
-                                            value=float(.1), width=4)
+                                            value=.1,
+                                            convert=float,
+                                            width=4)
         self._random_max_coeff.pack(padx=5, pady=5)
 
         generate = Button(tmp, text="generate", command=self.new_random_matrix)
@@ -1180,7 +1210,9 @@ class Function(LabelFrame):     # <<<1
         # add noise <<<3
         tmp3 = Frame(tmp)
         tmp3.pack(padx=5, pady=5)
-        self._noise = LabelEntry(tmp3, label="(%)", value=10, width=3)
+        self._noise = LabelEntry(tmp3, label="(%)",
+                                 value=10, convert=float,
+                                 width=3)
         self._noise.pack(side=RIGHT, padx=5, pady=5)
         self._noise.bind("<Return>", self.add_noise)
 
@@ -1747,9 +1779,6 @@ def main():     # <<<1
     --matrix=...                        transformation matrix
     --rotation-symmetry=P               p-fold symmetry around the origin
 
-    --gui                               use GUI instead of CLI
-                                        (default when no flag is present)
-
     -v  /  -verbose                     add information messages
     -h  /  --help                       this message
 """)
@@ -1762,7 +1791,7 @@ def main():     # <<<1
             "output=", "size=", "geometry=", "modulus=", "angle=",
             "matrix=", "rotation-symmetry=",
             "wallpaper=", "frieze=", "rosette=", "raw=", "params=",
-            "verbose", "gui"]
+            "verbose"]
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], short_options, long_options)
@@ -1772,7 +1801,6 @@ def main():     # <<<1
 
     if len(sys.argv) == 1:
         CreateSymmetry().mainloop()
-        # GUI().mainloop()
         return
 
     output_filename = "output.jpg"
@@ -1785,7 +1813,6 @@ def main():     # <<<1
     color_modulus = 1
     color_angle = 0
     matrix = {}
-    gui = False
     rotational_symmetry = 1
     tab = None
     pattern = None
@@ -1865,44 +1892,26 @@ def main():     # <<<1
             verbose += 1
         elif o in ["--matrix"]:
             matrix = parse_matrix(a)
-        elif o in ["--gui"]:
-            gui = True
         else:
             assert False
 
-    if gui:
-        CreateSymmetry(
-                matrix=matrix,
-                color_filename=color_filename,
-                size=(width, height),
-                geometry=(x_min, x_max, y_min, y_max),
-                modulus=modulus,
-                angle=angle,
-                color_geometry=(color_x_min, color_x_max,
-                                color_y_min, color_y_max),
-                color_modulus=color_modulus,
-                color_angle=color_angle,
-                default_color="black",
-                tab=tab,
-                pattern=pattern,
-                params=params
-                ).mainloop()
+    CreateSymmetry(
+            matrix=matrix,
+            color_filename=color_filename,
+            size=(width, height),
+            geometry=(x_min, x_max, y_min, y_max),
+            modulus=modulus,
+            angle=angle,
+            color_geometry=(color_x_min, color_x_max,
+                            color_y_min, color_y_max),
+            color_modulus=color_modulus,
+            color_angle=color_angle,
+            default_color="black",
+            tab=tab,
+            pattern=pattern,
+            params=params
+            ).mainloop()
 
-    else:
-        output_image = make_world(matrix=matrix,
-                                  color_filename=color_filename,
-                                  size=(width, height),
-                                  geometry=(x_min, x_max, y_min, y_max),
-                                  modulus=modulus,
-                                  angle=angle,
-                                  rotational_symmetry=rotational_symmetry,
-                                  color_geometry=(color_x_min, color_x_max,
-                                                  color_y_min, color_y_max),
-                                  color_modulus=color_modulus,
-                                  color_angle=color_angle,
-                                  default_color="black")
-        output_image.save(output_filename)
-        output_image.show()
 # >>>1
 
 
