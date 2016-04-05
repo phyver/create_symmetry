@@ -960,13 +960,28 @@ class World(LabelFrame):     # <<<1
     # >>>2
 
     def get_config(self):           # <<<2
-        # TODO
-        return {}
+        return {
+                "geometry": self.geometry,
+                "modulus": self.modulus,
+                "angle": self.angle,
+                "size": self.size,
+                }
     # >>>2
 
     def set_config(self, cfg):      # <<<2
-        # TODO
-        return
+        if "geometry" in cfg:
+            g = cfg["geometry"]
+            self._x_min.set(g[0])
+            self._x_max.set(g[1])
+            self._y_min.set(g[2])
+            self._y_max.set(g[3])
+        if "modulus" in cfg:
+            self._modulus.set(cfg["modulus"])
+        if "angle" in cfg:
+            self._angle.set(cfg["angle"])
+        if "size" in cfg:
+            self._width.set(cfg["size"][0])
+            self._height.set(cfg["size"][1])
     # >>>2
 # >>>1
 
@@ -1523,7 +1538,8 @@ class CreateSymmetry(Tk):      # <<<1
                            angle=angle,
                            filename_template=output_filename)
 
-        self.function = Function(self, matrix=matrix, tab=tab, pattern=pattern, pattern_params=params)
+        self.function = Function(self, matrix=matrix, tab=tab,
+                                 pattern=pattern, pattern_params=params)
 
         self.colorwheel.grid(row=0, column=0, sticky=N+S, padx=10, pady=10)
         self.world.grid(row=0, column=1, sticky=N+S, padx=10, pady=10)
