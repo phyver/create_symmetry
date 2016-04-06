@@ -1770,21 +1770,31 @@ Keyboard shortcuts:
                     x_min, x_max, y_min, y_max = self.world.geometry
                     delta_x = (x_max-x_min) / (width-1)
                     delta_y = (y_max-y_min) / (height-1)
+                    a = self.world.angle * pi / 180
+                    t = self.world.modulus * complex(cos(a), sin(a))
 
                     x0, y0 = 0, 0
                     x0, y0 = x0*B[0][0] + y0*B[1][0], x0*B[0][1] + y0*B[1][1]
+                    z0 = complex(x0, y0) * t
+                    x0, y0 = z0.real, z0.imag
                     x0, y0 = xc + (x0 - x_min) / delta_x, yc + (y_max - y0) / delta_y
 
                     x1, y1 = 1, 0
                     x1, y1 = x1*B[0][0] + y1*B[1][0], x1*B[0][1] + y1*B[1][1]
+                    z1 = complex(x1, y1) * t
+                    x1, y1 = z1.real, z1.imag
                     x1, y1 = xc + (x1 - x_min) / delta_x, yc + (y_max - y1) / delta_y
 
                     x2, y2 = 0, 1
                     x2, y2 = x2*B[0][0] + y2*B[1][0], x2*B[0][1] + y2*B[1][1]
+                    z2 = complex(x2, y2) * t
+                    x2, y2 = z2.real, z2.imag
                     x2, y2 = xc + (x2 - x_min) / delta_x, yc + (y_max - y2) / delta_y
 
                     x3, y3 = 1, 1
                     x3, y3 = x3*B[0][0] + y3*B[1][0], x3*B[0][1] + y3*B[1][1]
+                    z3 = complex(x3, y3) * t
+                    x3, y3 = z3.real, z3.imag
                     x3, y3 = xc + (x3 - x_min) / delta_x, yc + (y_max - y3) / delta_y
 
                     self.world._canvas.create_line(x0, y0,
