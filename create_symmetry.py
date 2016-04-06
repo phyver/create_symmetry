@@ -105,8 +105,9 @@ def sequence(*fs):
 
 def invert22(M):
     d = M[0][0] * M[1][1] - M[1][0] * M[0][1]
-    return [[M[1][1]/d, -M[0][1]/d],
-            [-M[1][0]/d, M[0][0]/d]]
+    I = [[M[1][1]/d, -M[0][1]/d],
+         [-M[1][0]/d, M[0][0]/d]]
+    return I
 
 
 def str_to_floats(s):
@@ -351,6 +352,7 @@ def make_world(                   # <<<1
     assert matrix is not None
     assert color_filename != ""
 
+    print("lattice: ", lattice_matrix)
     x_min, x_max, y_min, y_max = geometry
     color_x_min, color_x_max, color_y_min, color_y_max = color_geometry
     width, height = size
@@ -408,17 +410,18 @@ def make_world(                   # <<<1
                 ezsc = np.conj(ezs)
             res = res + matrix[(n, m)] * ezs**n * ezsc**m
         else:   # lattice_matrix should be a 2x2 array
+            C = invert22(lattice_matrix)
             ZS = np.zeros((width, height), complex)
             for k in range(0, rotational_symmetry):
                 _tmp = zs * complex(cos(2*pi*k/rotational_symmetry),
                                     sin(2*pi*k/rotational_symmetry))
                 _xs = _tmp.real
                 _ys = _tmp.imag
-                _tmp = (n*(lattice_matrix[0][0]*_xs+lattice_matrix[0][1]*_ys) +
-                        m*(lattice_matrix[1][0]*_xs+lattice_matrix[1][1]*_ys))
+                _tmp = (n*(C[0][0]*_xs+C[1][0]*_ys) +
+                        m*(C[0][1]*_xs+C[1][1]*_ys))
                 ZS += np.exp(2j*pi*_tmp)
             ZS = ZS / rotational_symmetry
-            res = res + matrix[(n, m)] * ZS
+            res += matrix[(n, m)] * ZS
         if message_queue is not None:
             message_queue.put("wave {}/{}".format(w1, w2))
         w1 += 1
@@ -513,6 +516,7 @@ class LabelEntry(Frame):  # <<<1
         else:
             try:
                 self.convert(self.content.get())
+                self.entry_widget.config(foreground="black")
             except Exception as e:
                 self.entry_widget.config(foreground="red")
     # >>>2
@@ -1105,6 +1109,11 @@ class Function(LabelFrame):     # <<<1
             return None
         else:
             assert False
+    # >>>2
+
+    @property
+    def lattice_matrix_invert(self):       # <<<2
+        return invert22(self.lattice_matrix)
     # >>>2
 
     def __init__(self, root):      # <<<2
@@ -1754,6 +1763,7 @@ Keyboard shortcuts:
                 # FIXME: methode change_preview in World class
                 self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
                 self.world._canvas.delete(self.world._image_id)
+                # self.world._canvas.delete(ALL)
                 self.world._image_id = self.world._canvas.create_image(
                                 (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
                                 image=self.world._canvas.tk_img)
@@ -1777,35 +1787,49 @@ Keyboard shortcuts:
                     x0, y0 = x0*B[0][0] + y0*B[1][0], x0*B[0][1] + y0*B[1][1]
                     z0 = complex(x0, y0) * t
                     x0, y0 = z0.real, z0.imag
-                    x0, y0 = xc + (x0 - x_min) / delta_x, yc + (y_max - y0) / delta_y
+                    x0, y0 = xc + (x0-x_min)/delta_x, yc + (y_max-y0)/delta_y
 
                     x1, y1 = 1, 0
                     x1, y1 = x1*B[0][0] + y1*B[1][0], x1*B[0][1] + y1*B[1][1]
                     z1 = complex(x1, y1) * t
                     x1, y1 = z1.real, z1.imag
-                    x1, y1 = xc + (x1 - x_min) / delta_x, yc + (y_max - y1) / delta_y
+                    x1, y1 = xc + (x1-x_min)/delta_x, yc + (y_max-y1)/delta_y
 
                     x2, y2 = 0, 1
                     x2, y2 = x2*B[0][0] + y2*B[1][0], x2*B[0][1] + y2*B[1][1]
                     z2 = complex(x2, y2) * t
                     x2, y2 = z2.real, z2.imag
-                    x2, y2 = xc + (x2 - x_min) / delta_x, yc + (y_max - y2) / delta_y
+                    x2, y2 = xc + (x2-x_min)/delta_x, yc + (y_max-y2)/delta_y
 
                     x3, y3 = 1, 1
                     x3, y3 = x3*B[0][0] + y3*B[1][0], x3*B[0][1] + y3*B[1][1]
                     z3 = complex(x3, y3) * t
                     x3, y3 = z3.real, z3.imag
-                    x3, y3 = xc + (x3 - x_min) / delta_x, yc + (y_max - y3) / delta_y
+                    x3, y3 = xc + (x3-x_min)/delta_x, yc + (y_max-y3)/delta_y
 
-                    self.world._canvas.create_line(x0, y0,
-                                                   x1, y1,
-                                                   x3, y3,
-                                                   x2, y2,
-                                                   x0, y0,
-                                                   fill="white", width=1)
+                    try:
+                        for tmp in self.__tmp:
+                            self.world._canvas.delete(tmp)
+                    except Exception as e:
+                        self.__tmp = []
+                    self.__tmp.append(
+                            self.world._canvas.create_polygon(
+                                x0, y0, x1, y1, x3, y3, x2, y2,
+                                fill="",
+                                width=3, outline="white"))
 
-                    self.world._canvas.create_oval(x0-10, y0-10, x0+10, y0+10,
-                                                   fill="", outline="white")
+                    # self.__tmp.append(
+                    #         self.world._canvas.create_oval(
+                    #             x1-10, y1-10, x1+10, y1+10,
+                    #             fill="", outline="blue", width=3))
+                    # self.__tmp.append(
+                    #         self.world._canvas.create_oval(
+                    #             x2-10, y2-10, x2+10, y2+10,
+                    #             fill="", outline="green", width=3))
+                    self.__tmp.append(
+                            self.world._canvas.create_oval(
+                                x0-10, y0-10, x0+10, y0+10,
+                                fill="", outline="white", width=1))
 
             threading.Thread(target=make_preview_thread).start()
 
@@ -1942,10 +1966,6 @@ def main():     # <<<1
         print(str(err))
         sys.exit(-1)
 
-    if len(sys.argv) == 1:
-        CreateSymmetry().mainloop()
-        return
-
     rotational_symmetry = 1
     tab = None
     pattern = None
@@ -2055,6 +2075,7 @@ def main():     # <<<1
     gui.colorwheel.set_config(color_config)
     gui.world.set_config(world_config)
     gui.function.set_config(function_config)
+    gui.make_preview()
     gui.mainloop()
 
 # >>>1
