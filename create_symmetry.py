@@ -105,8 +105,8 @@ def sequence(*fs):
 
 def invert22(M):
     d = M[0][0] * M[1][1] - M[1][0] * M[0][1]
-    return [[M[1][1]/d, M[0][0]/d],
-            [-M[0][1]/d, -M[1][0]/d]]
+    return [[M[1][1]/d, -M[0][1]/d],
+            [-M[1][0]/d, M[0][0]/d]]
 
 
 def str_to_floats(s):
@@ -120,6 +120,14 @@ def floats_to_str(l):
     l = map(str, l)
     l = map(lambda s: re.sub("\.0*\s*$", "", s), l)
     return ", ".join(l)
+
+
+def matrix_to_list(M):
+    return [((n, m), (z.real, z.imag)) for (n, m), z in M.items()]
+
+
+def list_to_matrix(L):
+    return dict([((n, m), complex(x, y)) for ((n, m), (x, y)) in L])
 # >>>1
 
 
@@ -1074,10 +1082,10 @@ class Function(LabelFrame):     # <<<1
                 xsi, eta = self.lattice_parameters
                 return [[1, -xsi/eta], [0, 1/eta]]
             elif lattice == "rhombic":
-                b = self.lattice_parameters
+                b, = self.lattice_parameters
                 return [[1, 1/(2*b)], [1, -1/(2*b)]]
             elif lattice == "rectangular":
-                L = self.lattice_parameters
+                L, = self.lattice_parameters
                 return [[2, 0], [0, 1/L]]
             elif lattice == "square":
                 return [[1, 0], [0, 1]]
@@ -1288,7 +1296,7 @@ class Function(LabelFrame):     # <<<1
         if M is None:
             M = self.matrix
         else:
-            self.matrix = M
+            self.matrix = dict(M)
         self._display_matrix.delete(0, END)
         keys = list(M.keys())
         keys.sort()
@@ -1465,7 +1473,7 @@ class Function(LabelFrame):     # <<<1
 
     def set_config(self, cfg):      # <<<2
         if "matrix" in cfg:
-            self.matrix = parse_matrix(cfg["matrix"])
+            self.change_matrix(cfg["matrix"])
         if "random_nb_coeff" in cfg:
             self._random_nb_coeff.set(cfg["random_nb_coeff"])
         if "random_degre" in cfg:
@@ -1487,14 +1495,15 @@ class Function(LabelFrame):     # <<<1
                 self._tabs.select(0)
         if "wallpaper_type" in cfg:
             for i in range(len(WALLPAPER_TYPES)):
-                if re.search("\\b{}\\b".format(re.escape(cfg["wallpaper_type"])),
+                if re.search("(^|\\W){}($|\\W)".format(re.escape(cfg["wallpaper_type"])),
                              WALLPAPER_TYPES[i]):
                     self._wallpaper_combo.current(i)
+            self.select_wallpaper()
         if "lattice_parameters" in cfg:
             self._lattice_params.set(floats_to_str(cfg["lattice_parameters"]))
         if "frieze_type" in cfg:
             for i in range(len(FRIEZE_TYPES)):
-                if re.search("\\b{}\\b".format(re.escape(cfg["frieze_type"])),
+                if re.search("(^|\\W){}($|\\W)".format(re.escape(cfg["frieze_type"])),
                              FRIEZE_TYPES[i]):
                     self._frieze_combo.current(i)
         if "rosette" in cfg:
@@ -1547,11 +1556,6 @@ class CreateSymmetry(Tk):      # <<<1
         self._console.config(state=DISABLED)
         self._nb_pending = Label(self)
         self._nb_pending.grid(row=1, column=0, sticky=E+S, padx=10, pady=10)
-
-        # self.function.new_random_matrix()
-        # cfg = self.function.get_config()
-        # import json
-        # print(json.dumps(cfg, separators=(",", ":")))
         # >>>3
 
         # attach appropriate actions to buttons     <<<3
@@ -1810,7 +1814,7 @@ Keyboard shortcuts:
         if message_queue is not None:
             message_queue.put("saved file {}".format(filename+".jpg"))
 
-        config["function"]["matrix"] = str(config["function"]["matrix"]).replace(" ", "")
+        config["function"]["matrix"] = matrix_to_list(config["function"]["matrix"])
         cmd = ("""#!/bin/sh
 CREATE_SYM={prog_path:}
 
@@ -1888,16 +1892,6 @@ def main():     # <<<1
         CreateSymmetry().mainloop()
         return
 
-    output_filename = "output.jpg"
-    color_filename = None
-    width, height = 400, 400
-    x_min, x_max, y_min, y_max = -2, 2, -2, 2
-    modulus = 1
-    angle = 0
-    color_x_min, color_x_max, color_y_min, color_y_max = -1, 1, -1, 1
-    color_modulus = 1
-    color_angle = 0
-    matrix = {}
     rotational_symmetry = 1
     tab = None
     pattern = None
@@ -1911,23 +1905,24 @@ def main():     # <<<1
             display_help()
             sys.exit(0)
         elif o in ["-c", "--color"]:
-            color_filename = a
+            color_config["filename"] = a
         elif o in ["-o", "--output"]:
-            output_filename = a
+            world_config["filename"] = a
         elif o in ["-s", "--size"]:
             try:
                 tmp = map(int, a.split(","))
                 width, height = tmp
+                world_config["size"] = (width, height)
             except:
                 error("problem with size '{}'".format(a))
-                width, height = 400, 400
+                sys.exit(1)
         elif o in ["-g", "--geometry"]:
             try:
                 tmp = map(float, a.split(","))
                 x_min, x_max, y_min, y_max = tmp
+                world_config["geometry"] = x_min, x_max, y_min, y_max
             except:
                 error("problem with geometry '{}' for output".format(a))
-                x_min, x_max, y_min, y_max = -2, 2, -2, 2
                 sys.exit(1)
         elif o in ["--rotation-symmetry"]:
             try:
@@ -1936,32 +1931,37 @@ def main():     # <<<1
                 error("problem with rotational symmetry '{}'".format(a))
         elif o in ["--modulus"]:
             try:
-                modulus = float(a)
+                world_config["modulu"] = float(a)
             except:
                 error("problem with modulus '{}'".format(a))
+                sys.exit(1)
         elif o in ["--angle"]:
             try:
                 angle = float(a)
+                world_config["angle"] = float(a)
             except:
                 error("problem with angle '{}'".format(a))
+                sys.exit(1)
         elif o in ["--color-geometry"]:
             try:
                 tmp = map(float, a.split(","))
                 color_x_min, color_x_max, color_y_min, color_y_max = tmp
+                color_config["geometry"] = x_min, x_max, y_min, y_max
             except:
                 error("problem with geometry '{}' for color image".format(a))
-                color_x_min, color_x_max, color_y_min, color_y_max = -1, 1, -1, 1
                 sys.exit(1)
         elif o in ["--color-modulus"]:
             try:
-                color_modulus = float(a)
+                color_config["modulu"] = float(a)
             except:
                 error("problem with modulus '{}'".format(a))
+                sys.exit(1)
         elif o in ["--color-angle"]:
             try:
-                color_angle = float(a)
+                color_config["angle"] = float(a)
             except:
                 error("problem with angle '{}'".format(a))
+                sys.exit(1)
         elif o in ["--wallpaper"]:
             tab = "wallpaper"
             pattern = a
@@ -1979,7 +1979,7 @@ def main():     # <<<1
         elif o in ["-v", "--verbose"]:
             verbose += 1
         elif o in ["--matrix"]:
-            matrix = parse_matrix(a)
+            function_config["matrix"] = parse_matrix(a)
         elif o == "--color-config":
             cfg = json.loads(a)
             for k in cfg:
@@ -1990,6 +1990,8 @@ def main():     # <<<1
                 world_config[k] = cfg[k]
         elif o == "--function-config":
             cfg = json.loads(a)
+            if "matrix" in cfg:
+                cfg["matrix"] = list_to_matrix(cfg["matrix"])
             for k in cfg:
                 function_config[k] = cfg[k]
         else:
