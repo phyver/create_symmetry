@@ -1730,31 +1730,75 @@ Keyboard shortcuts:
             cfg1 = self.colorwheel.get_config()
             cfg2 = self.world.get_config()
             cfg3 = self.function.get_config()
-            image = make_world(
-                color_filename=cfg1["filename"],
-                color_geometry=cfg1["geometry"],
-                color_modulus=cfg1["modulus"],
-                color_angle=cfg1["angle"],
-                default_color=cfg1["color"],
-                #
-                size=cfg2["size"],
-                modulus=cfg2["modulus"],
-                angle=cfg2["angle"],
-                geometry=cfg2["geometry"],
-                #
-                matrix=cfg3["matrix"],
-                rotational_symmetry=self.function.rotational_symmetry,
-                lattice_matrix=self.function.lattice_matrix,
-                lattice=self.function.current_tab,
-                #
-                message_queue=self.message_queue)
 
-            # FIXME: methode change_preview in World class
-            self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
-            self.world._canvas.delete(self.world._image_id)
-            self.world._image_id = self.world._canvas.create_image(
-                            (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
-                            image=self.world._canvas.tk_img)
+            def make_preview_thread():
+                image = make_world(
+                    color_filename=cfg1["filename"],
+                    color_geometry=cfg1["geometry"],
+                    color_modulus=cfg1["modulus"],
+                    color_angle=cfg1["angle"],
+                    default_color=cfg1["color"],
+                    #
+                    size=(width, height),
+                    modulus=cfg2["modulus"],
+                    angle=cfg2["angle"],
+                    geometry=cfg2["geometry"],
+                    #
+                    matrix=cfg3["matrix"],
+                    rotational_symmetry=self.function.rotational_symmetry,
+                    lattice_matrix=self.function.lattice_matrix,
+                    lattice=self.function.current_tab,
+                    #
+                    message_queue=self.message_queue)
+
+                # FIXME: methode change_preview in World class
+                self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
+                self.world._canvas.delete(self.world._image_id)
+                self.world._image_id = self.world._canvas.create_image(
+                                (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
+                                image=self.world._canvas.tk_img)
+
+                # draw tile
+                if self.function.lattice_matrix is not None:
+
+                    B = self.function.lattice_matrix
+
+                    corner = self.world._canvas.coords(self.world._image_id)
+                    xc = corner[0] - width / 2
+                    yc = corner[1] - height / 2
+
+                    x_min, x_max, y_min, y_max = self.world.geometry
+                    delta_x = (x_max-x_min) / (width-1)
+                    delta_y = (y_max-y_min) / (height-1)
+
+                    x0, y0 = 0, 0
+                    x0, y0 = x0*B[0][0] + y0*B[1][0], x0*B[0][1] + y0*B[1][1]
+                    x0, y0 = xc + (x0 - x_min) / delta_x, yc + (y_max - y0) / delta_y
+
+                    x1, y1 = 1, 0
+                    x1, y1 = x1*B[0][0] + y1*B[1][0], x1*B[0][1] + y1*B[1][1]
+                    x1, y1 = xc + (x1 - x_min) / delta_x, yc + (y_max - y1) / delta_y
+
+                    x2, y2 = 0, 1
+                    x2, y2 = x2*B[0][0] + y2*B[1][0], x2*B[0][1] + y2*B[1][1]
+                    x2, y2 = xc + (x2 - x_min) / delta_x, yc + (y_max - y2) / delta_y
+
+                    x3, y3 = 1, 1
+                    x3, y3 = x3*B[0][0] + y3*B[1][0], x3*B[0][1] + y3*B[1][1]
+                    x3, y3 = xc + (x3 - x_min) / delta_x, yc + (y_max - y3) / delta_y
+
+                    self.world._canvas.create_line(x0, y0,
+                                                   x1, y1,
+                                                   x3, y3,
+                                                   x2, y2,
+                                                   x0, y0,
+                                                   fill="white", width=1)
+
+                    self.world._canvas.create_oval(x0-10, y0-10, x0+10, y0+10,
+                                                   fill="", outline="white")
+
+            threading.Thread(target=make_preview_thread).start()
+
         except Error as e:
             self.message_queue.put("* {}".format(e))
     # >>>2
