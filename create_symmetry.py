@@ -45,6 +45,8 @@ OUTPUT_HEIGHT = 960
 COLOR_SIZE = 200
 COLOR_GEOMETRY = (-1, 1, -1, 1)
 WORLD_GEOMETRY = (-2, 2, -2, 2)
+DEFAULT_COLOR = "black"
+FILENAME_TEMPLATE = "output-{:03}"
 
 
 FRIEZE_TYPES = [    # <<<1
@@ -319,21 +321,23 @@ patterns, in crystallographic convention or orbifold notation.
 ###
 # making an image from a transformation and a colorwheel
 def make_world(                   # <<<1
-        matrix=None,                        # the matrix of the transformation
         color_filename="",                  # image for the colorwheel image
+        color_geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
+        color_modulus="1",
+        color_angle="0",
+        default_color="black",
+        #
         size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),     # size of the output image
         modulus="1",
         angle="0",
         geometry=(-2, 2, -2, 2),                # coordinates of the world
-        color_geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
-        color_modulus="1",
-        color_angle="0",
+        #
+        matrix=None,                        # the matrix of the transformation
         lattice_matrix=None,
         lattice="",
         rotational_symmetry=1,
-        default_color="black",
+        #
         message_queue=None,
-        **_
         ):
 
     assert matrix is not None
@@ -483,6 +487,7 @@ class LabelEntry(Frame):  # <<<1
         self.content = StringVar("")
         self.content.set(value)
         self.entry_widget = Entry(self, textvar=self.content,
+                                  exportselection=0,
                                   state=state, **kwargs)
         self.entry_widget.pack(side=LEFT)
 
@@ -509,6 +514,7 @@ class LabelEntry(Frame):  # <<<1
             self.content.set("")
         else:
             self.content.set(s)
+            self.entry_widget.select_clear()
             if self.convert is not None:
                 self.validate()
     # >>>2
@@ -567,20 +573,14 @@ class ColorWheel(LabelFrame):   # <<<1
         return self._color.get()
     # >>>2
 
-    def __init__(self,              # <<<2
-                 root,
-                 filename=None,
-                 geometry=COLOR_GEOMETRY,
-                 modulus=1,
-                 angle=0,
-                 default_color="black"):
+    def __init__(self, root):        # <<<2
 
         LabelFrame.__init__(self, root)
         self.configure(text="Color Wheel")
 
         self._color = LabelEntry(self,
                                  label="default color",
-                                 value=default_color,
+                                 value=DEFAULT_COLOR,
                                  width=10,
                                  convert=getrgb)
         self._color.grid(row=0, column=0, padx=5, pady=5)
@@ -608,25 +608,25 @@ class ColorWheel(LabelFrame):   # <<<1
         coord_frame.columnconfigure(1, weight=1)
 
         self._x_min = LabelEntry(coord_frame, label="x min",
-                                 value=geometry[0],
+                                 value=COLOR_GEOMETRY[0],
                                  convert=float,
                                  width=4, justify=RIGHT)
         self._x_min.grid(row=0, column=0, padx=5, pady=5)
 
         self._x_max = LabelEntry(coord_frame, label="x max",
-                                 value=geometry[1],
+                                 value=COLOR_GEOMETRY[1],
                                  convert=float,
                                  width=4, justify=RIGHT)
         self._x_max.grid(row=0, column=1, padx=5, pady=5)
 
         self._y_min = LabelEntry(coord_frame, label="y min",
-                                 value=geometry[2],
+                                 value=COLOR_GEOMETRY[2],
                                  convert=float,
                                  width=4, justify=RIGHT)
         self._y_min.grid(row=1, column=0, padx=5, pady=5)
 
         self._y_max = LabelEntry(coord_frame, label="y max",
-                                 value=geometry[3],
+                                 value=COLOR_GEOMETRY[3],
                                  convert=float,
                                  width=4, justify=RIGHT)
         self._y_max.grid(row=1, column=1, padx=5, pady=5)
@@ -638,22 +638,20 @@ class ColorWheel(LabelFrame):   # <<<1
         transformation_frame = LabelFrame(self, text="transformation")
         transformation_frame.grid(row=5, column=0, sticky=E+W, padx=5, pady=5)
         self._modulus = LabelEntry(transformation_frame, label="modulus",
-                                   value=modulus,
+                                   value=1,
                                    convert=float,
                                    width=4)
         self._modulus.pack(padx=5, pady=5)
 
         self._angle = LabelEntry(transformation_frame, label="angle (°)",
-                                 value=angle,
+                                 value=0,
                                  convert=float,
                                  width=4)
         self._angle.pack(padx=5, pady=5)
 
         self.update_defaultcolor()
 
-        if filename is not None:
-            self.change_colorwheel(filename)
-        elif os.path.exists("./colorwheel.jpg"):
+        if os.path.exists("./colorwheel.jpg"):
             self.change_colorwheel("colorwheel.jpg")
         else:
             self.filename = None
@@ -803,13 +801,7 @@ class World(LabelFrame):     # <<<1
         return self._filename_template.get()
     # >>>2
 
-    def __init__(self,              # <<<2
-                 root,
-                 geometry=WORLD_GEOMETRY,
-                 modulus=1,
-                 angle=0,
-                 size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),
-                 filename_template="output-{:03}"):
+    def __init__(self, root):       # <<<2
 
         LabelFrame.__init__(self, root)
         self.configure(text="World")
@@ -834,25 +826,25 @@ class World(LabelFrame):     # <<<1
         coord_frame.columnconfigure(1, weight=1)
 
         self._x_min = LabelEntry(coord_frame, label="x min",
-                                 value=geometry[0],
+                                 value=WORLD_GEOMETRY[0],
                                  convert=float,
                                  width=4, justify=RIGHT)
         self._x_min.grid(row=0, column=0, padx=5, pady=5)
 
         self._x_max = LabelEntry(coord_frame, label="x max",
-                                 value=geometry[1],
+                                 value=WORLD_GEOMETRY[1],
                                  convert=float,
                                  width=4, justify=RIGHT)
         self._x_max.grid(row=0, column=1, padx=5, pady=5)
 
         self._y_min = LabelEntry(coord_frame, label="y min",
-                                 value=geometry[2],
+                                 value=WORLD_GEOMETRY[2],
                                  convert=float,
                                  width=4, justify=RIGHT)
         self._y_min.grid(row=1, column=0, padx=5, pady=5)
 
         self._y_max = LabelEntry(coord_frame, label="y max",
-                                 value=geometry[3],
+                                 value=WORLD_GEOMETRY[3],
                                  convert=float,
                                  width=4, justify=RIGHT)
         self._y_max.grid(row=1, column=1, padx=5, pady=5)
@@ -867,13 +859,13 @@ class World(LabelFrame):     # <<<1
         transformation_frame = LabelFrame(self, text="transformation")
         transformation_frame.grid(row=1, column=1, sticky=E+W, padx=5, pady=5)
         self._modulus = LabelEntry(transformation_frame, label="modulus",
-                                   value=modulus,
+                                   value=1,
                                    convert=float,
                                    width=4)
         self._modulus.pack(padx=5, pady=5)
 
         self._angle = LabelEntry(transformation_frame, label="angle (°)",
-                                 value=angle,
+                                 value=0,
                                  convert=float,
                                  width=4)
         self._angle.pack(padx=5, pady=5)
@@ -900,7 +892,7 @@ class World(LabelFrame):     # <<<1
         self._height.pack(padx=5, pady=5)
 
         self._filename_template = LabelEntry(settings_frame, label=None,
-                                             value=filename_template,
+                                             value=FILENAME_TEMPLATE,
                                              width=15)
         self._filename_template.pack(padx=5, pady=5)
         # >>>3
@@ -970,6 +962,7 @@ class World(LabelFrame):     # <<<1
                 "modulus": self.modulus,
                 "angle": self.angle,
                 "size": self.size,
+                "filename": self.filename_template,
                 }
     # >>>2
 
@@ -987,6 +980,8 @@ class World(LabelFrame):     # <<<1
         if "size" in cfg:
             self._width.set(cfg["size"][0])
             self._height.set(cfg["size"][1])
+        if "filename" in cfg:
+            self._filename_template.set(cfg["filename"])
     # >>>2
 # >>>1
 
@@ -1104,11 +1099,7 @@ class Function(LabelFrame):     # <<<1
             assert False
     # >>>2
 
-    def __init__(self, root, matrix=None,      # <<<2
-                 tab=None,      # which tab to select ("wallpaper", "frieze", "rosette", "raw")
-                 pattern=None,  # which pattern to select (group name, or rotation symmetry for "raw")
-                 pattern_params=None    # additional parameters (lattice parameters, rotation symmetry for rosettes)
-                 ):
+    def __init__(self, root):      # <<<2
 
         LabelFrame.__init__(self, root)
         self.configure(text="Function")
@@ -1193,14 +1184,16 @@ class Function(LabelFrame):     # <<<1
                                          value="0, 1",
                                          convert=str_to_floats,
                                          width=10)
-        self._basis_matrix1.grid(row=0, column=0, sticky=E, padx=5, pady=5)
-        self._basis_matrix2.grid(row=1, column=0, sticky=E, padx=5, pady=5)
+        self._basis_matrix1.grid(row=0, column=0, sticky=E,
+                                 padx=5, pady=(5, 0))
+        self._basis_matrix2.grid(row=1, column=0, sticky=E,
+                                 padx=5, pady=(0, 5))
 
         self._raw_rotation = LabelEntry(raw_tab,
-                                               label="rotational symmetry",
-                                               value=1,
-                                               convert=int,
-                                               width=3)
+                                        label="rotational symmetry",
+                                        value=1,
+                                        convert=int,
+                                        width=3)
         self._raw_rotation.grid(row=2, column=0, padx=5, pady=5)
         # >>>3
 
@@ -1223,10 +1216,7 @@ class Function(LabelFrame):     # <<<1
         self._display_matrix.bind("<BackSpace>", self.remove_entries)
         self._display_matrix.bind("<Delete>", self.remove_entries)
 
-        if matrix is not None:
-            self.change_matrix(matrix)
-        else:
-            self.change_matrix({})
+        self.change_matrix({})
         # >>>3
 
         # change entries <<<3
@@ -1291,40 +1281,6 @@ class Function(LabelFrame):     # <<<1
         # make sure the layout reflects the selected options    <<<3
         self.select_wallpaper()
         self.set_rosette()
-
-        if tab == "wallpaper":
-            self._tabs.select(0)
-            self._wallpaper_combo.current(0)
-            for i in range(len(WALLPAPER_TYPES)):
-                if re.search("\\b{}\\b".format(pattern), WALLPAPER_TYPES[i]):
-                    self._wallpaper_combo.current(i)
-            if pattern_params:
-                self._lattice_params.set(pattern_params)
-
-        elif tab == "frieze" or tab == "rosette":
-            self._tabs.select(1)
-            self._frieze_combo.current(0)
-            for i in range(len(FRIEZE_TYPES)):
-                if re.search("\\b{}\\b".format(pattern), FRIEZE_TYPES[i]):
-                    self._frieze_combo.current(i)
-            if tab == "rosette":
-                self._rosette.set(True)
-                self.set_rosette()
-            if pattern_params:
-                self._rosette_rotation.set(pattern_params)
-
-        elif tab == "raw":
-            self._tabs.select(2)
-            if pattern_params:
-                try:
-                    params = pattern_params.split(",")
-                    self._basis_matrix1.set(", ".join(params[0:2]))
-                    self._basis_matrix2.set(", ".join(params[2:4]))
-                    self._raw_rotation.set(pattern)
-                except:
-                    self._basis_matrix1.set("1, 0")
-                    self._basis_matrix2.set("0, 1")
-                    self._raw_rotation.set(1)
         # >>>3
     # >>>2
 
@@ -1488,7 +1444,7 @@ class Function(LabelFrame):     # <<<1
 
     def get_config(self):           # <<<2
         return {
-                "matrix": str(self.matrix).replace(" ", ""),
+                "matrix": self.matrix,
                 "random_nb_coeff": self._random_nb_coeff.get(),
                 "random_degre": (self._random_min_degre.get(),
                                  self._random_max_degre.get()),
@@ -1531,14 +1487,14 @@ class Function(LabelFrame):     # <<<1
                 self._tabs.select(0)
         if "wallpaper_type" in cfg:
             for i in range(len(WALLPAPER_TYPES)):
-                if re.search("\\b{}\\b".format(cfg["wallpaper_type"]),
+                if re.search("\\b{}\\b".format(re.escape(cfg["wallpaper_type"])),
                              WALLPAPER_TYPES[i]):
                     self._wallpaper_combo.current(i)
         if "lattice_parameters" in cfg:
             self._lattice_params.set(floats_to_str(cfg["lattice_parameters"]))
         if "frieze_type" in cfg:
             for i in range(len(FRIEZE_TYPES)):
-                if re.search("\\b{}\\b".format(cfg["frieze_type"]),
+                if re.search("\\b{}\\b".format(re.escape(cfg["frieze_type"])),
                              FRIEZE_TYPES[i]):
                     self._frieze_combo.current(i)
         if "rosette" in cfg:
@@ -1550,28 +1506,14 @@ class Function(LabelFrame):     # <<<1
             self._basis_matrix2.set(floats_to_str(cfg["raw_basis"][1]))
         if "raw_rotation" in cfg:
             self._raw_rotation.set(cfg["raw_rotation"])
+        self.set_rosette()
     # >>>2
 # >>>1
 
 
 class CreateSymmetry(Tk):      # <<<1
 
-    def __init__(self,      # <<<2
-                 matrix=None,
-                 color_filename=None,
-                 size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),
-                 output_filename="output-{:03}",
-                 modulus=1.0,
-                 angle=0.0,
-                 geometry=(-2, 2, -2, 2),
-                 color_modulus=1.0,
-                 color_angle=0.0,
-                 color_geometry=COLOR_GEOMETRY,
-                 default_color="black",
-                 tab="",
-                 pattern=None,
-                 params=None
-                 ):
+    def __init__(self):     # <<<2
 
         # tk interface
         Tk.__init__(self)
@@ -1586,21 +1528,11 @@ class CreateSymmetry(Tk):      # <<<1
         # s.configure("TButton", background="blue")
 
         # components    <<<3
-        self.colorwheel = ColorWheel(self,
-                                     filename=color_filename,
-                                     geometry=color_geometry,
-                                     modulus=color_modulus,
-                                     angle=color_angle,
-                                     default_color=default_color)
+        self.colorwheel = ColorWheel(self)
 
-        self.world = World(self,
-                           geometry=geometry,
-                           modulus=modulus,
-                           angle=angle,
-                           filename_template=output_filename)
+        self.world = World(self)
 
-        self.function = Function(self, matrix=matrix, tab=tab,
-                                 pattern=pattern, pattern_params=params)
+        self.function = Function(self)
 
         self.colorwheel.grid(row=0, column=0, sticky=N+S, padx=10, pady=10)
         self.world.grid(row=0, column=1, sticky=N+S, padx=10, pady=10)
@@ -1689,10 +1621,10 @@ class CreateSymmetry(Tk):      # <<<1
         """generate background processes for the pending image generation"""
         self.output_running = True
         while not self.output_queue.empty():
-            params = self.output_queue.get(0)
-            params["message_queue"] = self.message_queue
+            config = self.output_queue.get(0)
+            config["message_queue"] = self.message_queue
             p = multiprocessing.Process(target=self.background_output,
-                                        kwargs=params)
+                                        kwargs=config)
             p.start()
             p.join()
         message("output queue empty")
@@ -1753,7 +1685,6 @@ Keyboard shortcuts:
 
         lattice = self.function.current_tab
         pattern = self.function.pattern
-        lattice_params = self.function.lattice_parameters
 
         matrix = self.function.matrix
         if not matrix:
@@ -1763,15 +1694,6 @@ Keyboard shortcuts:
             raise Error("missing parameter: colorwheel")
 
         pattern = self.function.pattern
-        params = ""
-        if lattice == "wallpaper":
-            params = self.function.lattice_parameters
-        elif lattice == "frieze":
-            params = self.function.rotational_symmetry
-        elif lattice == "raw":
-            B = ",".join(map(str, self.function._basis_matrix1.get() +
-                                  self.function._basis_matrix2.get()))
-            params = B
 
         return {
                 "matrix": matrix,
@@ -1787,7 +1709,6 @@ Keyboard shortcuts:
                 "color_angle": color_ang,
                 "default_color": default_color,
                 "pattern": pattern,
-                "params": params
                 }
     # >>>2
 
@@ -1802,10 +1723,27 @@ Keyboard shortcuts:
             height = PREVIEW_SIZE
 
         try:
-            params = self.get_image_parameters()
-            params["size"] = (width, height)
-
-            image = make_world(**params)
+            cfg1 = self.colorwheel.get_config()
+            cfg2 = self.world.get_config()
+            cfg3 = self.function.get_config()
+            image = make_world(
+                color_filename=cfg1["filename"],
+                color_geometry=cfg1["geometry"],
+                color_modulus=cfg1["modulus"],
+                color_angle=cfg1["angle"],
+                default_color=cfg1["color"],
+                #
+                size=cfg2["size"],
+                modulus=cfg2["modulus"],
+                angle=cfg2["angle"],
+                geometry=cfg2["geometry"],
+                #
+                matrix=cfg3["matrix"],
+                rotational_symmetry=self.function.rotational_symmetry,
+                lattice_matrix=self.function.lattice_matrix,
+                lattice=self.function.current_tab,
+                #
+                message_queue=self.message_queue)
 
             # FIXME: methode change_preview in World class
             self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
@@ -1821,18 +1759,45 @@ Keyboard shortcuts:
         width = self.world.width
         height = self.world.height
 
-        params = self.get_image_parameters()
-        params["size"] = (width, height)
-        params["filename_template"] = self.world.filename_template
+        config = {
+                "color": self.colorwheel.get_config(),
+                "world": self.world.get_config(),
+                "function": self.function.get_config(),
+                "params":
+                    {"rotational_symmetry": self.function.rotational_symmetry,
+                     "lattice_matrix": self.function.lattice_matrix}
+                }
 
-        self.output_queue.put(params)
+        self.output_queue.put(config)
         self.process_output()
 
-    def background_output(self, message_queue=None, **params):
+    def background_output(self, message_queue=None, **config):
 
-        filename_template = params.pop("filename_template")
+        filename_template = config["world"]["filename"]
 
-        image = make_world(queue=self.message_queue, **params)
+        cfg1 = config["color"]
+        cfg2 = config["world"]
+        cfg3 = config["function"]
+        cfg4 = config["params"]
+
+        image = make_world(
+                color_filename=cfg1["filename"],
+                color_geometry=cfg1["geometry"],
+                color_modulus=cfg1["modulus"],
+                color_angle=cfg1["angle"],
+                default_color=cfg1["color"],
+                #
+                size=cfg2["size"],
+                modulus=cfg2["modulus"],
+                angle=cfg2["angle"],
+                geometry=cfg2["geometry"],
+                #
+                matrix=cfg3["matrix"],
+                rotational_symmetry=cfg4["rotational_symmetry"],
+                lattice_matrix=cfg4["lattice_matrix"],
+                lattice=cfg3["tab"],
+                #
+                message_queue=self.message_queue)
 
         nb = 1
         while True:
@@ -1845,33 +1810,19 @@ Keyboard shortcuts:
         if message_queue is not None:
             message_queue.put("saved file {}".format(filename+".jpg"))
 
-        style = "--{}={} \\\n            --params={}".format(
-                params["lattice"],
-                params["pattern"],
-                str(params["params"]).strip("()").replace(" ", "")
-                )
-        for k in params:
-            params[k] = str(params[k]).strip("()").replace(" ", "")
+        config["function"]["matrix"] = str(config["function"]["matrix"]).replace(" ", "")
         cmd = ("""#!/bin/sh
 CREATE_SYM={prog_path:}
 
-$CREATE_SYM --color={color_filename:} \\
-            --color-geometry={color_geometry:} \\
-            --color-modulus={color_modulus:} \\
-            --color-angle={color_angle:} \\
-            --geometry={geometry:} \\
-            --modulus={modulus:} \\
-            --angle={angle:} \\
-            --size={size:} \\
-            --matrix='{matrix:}' \\
-            {style:} \\
-            --output={output:} \\
+$CREATE_SYM --color-config='{color_config:}' \\
+            --world-config='{world_config:}' \\
+            --function-config='{function_config:}' \\
             $@
 """.format(
            prog_path=os.path.abspath(sys.argv[0]),
-           output=filename,
-           style=style,
-           **params
+           color_config=json.dumps(config["color"], separators=(",", ":")),
+           world_config=json.dumps(config["world"], separators=(",", ":")),
+           function_config=json.dumps(config["function"], separators=(",", ":")),
            ))
 
         cs = open(filename + ".sh", mode="w")
@@ -1908,6 +1859,10 @@ def main():     # <<<1
                                            nb of rotations for rosettes
                                            basis for lattice (for raw)
 
+    --color-config=...
+    --world-config=...
+    --function-config=...
+
     -v  /  -verbose                     add information messages
     -h  /  --help                       this message
 """)
@@ -1920,6 +1875,7 @@ def main():     # <<<1
             "output=", "size=", "geometry=", "modulus=", "angle=",
             "matrix=", "rotation-symmetry=",
             "wallpaper=", "frieze=", "rosette=", "raw=", "params=",
+            "color-config=", "world-config=", "function-config=",
             "verbose"]
 
     try:
@@ -1946,6 +1902,9 @@ def main():     # <<<1
     tab = None
     pattern = None
     params = None
+    color_config = {}
+    world_config = {}
+    function_config = {}
     global verbose
     for o, a in opts:
         if o in ["-h", "--help"]:
@@ -2021,25 +1980,26 @@ def main():     # <<<1
             verbose += 1
         elif o in ["--matrix"]:
             matrix = parse_matrix(a)
+        elif o == "--color-config":
+            cfg = json.loads(a)
+            for k in cfg:
+                color_config[k] = cfg[k]
+        elif o == "--world-config":
+            cfg = json.loads(a)
+            for k in cfg:
+                world_config[k] = cfg[k]
+        elif o == "--function-config":
+            cfg = json.loads(a)
+            for k in cfg:
+                function_config[k] = cfg[k]
         else:
             assert False
 
-    CreateSymmetry(
-            matrix=matrix,
-            color_filename=color_filename,
-            size=(width, height),
-            geometry=(x_min, x_max, y_min, y_max),
-            modulus=modulus,
-            angle=angle,
-            color_geometry=(color_x_min, color_x_max,
-                            color_y_min, color_y_max),
-            color_modulus=color_modulus,
-            color_angle=color_angle,
-            default_color="black",
-            tab=tab,
-            pattern=pattern,
-            params=params
-            ).mainloop()
+    gui = CreateSymmetry()
+    gui.colorwheel.set_config(color_config)
+    gui.world.set_config(world_config)
+    gui.function.set_config(function_config)
+    gui.mainloop()
 
 # >>>1
 
