@@ -730,7 +730,7 @@ class ColorWheel(LabelFrame):   # <<<1
 
     def reset_geometry(self, *args):        # <<<2
         if self.filename is not None:
-            self.change_colorwheel(self._filename)
+            self.change_colorwheel(self.filename)
         else:
             self._x_min.set(COLOR_GEOMETRY[0])
             self._x_max.set(COLOR_GEOMETRY[1])
