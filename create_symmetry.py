@@ -330,7 +330,7 @@ patterns, in crystallographic convention or orbifold notation.
 ###
 # making an image from a transformation and a colorwheel
 def make_world(                   # <<<1
-        color_filename="",                  # image for the colorwheel image
+        color_filename=None,                  # image for the colorwheel image
         color_geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
         color_modulus="1",
         color_angle="0",
@@ -343,16 +343,17 @@ def make_world(                   # <<<1
         #
         matrix=None,                        # the matrix of the transformation
         lattice_matrix=None,
-        lattice="",
+        lattice=None,
         rotational_symmetry=1,
         #
         message_queue=None,
         ):
 
-    assert matrix is not None
-    assert color_filename != ""
+    if not matrix:
+        raise(Error("no matrix given"))
+    if not color_filename:
+        raise(Error("no colorwheel given"))
 
-    print("lattice: ", lattice_matrix)
     x_min, x_max, y_min, y_max = geometry
     color_x_min, color_x_max, color_y_min, color_y_max = color_geometry
     width, height = size
@@ -2075,7 +2076,7 @@ def main():     # <<<1
     gui.colorwheel.set_config(color_config)
     gui.world.set_config(world_config)
     gui.function.set_config(function_config)
-    gui.make_preview()
+    # gui.make_preview()
     gui.mainloop()
 
 # >>>1
