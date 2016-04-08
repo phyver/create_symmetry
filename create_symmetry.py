@@ -967,11 +967,11 @@ class World(LabelFrame):     # <<<2
         self._y_max.grid(row=1, column=1, padx=5, pady=5)
 
         Button(coord_frame, text="zoom -",
-               command=self.zoom_out).grid(row=3, column=0,
-                                           padx=5, pady=5)
+               command=self.zoom(2**.1)).grid(row=3, column=0,
+                                              padx=5, pady=5)
         Button(coord_frame, text="zoom +",
-               command=self.zoom_in).grid(row=3, column=1,
-                                          padx=5, pady=5)
+               command=self.zoom(2**-.1)).grid(row=3, column=1,
+                                               padx=5, pady=5)
 
         transformation_frame = LabelFrame(self, text="transformation")
         transformation_frame.grid(row=1, column=1, sticky=E+W, padx=5, pady=5)
@@ -1030,16 +1030,11 @@ class World(LabelFrame):     # <<<2
             self.adjust_preview_X()
     # >>>3
 
-    def zoom_out(self, *args):      # <<<3
-        a = 2**0.1
-        for c in ["_x_min", "_x_max", "_y_min", "_y_max"]:
-            self.__dict__[c].set(self.__dict__[c].get() * a)
-    # >>>3
-
-    def zoom_in(self, *args):       # <<<3
-        a = 2**0.1
-        for c in ["_x_min", "_x_max", "_y_min", "_y_max"]:
-            self.__dict__[c].set(self.__dict__[c].get() / a)
+    def zoom(self, alpha):      # <<<3
+        def zoom_tmp(*args):
+            for c in ["_x_min", "_x_max", "_y_min", "_y_max"]:
+                self.__dict__[c].set(self.__dict__[c].get() * alpha)
+        return zoom_tmp
     # >>>3
 
     def translate(self, dx, dy):    # <<<3
@@ -1729,9 +1724,9 @@ class CreateSymmetry(Tk):      # <<<2
                                           self.function.make_matrix,
                                           self.make_preview))
 
-        self.bind("<Control-Key-minus>", sequence(self.world.zoom_out,
+        self.bind("<Control-Key-minus>", sequence(self.world.zoom(2**.1),
                                                   self.make_preview))
-        self.bind("<Control-Key-plus>", sequence(self.world.zoom_in,
+        self.bind("<Control-Key-plus>", sequence(self.world.zoom(2**-.1),
                                                  self.make_preview))
 
         self.bind("<Control-Key-Left>", sequence(self.world.translate(.1, 0),
@@ -1742,6 +1737,8 @@ class CreateSymmetry(Tk):      # <<<2
                                                self.make_preview))
         self.bind("<Control-Key-Down>", sequence(self.world.translate(0, .1),
                                                  self.make_preview))
+        self.bind("<Control-0>", sequence(self.world.reset_geometry,
+                                          self.make_preview))
         # >>>4
 
         self.output_queue = Queue()
@@ -1820,10 +1817,12 @@ Keyboard shortcuts:
   Control--     zoom out the result file and display preview
   Control-+     zoom in the result file and display preview
 
-  Control-Shift-Up  translate the result and display preview
-  Control-Shift-Down
-  Control-Shift-Right
-  Control-Shift-Left
+  Control-0     reset geometry of output and display preview
+
+  Control-Up    translate the result and display preview
+  Control-Down
+  Control-Right
+  Control-Left
 """)
         text.config(state=DISABLED)
 
