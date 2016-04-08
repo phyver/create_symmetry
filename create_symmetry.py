@@ -1042,6 +1042,18 @@ class World(LabelFrame):     # <<<2
             self.__dict__[c].set(self.__dict__[c].get() / a)
     # >>>3
 
+    def translate(self, dx, dy):    # <<<3
+        def translate_tmp(*args):
+            x_min, x_max, y_min, y_max = self.geometry
+            delta_x = x_max - x_min
+            delta_y = y_max - y_min
+            self._x_min.set(x_min + dx * delta_x)
+            self._x_max.set(x_max + dx * delta_x)
+            self._y_min.set(y_min + dy * delta_y)
+            self._y_max.set(y_max + dy * delta_y)
+        return translate_tmp
+    # >>>3
+
     def reset_geometry(self, *args):        # <<<3
         self._x_min.set(WORLD_GEOMETRY[0])
         self._x_max.set(WORLD_GEOMETRY[1])
@@ -1721,6 +1733,15 @@ class CreateSymmetry(Tk):      # <<<2
                                                   self.make_preview))
         self.bind("<Control-Key-plus>", sequence(self.world.zoom_in,
                                                  self.make_preview))
+
+        self.bind("<Control-Key-Left>", sequence(self.world.translate(.1, 0),
+                                                 self.make_preview))
+        self.bind("<Control-Key-Right>", sequence(self.world.translate(-.1, 0),
+                                                  self.make_preview))
+        self.bind("<Control-Key-Up>", sequence(self.world.translate(0, -.1),
+                                               self.make_preview))
+        self.bind("<Control-Key-Down>", sequence(self.world.translate(0, .1),
+                                                 self.make_preview))
         # >>>4
 
         self.output_queue = Queue()
@@ -1798,6 +1819,11 @@ Keyboard shortcuts:
 
   Control--     zoom out the result file and display preview
   Control-+     zoom in the result file and display preview
+
+  Control-Shift-Up  translate the result and display preview
+  Control-Shift-Down
+  Control-Shift-Right
+  Control-Shift-Left
 """)
         text.config(state=DISABLED)
 
