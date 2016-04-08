@@ -81,6 +81,56 @@ WALLPAPER_TYPES = [     # <<<1
         ]
 # >>>1
 
+WALLPAPER_NAMES = [     # <<<1
+            # wallpaper names
+            ("o",     "p1"),
+            ("2222",  "p2"),
+            ("*×",    "cm"),
+            ("2*22",  "cmm"),
+            ("**",    "pm"),
+            ("××",    "pg"),
+            ("*2222", "pmm"),
+            ("22*",   "pmg"),
+            ("22×",   "pgg"),
+            ("442",   "p4"),
+            ("*442",  "p4m"),
+            ("4*2",   "p4g"),
+            ("333",   "p3"),
+            ("3*3",   "p31m"),
+            ("*333",  "p3m1"),
+            ("632",   "p6"),
+            ("*632",  "p6m"),
+            # frieze names
+            ("∞∞",    "p111"),
+            ("22∞",   "p211"),
+            ("∞∞*",   "p1m1"),
+            ("*∞",    "p11m"),
+            ("*22∞",  "p2mm"),
+            ("∞×",    "p11g"),
+            ("2*∞",   "p2mg"),
+        ]
+# >>>1
+
+COLOR_REVERSING = {     # <<<1
+        "o": ["o"],
+        "2222": ["o", "2222", ],
+        "*×": ["××", "**", "o"],
+        "2*22": ["2222", "*×", "*2222", "22*", "22×"],
+        "**": ["o", "××", "** (1)", "** (2)", "*×"],
+        "××": ["o", "××"],
+        "*2222": ["**", "2*22", "2222", "*2222", "22*"],
+        "22*": ["××", "**", "2222", "22*", "22×"],
+        "22×": ["××", "2222"],
+        "442": ["2222", "442"],
+        "*442": ["*2222", "2*22", "442", "*442", "4*2"],
+        "4*2": ["22×", "2*22", "442", ],
+        "333": [],
+        "3*3": ["333"],
+        "*333": ["333", ],
+        "632": ["333"],
+        "*632": ["3*3", "*333", "632"],
+        }
+# >>>1
 
 ###
 # utility functions
@@ -1210,10 +1260,22 @@ class Function(LabelFrame):     # <<<2
         self._lattice_params.pack(padx=5, pady=5)
 
         self._wallpaper_combo.bind("<<ComboboxSelected>>",
-                                   self.select_wallpaper)
+                                   self.update_wallpaper_tab)
+
+        Label(wallpaper_tab,
+              text="color reverting symmetry").pack(padx=5, pady=(20, 0))
+        self._color_reversing_type = StringVar()
+        self._color_reversing_combo = Combobox(
+                wallpaper_tab, width=20, exportselection=0,
+                textvariable=self._color_reversing_type,
+                state="readonly",
+                values=["--"]
+                )
+        self._color_reversing_combo.pack(padx=5, pady=5)
+        self._color_reversing_combo.current(0)
 
         Button(wallpaper_tab, text="make matrix",
-               command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=5)
+               command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=10)
         # # >>>4
 
         # frieze / rosette tab   <<<4
@@ -1351,7 +1413,7 @@ class Function(LabelFrame):     # <<<2
         # >>>4
 
         # make sure the layout reflects the selected options    <<<4
-        self.select_wallpaper()
+        self.update_wallpaper_tab()
         self.set_rosette()
         # >>>4
     # >>>3
@@ -1465,7 +1527,7 @@ class Function(LabelFrame):     # <<<2
             self._rosette_rotation.disable()
     # >>>3
 
-    def select_wallpaper(self, *args):        # <<<3
+    def update_wallpaper_tab(self, *args):        # <<<3
         pattern = self.pattern
         lattice = lattice_type(pattern)
         if lattice == "general":
@@ -1492,6 +1554,12 @@ class Function(LabelFrame):     # <<<2
             pass
         else:
             assert False
+
+        # TODO COLOR_REVERSING combo
+        pattern = self.pattern
+        self._color_reversing_combo.configure(
+                values=["--"] + COLOR_REVERSING[pattern]
+                )
     # >>>3
 
     def make_matrix(self):       # <<<3
@@ -1559,15 +1627,17 @@ class Function(LabelFrame):     # <<<2
                 self._tabs.select(0)
         if "wallpaper_type" in cfg:
             for i in range(len(WALLPAPER_TYPES)):
-                if re.search("(^|\\W){}($|\\W)".format(re.escape(cfg["wallpaper_type"])),
+                if re.search("(^|\\W){}($|\\W)"
+                             .format(re.escape(cfg["wallpaper_type"])),
                              WALLPAPER_TYPES[i]):
                     self._wallpaper_combo.current(i)
-            self.select_wallpaper()
+            self.update_wallpaper_tab()
         if "lattice_parameters" in cfg:
             self._lattice_params.set(floats_to_str(cfg["lattice_parameters"]))
         if "frieze_type" in cfg:
             for i in range(len(FRIEZE_TYPES)):
-                if re.search("(^|\\W){}($|\\W)".format(re.escape(cfg["frieze_type"])),
+                if re.search("(^|\\W){}($|\\W)"
+                             .format(re.escape(cfg["frieze_type"])),
                              FRIEZE_TYPES[i]):
                     self._frieze_combo.current(i)
         if "rosette" in cfg:
@@ -1907,6 +1977,7 @@ Keyboard shortcuts:
 
         self.output_queue.put(config)
         self.process_output()
+    # >>>3
 
     def background_output(self, message_queue=None, **config):
 
