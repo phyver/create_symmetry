@@ -50,34 +50,34 @@ FILENAME_TEMPLATE = "output-{:03}"
 
 
 FRIEZE_TYPES = [    # <<<1
-        "∞∞ (p111)",
-        "22∞ (p211)",
-        "∞∞* (p1m1)",
-        "*∞ (p11m)",
-        "*22∞ (p2mm)",
-        "∞× (p11g)",
-        "2*∞ (p2mg)",
+        "∞∞",       # (p111)",
+        "22∞",      # (p211)",
+        "∞∞*",      # (p1m1)",
+        "*∞",       # (p11m)",
+        "*22∞",     # (p2mm)",
+        "∞×",       # (p11g)",
+        "2*∞",      # (p2mg)",
         ]
 # >>>1
 
 WALLPAPER_TYPES = [     # <<<1
-        "o (p1)" + "   -- general",
-        "2222 (p2)",
-        "*× (cm)" + "   -- rhombic",
-        "2*22 (cmm)",
-        "** (pm)" + "   -- rectangular",
-        "×× (pg)",
-        "*2222 (pmm)",
-        "22* (pmg)",
-        "22× (pgg)",
-        "442 (p4)" + "   -- square",
-        "*442 (p4m)",
-        "4*2 (p4g)",
-        "333 (p3)" + "   -- hexagonal",
-        "3*3 (p31m)",
-        "*333 (p3m1)",
-        "632 (p6)",
-        "*632 (p6m)",
+        "o          --general",        # (p1)" + "   -- general",
+        "2222",     # (p2)",
+        "*×         --rhombic",       # (cm)" + "   -- rhombic",
+        "2*22",     # (cmm)",
+        "**         --rectangular",       # (pm)" + "   -- rectangular",
+        "××",       # (pg)",
+        "*2222",    # (pmm)",
+        "22*",      # (pmg)",
+        "22×",      # (pgg)",
+        "442        --square",      # (p4)" + "   -- square",
+        "*442",     # (p4m)",
+        "4*2",      # (p4g)",
+        "333        --hexagonal",      # (p3)" + "   -- hexagonal",
+        "3*3",      # (p31m)",
+        "*333",     # (p3m1)",
+        "632",      # (p6)",
+        "*632",     # (p6m)",
         ]
 # >>>1
 
@@ -1250,8 +1250,10 @@ class Function(LabelFrame):     # <<<2
         # wallpaper tab      <<<4
         self._wallpaper_type = StringVar()
 
+        Label(wallpaper_tab,
+              text="wallpaper pattern").pack(padx=5, pady=(20, 0))
         self._wallpaper_combo = Combobox(
-                wallpaper_tab, width=20, exportselection=0,
+                wallpaper_tab, width=17, exportselection=0,
                 textvariable=self._wallpaper_type,
                 state="readonly",
                 values=WALLPAPER_TYPES
@@ -1270,10 +1272,10 @@ class Function(LabelFrame):     # <<<2
                                    self.update_wallpaper_tab)
 
         Label(wallpaper_tab,
-              text="color reverting symmetry").pack(padx=5, pady=(20, 0))
+              text="color reverting pattern").pack(padx=5, pady=(20, 0))
         self._color_reversing_type = StringVar()
         self._color_reversing_combo = Combobox(
-                wallpaper_tab, width=20, exportselection=0,
+                wallpaper_tab, width=6, exportselection=0,
                 textvariable=self._color_reversing_type,
                 state="readonly",
                 values=["--"]
@@ -1286,6 +1288,8 @@ class Function(LabelFrame):     # <<<2
         # # >>>4
 
         # frieze / rosette tab   <<<4
+        Label(frieze_tab,
+              text="frieze pattern").pack(padx=5, pady=(20, 0))
         self._frieze_type = StringVar()
         self._frieze_combo = Combobox(frieze_tab, width=15, exportselection=0,
                                       textvariable=self._frieze_type,
@@ -1311,7 +1315,7 @@ class Function(LabelFrame):     # <<<2
         self._rosette_rotation.pack(padx=5, pady=5)
 
         Button(frieze_tab, text="make matrix",
-               command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=5)
+               command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=10)
         # # >>>4
 
         # raw tab   <<<4
@@ -1671,7 +1675,8 @@ class CreateSymmetry(Tk):      # <<<2
         # self.geometry("1200x600")
         self.title("Create Symmetry")
 
-        # s = Style()
+        s = Style()
+        s.configure("*TCombobox*Listbox*Font", "TkFixedFont")
         # s.configure("TFrame", background="red")
         # s.configure("TLabel", background="green")
         # s.configure("TEntry", background="yellow")
@@ -1791,7 +1796,7 @@ class CreateSymmetry(Tk):      # <<<2
         dialog = Toplevel(self)
         dialog.resizable(width=False, height=False)
 
-        text = Text(dialog)
+        text = Text(dialog, height=35)
         text.pack(padx=10, pady=10)
         text.insert(END, """
 create_symmetry.py : a Python script to experiment with
@@ -1966,7 +1971,7 @@ Keyboard shortcuts:
                             self.world._canvas.create_polygon(
                                 x0, y0, x1, y1, x3, y3, x2, y2,
                                 fill="",
-                                width=3, outline="white"))
+                                width=1, outline="white"))
 
                     # self.__tmp.append(
                     #         self.world._canvas.create_oval(
