@@ -24,6 +24,7 @@ from itertools import product
 import re
 import json
 import time
+from ast import literal_eval
 
 # math
 from cmath import exp
@@ -49,7 +50,7 @@ DEFAULT_COLOR = "black"
 FILENAME_TEMPLATE = "output-{:03}"
 
 
-FRIEZE_TYPES = [    # <<<1
+FRIEZE_NAMES = [    # <<<1
         "∞∞",       # (p111)",
         "22∞",      # (p211)",
         "∞∞*",      # (p1m1)",
@@ -60,7 +61,7 @@ FRIEZE_TYPES = [    # <<<1
         ]
 # >>>1
 
-WALLPAPER_TYPES = [     # <<<1
+WALLPAPER_NAMES = [     # <<<1
         "o          --general",        # (p1)" + "   -- general",
         "2222",     # (p2)",
         "*×         --rhombic",       # (cm)" + "   -- rhombic",
@@ -81,56 +82,334 @@ WALLPAPER_TYPES = [     # <<<1
         ]
 # >>>1
 
-WALLPAPER_NAMES = [     # <<<1
-            # wallpaper names
-            ("o",     "p1"),
-            ("2222",  "p2"),
-            ("*×",    "cm"),
-            ("2*22",  "cmm"),
-            ("**",    "pm"),
-            ("××",    "pg"),
-            ("*2222", "pmm"),
-            ("22*",   "pmg"),
-            ("22×",   "pgg"),
-            ("442",   "p4"),
-            ("*442",  "p4m"),
-            ("4*2",   "p4g"),
-            ("333",   "p3"),
-            ("3*3",   "p31m"),
-            ("*333",  "p3m1"),
-            ("632",   "p6"),
-            ("*632",  "p6m"),
-            # frieze names
-            ("∞∞",    "p111"),
-            ("22∞",   "p211"),
-            ("∞∞*",   "p1m1"),
-            ("*∞",    "p11m"),
-            ("*22∞",  "p2mm"),
-            ("∞×",    "p11g"),
-            ("2*∞",   "p2mg"),
-        ]
-# >>>1
-
-COLOR_REVERSING = {     # <<<1
-        "o": ["o"],
-        "2222": ["o", "2222", ],
-        "*×": ["××", "**", "o"],
-        "2*22": ["2222", "*×", "*2222", "22*", "22×"],
-        "**": ["o", "××", "** (1)", "** (2)", "*×"],
-        "××": ["o", "××"],
-        "*2222": ["**", "2*22", "2222", "*2222", "22*"],
-        "22*": ["××", "**", "2222", "22*", "22×"],
-        "22×": ["××", "2222"],
-        "442": ["2222", "442"],
-        "*442": ["*2222", "2*22", "442", "*442", "4*2"],
-        "4*2": ["22×", "2*22", "442", ],
-        "333": [],
-        "3*3": ["333"],
-        "*333": ["333", ],
-        "632": ["333"],
-        "*632": ["3*3", "*333", "632"],
+FRIEZES = {    # <<<1
+        "∞∞": {
+            "IUC": "(p111)",
+            "recipe": []
+            },
+        "22∞": {
+            "IUC": "(p211)",
+            "recipe": ["n,m", "-n,-m"]
+            },
+        "∞∞*": {
+            "IUC": "(p1m1)",
+            "recipe": ["n,m", "m,n"]
+            },
+        "*∞": {
+            "IUC": "(p11m)",
+            "recipe": ["n,m", "-m,-n"]
+            },
+        "*22∞": {
+            "IUC": "(p2mm)",
+            "recipe": ["n,m", "m,n", "-n,-m", "-m,-n"]
+            },
+        "∞×": {
+            "IUC": "(p11g)",
+            "recipe": ["n,m", "-{n+m}(-m,-n)"]
+            },
+        "2*∞": {
+            "IUC": "(p2mg)",
+            "recipe": ["n,m", "-n,-m", "-{n+m}(-m,-n)", "-{n+m}(m,n)"]
+            },
         }
 # >>>1
+
+WALLPAPERS = {          # <<<1
+        "o": {
+              "IUC": "p1",
+              "recipe": [],
+              "lattice": "general",
+              # "basis": lambda *p:  [[1, -p[0]/p[1]], [0, 1/p[1]]]
+              "basis": lambda *p:  [[1, 0], [p[0], p[1]]]
+             },
+        "2222": {
+              "IUC": "p2",
+              "recipe": ["n,m", "-n,-m"],
+              "lattice": "general",
+              # "basis": lambda *p:  [[1, -p[0]/p[1]], [0, 1/p[1]]]
+              "basis": lambda *p:  [[1, 0], [p[0], p[1]]]
+             },
+        "*×": {
+              "IUC": "cm",
+              "recipe": ["n,m", "m,n"],
+              "lattice": "rhombic",
+              # "basis": lambda *p:  [[1, 1/(2*p[0])], [1, -1/(2*p[0])]]
+              "basis": lambda *p:  [[1, -p[0]], [1, p[0]]]
+             },
+        "2*22": {
+              "IUC": "cmm",
+              "recipe": ["n,m", "m,n", "-n,-m", "-m,-n"],
+              "lattice": "rhombic",
+              # "basis": lambda *p:  [[1, 1/(2*p[0])], [1, -1/(2*p[0])]]
+              "basis": lambda *p:  [[1, -p[0]], [1, p[0]]]
+             },
+        "**": {
+              "IUC": "pm",
+              "recipe": ["n,m", "n,-m"],
+              "lattice": "rectangular",
+              # "basis": lambda *p:  [[1, 0], [0, 1/(p[0])]]
+              "basis": lambda *p:  [[1, 0], [0, p[0]]]
+             },
+        "××": {
+              "IUC": "pg",
+              "recipe": ["n,m", "-{n}(n,-m)"],
+              "lattice": "rectangular",
+              # "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
+              "basis": lambda *p:  [[1, 0], [0, p[0]]]
+             },
+        "*2222": {
+              "IUC": "pmm",
+              "recipe": ["n,m", "-n,-m", "-n,m", "n,-m"],
+              "lattice": "rectangular",
+              # "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
+              "basis": lambda *p:  [[1, 0], [0, p[0]]]
+             },
+        "22*": {
+              "IUC": "pmg",
+              "recipe": ["n,m", "-n,-m", "-{n}(n,-m)", "-{n}(n,-m)"],
+              "lattice": "rectangular",
+              # "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
+              "basis": lambda *p:  [[1, 0], [0, p[0]]]
+             },
+        "22×": {
+              "IUC": "pgg",
+              "recipe": ["n,m", "-n,-m", "-{n+m}(n,-m)", "-{n+m}(-n,m)"],
+              "lattice": "rectangular",
+              # "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
+              "basis": lambda *p:  [[1, 0], [0, p[0]]]
+             },
+        "442": {
+              "IUC": "p4",
+              "recipe": [],
+              "lattice": "square",
+              "basis": lambda *p:  [[1, 0], [0, 1]]
+             },
+        "*442": {
+              "IUC": "p4m",
+              "recipe": ["n,m", "m,n"],
+              "lattice": "square",
+              "basis": lambda *p:  [[1, 0], [0, 1]]
+             },
+        "4*2": {
+              "IUC": "p4g",
+              "recipe": ["n,m", "-{n+m}(m,n)"],
+              "lattice": "square",
+              "basis": lambda *p:  [[1, 0], [0, 1]]
+             },
+        "333": {
+              "IUC": "p3",
+              "recipe": [],
+              "lattice": "hexagonal",
+              # "basis": lambda *p:  [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
+              "basis": lambda *p:  [[2/sqrt(3), 0], [1/sqrt(3),1]]
+             },
+        "3*3": {
+              "IUC": "p31m",
+              "recipe": ["n,m", "m,n"],
+              "lattice": "hexagonal",
+              # "basis": lambda *p:  [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
+              "basis": lambda *p:  [[2/sqrt(3), 0], [1/sqrt(3),1]]
+             },
+        "*333": {
+              "IUC": "p3m1",
+              "recipe": ["n,m", "-m,-n"],
+              "lattice": "hexagonal",
+              # "basis": lambda *p:  [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
+              "basis": lambda *p:  [[2/sqrt(3), 0], [1/sqrt(3),1]]
+             },
+        "632": {
+              "IUC": "p6",
+              "recipe": ["n,m", "-n,-m"],
+              "lattice": "hexagonal",
+              # "basis": lambda *p:  [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
+              "basis": lambda *p:  [[2/sqrt(3), 0], [1/sqrt(3),1]]
+             },
+        "*632": {
+              "IUC": "p6m",
+              "recipe": ["n,m", "m,n", "-n,-m", "-m,-n"],
+              "lattice": "hexagonal",
+              # "basis": lambda *p:  [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
+              "basis": lambda *p:  [[2/sqrt(3), 0], [1/sqrt(3),1]]
+             },
+        }
+# >>>1
+
+COLOR_REVERSING_WALLPAPERS = {     # <<<1
+        "o": [
+                {"subgroup": "o",
+                 "recipe": [],
+                 "parity": "1+n+m"}
+            ],
+        "2222": [
+                {"subgroup": "o",
+                 "recipe": ["n,m", "-n,-m"],
+                 "parity": ""},
+                {"subgroup": "2222",
+                 "recipe": ["n,m", "-n,-m"],
+                 "parity": "1+n+m"},
+            ],
+        "*×": [
+                {"subgroup": "××",
+                 "recipe": ["n,m", "-{m}(-n,m)"],
+                 "parity": "1+n+m"},
+                {"subgroup": "**",
+                 "recipe": ["n,m", "-n,m"],
+                 "parity": "1+n+m"},
+                {"subgroup": "o",
+                 "recipe": ["n,m", "-(m,n)"],
+                 "parity": ""}
+            ],
+        "2*22": [
+                {"subgroup": "2222",
+                 "recipe": ["n,m", "-(m,n)", "-n,-m"],
+                 "parity": ""},
+                {"subgroup": "*×",
+                 "recipe": ["n,m", "-(m,n)", "-n,-m"],
+                 "parity": ""},
+                {"subgroup": "*2222",
+                 "recipe": ["n,m", "-n,m", "-n,-m"],
+                 "parity": "n+m+1"},
+                {"subgroup": "22*",
+                 "recipe": ["n,m", "-{m}(-n,m)", "-n,-m"],
+                 "parity": "1+n+m"},
+                {"subgroup": "22×",
+                 "recipe": ["n,m", "-{n+m}(-n,m)", "-n,-m"],
+                 "parity": "1+n+m"}
+            ],
+        "**": [
+                {"subgroup": "o",
+                 "recipe": ["n,m", "-n,m"],
+                 "parity": ""},
+                {"subgroup": "××",
+                 "recipe": ["n,m", "-{m}(-n,m)"],
+                 "parity": "m+1"},
+                {"subgroup": "** (1)",
+                 "recipe": ["n,m", "-n,m"],
+                 "parity": "n+1"},
+                {"subgroup": "** (2)",
+                 "recipe": ["n,m", "-n,m"],
+                 "parity": "m+1"},
+                {"subgroup": "*×",
+                 "recipe": ["n,m", "m,n"],
+                 "parity": "1+n+m"}
+            ],
+        "××": [
+                {"subgroup": "o",
+                 "recipe": ["n,m", "-{m+1}(-n,m)"],
+                 "parity": ""},
+                {"subgroup": "××",
+                 "recipe": ["n,m", "-{m}(-n,m)"],
+                 "parity": "n+1"}
+            ],
+        "*2222": [
+                {"subgroup": "**",
+                 "recipe": ["n,m", "-n,m", "-n,-m"],
+                 "parity": ""},
+                {"subgroup": "2*22",
+                 "recipe": ["n,m", "m,n", "-n,-m"],
+                 "parity": "1+n+m"},
+                {"subgroup": "2222",
+                 "recipe": ["n,m", "-(-n,m)", "-n,-m"],
+                 "parity": ""},
+                {"subgroup": "*2222",
+                 "recipe": ["n,m", "-n,m", "-n,-m"],
+                 "parity": "n+1"},
+                {"subgroup": "22*",
+                 "recipe": ["n,m", "-{m}(-n,m)"],
+                 "parity": "m+1"}
+            ],
+        "22*": [
+                {"subgroup": "××",
+                 "recipe": ["n,m", "-{m}(-n,m)", "-n,-m"],
+                 "parity": ""},
+                {"subgroup": "**",
+                 "recipe": ["n,m", "-{m+1}(-n,m)", "-(-n,-m)"],
+                 "parity": ""},
+                {"subgroup": "2222",
+                 "recipe": ["n,m", "-{m+1}(m,n)", "-n,-m"],
+                 "parity": ""},
+                {"subgroup": "22*",
+                 "recipe": ["n,m", "-{m}(-n,m)", "-n,-m"],
+                 "parity": "1+n"},
+                {"subgroup": "22×",
+                 "recipe": ["n,m", "-{n+m}(-n,m)", "-n,-m"],
+                 "parity": "1+n"}
+            ],
+        "22×": [
+                {"subgroup": "××",
+                 "recipe": ["n,m", "-{n+m}(-n,m)", "-n,-m"],
+                 "parity": ""},
+                {"subgroup": "2222",
+                 "recipe": ["n,m", "-{1+n+m}(m,n)", "-n,-m"],
+                 "parity": ""}
+            ],
+        "442": [
+                {"subgroup": "2222",
+                 "recipe": ["n,m", "-(-m,n)"],
+                 "parity": ""},
+                {"subgroup": "442",
+                 "recipe": ["n,m", "-m,n"],
+                 "parity": "n+m+1"}
+            ],
+        "*442": [
+                {"subgroup": "*2222",
+                 "recipe": ["n,m", "-(-m,n)", "-(m,n)"],
+                 "parity": ""},
+                {"subgroup": "2*22",
+                 "recipe": ["n,m", "-(-m,n)", "m,n"],
+                 "parity": ""},
+                {"subgroup": "442",
+                 "recipe": ["n,m", "-m,n", "-(m,n)"],
+                 "parity": ""},
+                {"subgroup": "*442",
+                 "recipe": ["n,m", "-m,n", "m,n"],
+                 "parity": "1+n+m"},
+                {"subgroup": "4*2",
+                 "recipe": ["n,m", "-m,n", "-{n+m}(m,n)"],
+                 "parity": "1+n+m"}
+                ],
+        "4*2": [
+                {"subgroup": "22×",
+                 "recipe": ["n,m", "-(-m,n)", "-{1+n+m}(m,n)"],
+                 "parity": ""},
+                {"subgroup": "2*22",
+                 "recipe": ["n,m", "-(-m,n)", "-{n+m}(m,n)"],
+                 "parity": ""},
+                {"subgroup": "442",
+                 "recipe": ["n,m", "-m,n", "-{n+m+1}(m,n)"],
+                 "parity": ""}
+                ],
+        "333": [],
+        "3*3": [
+                {"subgroup": "333",
+                 "recipe": ["n,m", "m,-n-m", "-n-m,n", "-(m,n)"],
+                 "parity": ""}
+                ],
+        "*333": [
+                {"subgroup": "333",
+                 "recipe": ["n,m", "m,-n-m", "-n-m,n", "-m,-n"],
+                 "parity": ""}
+                ],
+        "632": [
+                {"subgroup": "333",
+                 "recipe": ["n,m", "m,-n-m", "-n-m,n", "-n,-m"],
+                 "parity": ""}
+                ],
+        "*632": [
+                {"subgroup": "3*3",
+                 "recipe": ["n,m", "m,-n-m", "-n-m,n", "m,n", "-n,-m"],
+                 "parity": ""},
+                {"subgroup": "*333",
+                 "recipe": ["n,m", "m,-n-m", "-n-m,n", "-m,-n", "-(-n,-m)"],
+                 "parity": ""},
+                {"subgroup": "632",
+                 "recipe": ["n,m", "m,-n-m", "-n-m,n", "-n,-m", "-(m,n)"],
+                 "parity": ""}
+                ],
+        }
+# >>>1
+
+assert set(FRIEZES.keys()).isdisjoint(set(WALLPAPERS.keys()))
 
 ###
 # utility functions
@@ -208,187 +487,46 @@ def parse_matrix(s):        # <<<2
 # >>>2
 
 
-def mean(l, M):     # <<<2
-    """compute the mean of the existing values with keys in l,
-from the dictionnary M"""
-    vs = []
-    for k in l:
-        if k in M:
-            vs.append(M[k])
-    return sum(vs) / len(vs)
-# >>>2
-# >>>1
-
-
-###
-# functions to manipulate matrices of functions
-# <<<1
-def lattice_type(pattern):      # <<<2
-    if pattern is None:
-        return "raw"
-    elif pattern in ["o", "p1", "2222", "p2"]:
-        return "general"
-    elif pattern in ["*×", "cm", "2*22", "cmm"]:
-        return "rhombic"
-    elif pattern in ["**", "pm", "××", "pg", "*2222", "pmm",
-                     "22*", "pmg", "22×", "pgg"]:
-        return "rectangular"
-    elif pattern in ["442", "p4", "*442", "p4m", "4*2", "p4g"]:
-        return "square"
-    elif pattern in ["333", "p3", "3*3", "p31m", "*333", "p3m1",
-                     "632", "p6", "*632", "p6m"]:
-        return "hexagonal"
-    elif pattern in ["∞∞", "p111", "22∞", "p211", "∞∞*", "p1m1", "*∞", "p11m",
-                     "*22∞", "p2mm", "∞×", "p11g", "2*∞", "p2mg"]:
-        return "frieze"
-    else:
-        error("unknown pattern type: '{}'".format(pattern))
-
-# >>>2
-
-
-def add_symmetries_to_matrix(M, pattern):     # <<<2
-    """modify the matrix ``M`` to give a matrix with appropriate symetries.
-``pattern`` can be any of the seven types of pattern patterns or wallpaper
-patterns, in crystallographic convention or orbifold notation.
+def add_symmetries(M, recipe):      # <<<2
+    """return a matrix computed from ``M`` by adding symmetries given by ``recipe``
+``recipe`` can be of the form ["n,m", "-n,-m", "-(m,n), -{n+m}(n,m)"]...
 """
-    if pattern in ["p111", "∞∞", "o", "p1", "333", "p3", "442", "p4"]:
+    def others(n, m, recipe):
+        res = []
+        for snm in recipe:
+            if re.match("^[-nm,]*$", snm):
+                nm = snm.replace("n", str(n)).replace("m", str(m))
+                res.append((1, literal_eval(nm)))
+            else:
+                r = re.match("^([-{n+m1}]*)(.*)$", snm)
+                s = r.group(1)
+                nm = r.group(2)
+                nm = nm.replace("n", str(n)).replace("m", str(m))
+                s = s.replace("-", "").replace("{", "").replace("}", "")
+                s = s.replace("n", str(n)).replace("m", str(m))
+                if s == "":
+                    s = -1
+                else:
+                    s = (-1)**(literal_eval(s) % 2)
+                res.append((s, literal_eval(nm)))
+        return res
+
+    R = {}
+    if recipe == []:
         return M
-    elif pattern in ["p211", "22∞", "2222", "p2", "632", "p6"]:
-        R = {}
-        for (n, m) in M:
-            coeff = mean([(n, m), (-n, -m)], M)
-            R[(n, m)] = R[(-n, -m)] = coeff
-        return R
-    elif pattern in ["p1m1", "∞∞*", "*×", "cm", "*442", "p4m", "3*3", "p31m"]:
-        R = {}
-        for (n, m) in M:
-            coeff = mean([(n, m), (m, n)], M)
-            R[(n, m)] = R[(m, n)] = coeff
-        return R
-    elif pattern in ["p11m", "*∞", "*333", "p3m1"]:
-        R = {}
-        for (n, m) in M:
-            coeff = mean([(n, m), (-m, -n)], M)
-            R[(n, m)] = R[(-m, -n)] = coeff
-        return R
-    elif pattern in ["p11g", "∞×"]:
-        R = {}
-        for (n, m) in M:
-            coeff = mean([(n, m), (-m, -n)], M)
-            R[(n, m)] = R[(-m, -n)] = coeff
-        S = {}
-        for (n, m) in R:
-            coeff = R[(n, m)]
-            if (n+m) % 2 == 1:
-                S[(n, m)] = coeff
-                S[(-m, -n)] = -coeff
-            else:
-                S[(n, m)] = coeff
-                S[(-m, -n)] = coeff
-        return S
-    elif pattern in ["p2mm", "*22∞", "2*22", "cmm", "*632", "p6m"]:
-        R = {}
-        for (n, m) in M:
-            coeff = mean([(n, m), (m, n), (-n, -m), (-m, -n)], M)
-            R[(n, m)] = R[(m, n)] = R[(-n, -m)] = R[(-m, -n)] = coeff
-        return R
-    elif pattern in ["p2mg", "2*∞"]:
-        R = {}
-        for (n, m) in M:
-            coeff = mean([(n, m), (m, n), (-n, -m), (-m, -n)], M)
-            R[(n, m)] = R[(m, n)] = R[(-n, -m)] = R[(-m, -n)] = coeff
-        S = {}
-        for (n, m) in R:
-            coeff = R[(n, m)]
-            if (n+m) % 2 == 1:
-                S[(n, m)] = coeff
-                S[(-n, -m)] = coeff
-                S[(m, n)] = -coeff
-                S[(-m, -n)] = -coeff
-            else:
-                S[(n, m)] = coeff
-                S[(-n, -m)] = coeff
-                S[(m, n)] = coeff
-                S[(-m, -n)] = coeff
-        return S
-    elif pattern in ["**", "pm"]:
-        R = {}
-        for (n, m) in M:
-            coeff = mean([(n, m), (n, -m)], M)
-            R[(n, m)] = R[(n, -m)] = coeff
-        return R
-    elif pattern in ["pg", "××"]:
-        R = {}
-        for (n, m) in M:
-            coeff = mean([(n, m), (n, -m)], M)
-            R[(n, m)] = R[(n, -m)] = coeff
-        S = {}
-        for (n, m) in R:
-            coeff = R[(n, m)]
-            if n % 2 == 1:
-                S[(n, m)] = coeff
-                S[(n, -m)] = -coeff
-            else:
-                S[(n, m)] = coeff
-                S[(n, -m)] = coeff
-        return S
-    elif pattern in ["pmm", "*2222"]:
-        R = {}
-        for (n, m) in M:
-            coeff = mean([(n, m), (-n, -m), (-n, m), (n, -m)], M)
-            R[(n, m)] = R[(-n, -m)] = R[(-n, m)] = R[(n, -m)] = coeff
-        return R
-    elif pattern in ["pmg", "22*"]:
-        R = {}
-        for (n, m) in M:
-            coeff = mean([(n, m), (-n, -m), (n, -m), (-n, m)], M)
-            R[(n, m)] = R[(-n, -m)] = R[(n, -m)] = R[(-n, m)] = coeff
-        S = {}
-        for (n, m) in R:
-            coeff = R[(n, m)]
-            if n % 2 == 1:
-                S[(n, m)] = S[(-n, -m)] = coeff
-                S[(n, -m)] = S[(-n, m)] = -coeff
-            else:
-                S[(n, m)] = S[(-n, -m)] = coeff
-                S[(n, -m)] = S[(-n, m)] = coeff
-        return S
-    elif pattern in ["pgg", "22×"]:
-        R = {}
-        for (n, m) in M:
-            coeff = mean([(n, m), (-n, -m), (n, -m), (-n, m)], M)
-            R[(n, m)] = R[(-n, -m)] = R[(n, -m)] = R[(-n, m)] = coeff
-        S = {}
-        for (n, m) in R:
-            coeff = R[(n, m)]
-            if (n+m) % 2 == 1:
-                S[(n, m)] = S[(-n, -m)] = coeff
-                S[(n, -m)] = S[(-n, m)] = -coeff
-            else:
-                S[(n, m)] = S[(-n, -m)] = coeff
-                S[(n, -m)] = S[(-n, m)] = coeff
-        return S
-    elif pattern in ["p4g", "4*2"]:
-        R = {}
-        for (n, m) in M:
-            coeff = mean([(n, m), (m, n)], M)
-            R[(n, m)] = R[(m, n)] = coeff
-        S = {}
-        for (n, m) in R:
-            coeff = R[(n, m)]
-            if (n+m) % 2 == 1:
-                S[(n, m)] = coeff
-                S[(m, n)] = -coeff
-            else:
-                S[(n, m)] = coeff
-                S[(m, n)] = coeff
-        return S
-    else:
-        return M
+    for n, m in M:
+        if (n, m) in R:
+            continue
+        indices = others(n, m, recipe)
+        coeffs = [M[nm] for (s, nm) in indices if nm in M]
+        coeff = sum(coeffs) / len(indices)
+        # coeff = sum(coeffs) / len(coeffs)
+        for s, nm in indices:
+            R[nm] = s * coeff
+
+    return R
 # >>>2
 # >>>1
-
 
 ###
 # making an image from a transformation and a colorwheel
@@ -505,9 +643,9 @@ def make_frieze(zs, matrix,             # <<<2
 # >>>2
 
 
-def make_wallpaper(zs, matrix, lattice_matrix, rotational_symmetry,     # <<<2
+def make_wallpaper(zs, matrix, lattice_basis, rotational_symmetry,     # <<<2
                    message_queue=None):
-    C = invert22(lattice_matrix)
+    C = invert22(lattice_basis)
     res = np.zeros(zs.shape, complex)
 
     w1, w2 = 1, len(matrix)
@@ -546,7 +684,7 @@ def make_world(                   # <<<2
         geometry=(-2, 2, -2, 2),                # coordinates of the world
         #
         matrix=None,                        # the matrix of the transformation
-        lattice_matrix=None,
+        lattice_basis=None,
         lattice=None,
         rotational_symmetry=1,
         #
@@ -565,7 +703,7 @@ def make_world(                   # <<<2
     elif lattice == "frieze":
         res = make_frieze(zs, matrix, message_queue)
     elif lattice == "wallpaper" or lattice == "raw":
-        res = make_wallpaper(zs, matrix, lattice_matrix, rotational_symmetry,
+        res = make_wallpaper(zs, matrix, lattice_basis, rotational_symmetry,
                              message_queue)
 
     return apply_color(res, color_filename,
@@ -611,7 +749,7 @@ class LabelEntry(Frame):  # <<<2
             setattr(self, method, getattr(self.entry_widget, method))
 
         if self.convert is not None:
-            self.bind("<Enter>", self.validate)
+            self.bind("<Return>", self.validate)
             self.bind("<FocusOut>", self.validate)
     # >>>3
 
@@ -1117,7 +1255,7 @@ class Function(LabelFrame):     # <<<2
         if ("wallpaper" in self._tabs.tab(self._tabs.select(), "text")):
             return "wallpaper"
         elif ("frieze" in self._tabs.tab(self._tabs.select(), "text")):
-            if self.rosette:
+            if self._rosette.get():
                 return "rosette"
             else:
                 return "frieze"
@@ -1128,18 +1266,13 @@ class Function(LabelFrame):     # <<<2
     # >>>3
 
     @property
-    def rosette(self):          # <<<3
-        return self._rosette.get()
-    # >>>3
-
-    @property
     def rotational_symmetry(self):      # <<<3
         if self.current_tab == "rosette":
             return self._rosette_rotation.get()
         elif self.current_tab == "raw":
             return self._raw_rotation.get()
         elif self.current_tab == "wallpaper":
-            lattice = lattice_type(self.pattern)
+            lattice = WALLPAPERS[self.pattern]["lattice"]
             if lattice == "square":
                 return 4
             elif lattice == "hexagonal":
@@ -1159,56 +1292,27 @@ class Function(LabelFrame):     # <<<2
         elif self.current_tab == "wallpaper":
             return self._wallpaper_type.get().split()[0]
         elif self.current_tab == "raw":
-            return self._raw_rotation.get()
+            assert False
         else:
             assert False
     # >>>3
 
     @property
-    def lattice_parameters(self):       # <<<3
-        s = self._lattice_params.get()
-
-        if self.current_tab == "raw":
-            return s
+    def sub_pattern(self):          # <<<3
+        if self.current_tab == "wallpaper":
+            sub = self._color_reversing_subpattern.get()
+            if sub == "--":
+                return ""
+            else:
+                return sub
         else:
-            lattice = lattice_type(self.pattern)
-            lattice_params = ()
-
-            try:
-                if lattice == "general":
-                    xsi, eta = s
-                    lattice_params = (xsi, eta)
-                elif lattice == "rhombic":
-                    b = s
-                    lattice_params = b
-                elif lattice == "rectangular":
-                    L = s
-                    lattice_params = L
-            except Exception as e:
-                raise Error("error while getting lattice parameters '{}': {}"
-                            .format(s, e))
-            return lattice_params
+            assert False
     # >>>3
 
     @property
-    def lattice_matrix(self):       # <<<3
+    def lattice_basis(self):       # <<<3
         if self.current_tab == "wallpaper":
-            lattice = lattice_type(self.pattern)
-            if lattice == "general":
-                xsi, eta = self.lattice_parameters
-                return [[1, -xsi/eta], [0, 1/eta]]
-            elif lattice == "rhombic":
-                b, = self.lattice_parameters
-                return [[1, 1/(2*b)], [1, -1/(2*b)]]
-            elif lattice == "rectangular":
-                L, = self.lattice_parameters
-                return [[2, 0], [0, 1/L]]
-            elif lattice == "square":
-                return [[1, 0], [0, 1]]
-            elif lattice == "hexagonal":
-                return [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
-            else:
-                assert False
+            return WALLPAPERS[self.pattern]["basis"](*self._lattice_params.get())
         elif self.current_tab == "raw":
             v1 = self._basis_matrix1.get()
             v2 = self._basis_matrix2.get()
@@ -1221,11 +1325,6 @@ class Function(LabelFrame):     # <<<2
             return None
         else:
             assert False
-    # >>>3
-
-    @property
-    def lattice_matrix_invert(self):       # <<<3
-        return invert22(self.lattice_matrix)
     # >>>3
 
     def __init__(self, root):      # <<<3
@@ -1256,7 +1355,7 @@ class Function(LabelFrame):     # <<<2
                 wallpaper_tab, width=17, exportselection=0,
                 textvariable=self._wallpaper_type,
                 state="readonly",
-                values=WALLPAPER_TYPES
+                values=WALLPAPER_NAMES
                 )
         self._wallpaper_combo.pack(padx=5, pady=5)
         self._wallpaper_combo.current(0)
@@ -1273,10 +1372,10 @@ class Function(LabelFrame):     # <<<2
 
         Label(wallpaper_tab,
               text="color reverting pattern").pack(padx=5, pady=(20, 0))
-        self._color_reversing_type = StringVar()
+        self._color_reversing_subpattern = StringVar()
         self._color_reversing_combo = Combobox(
                 wallpaper_tab, width=6, exportselection=0,
-                textvariable=self._color_reversing_type,
+                textvariable=self._color_reversing_subpattern,
                 state="readonly",
                 values=["--"]
                 )
@@ -1294,7 +1393,7 @@ class Function(LabelFrame):     # <<<2
         self._frieze_combo = Combobox(frieze_tab, width=15, exportselection=0,
                                       textvariable=self._frieze_type,
                                       state="readonly",
-                                      values=FRIEZE_TYPES)
+                                      values=FRIEZE_NAMES)
         self._frieze_combo.pack(padx=5, pady=5)
         self._frieze_combo.current(0)
 
@@ -1532,27 +1631,32 @@ class Function(LabelFrame):     # <<<2
     # >>>3
 
     def set_rosette(self, *args):     # <<<3
-        if self.rosette:
+        if self._rosette.get():
             self._rosette_rotation.enable()
         else:
             self._rosette_rotation.disable()
     # >>>3
 
     def update_wallpaper_tab(self, *args):        # <<<3
-        pattern = self.pattern
-        lattice = lattice_type(pattern)
+        lattice = WALLPAPERS[self.pattern]["lattice"]
         if lattice == "general":
             self._lattice_params.enable()
-            self._lattice_params.set("1, 2")
-            self._lattice_params.label_widget.config(text="xsi, eta")
+            # self._lattice_params.label_widget.config(text="xsi, eta")
+            # self._lattice_params.set("1, 2")
+            self._lattice_params.label_widget.config(text="x, y")
+            self._lattice_params.set("1, 1")
         elif lattice == "rhombic":
             self._lattice_params.enable()
-            self._lattice_params.set("2")
+            # self._lattice_params.label_widget.config(text="b")
+            # self._lattice_params.set("2")
             self._lattice_params.label_widget.config(text="b")
+            self._lattice_params.set(".5")
         elif lattice == "rectangular":
             self._lattice_params.enable()
-            self._lattice_params.set("2")
-            self._lattice_params.label_widget.config(text="L")
+            # self._lattice_params.set("2")
+            # self._lattice_params.label_widget.config(text="L")
+            self._lattice_params.set(".5")
+            self._lattice_params.label_widget.config(text="H")
         elif lattice == "square":
             self._lattice_params.set("")
             self._lattice_params.label_widget.config(text="lattice parameters")
@@ -1566,30 +1670,50 @@ class Function(LabelFrame):     # <<<2
         else:
             assert False
 
-        # TODO COLOR_REVERSING combo
+        # color reversing combo
         pattern = self.pattern
+        CRW = COLOR_REVERSING_WALLPAPERS
         self._color_reversing_combo.configure(
-                values=["--"] + COLOR_REVERSING[pattern]
+                values=["--"] + [g["subgroup"] for g in CRW[pattern]]
                 )
+        self._color_reversing_combo.current(0)
     # >>>3
 
     def make_matrix(self):       # <<<3
+
+        if self.current_tab == "raw":
+            return
+
         M = self.matrix
+        pattern = self.pattern
 
-        if (self.current_tab == "rosette"):
+        if self.current_tab == "rosette":
             p = self.rotational_symmetry
-            try:
-                keys = list(M.keys())
-                for (n, m) in keys:
-                    if (n-m) % p != 0 or n == m:
-                        del M[(n, m)]
-            except Exception as err:
-                error("problem while adding '{}'-fold symmetry "
-                      "to the matrix: {}"
-                      .format(p, err))
-                return
+            keys = list(M.keys())
+            for (n, m) in keys:
+                if (n-m) % p != 0 or n == m:
+                    del M[(n, m)]
+            M = add_symmetries(M, FRIEZES[pattern]["recipe"])
+        elif self.current_tab == "frieze":
+            M = add_symmetries(M, FRIEZES[pattern]["recipe"])
+        elif self.current_tab == "wallpaper":
+            subpattern = self.sub_pattern
 
-        M = add_symmetries_to_matrix(M, self.pattern)
+            if subpattern:
+                sub, = [sub
+                        for sub in COLOR_REVERSING_WALLPAPERS[pattern]
+                        if sub["subgroup"] == subpattern]
+                parity = sub["parity"]
+                if parity:
+                    keys = list(M.keys())
+                    for (n, m) in keys:
+                        e = parity.replace("n", str(n)) .replace("m", str(m))
+                        if literal_eval(e) % 2 == 0:
+                            del M[(n, m)]
+                M = add_symmetries(M, sub["recipe"])
+            else:
+                M = add_symmetries(M, WALLPAPERS[pattern]["recipe"])
+
         self.change_matrix(M)
     # >>>3
 
@@ -1606,7 +1730,7 @@ class Function(LabelFrame):     # <<<2
                 "wallpaper_type": self._wallpaper_type.get(),
                 "lattice_parameters": self._lattice_params.get(),
                 "frieze_type": self._frieze_type.get(),
-                "rosette": self.rosette,
+                "rosette": self._rosette.get(),
                 "rosette_rotation": self._rosette_rotation.get(),
                 "raw_basis": [self._basis_matrix1.get(),
                               self._basis_matrix2.get()],
@@ -1637,19 +1761,19 @@ class Function(LabelFrame):     # <<<2
             else:
                 self._tabs.select(0)
         if "wallpaper_type" in cfg:
-            for i in range(len(WALLPAPER_TYPES)):
+            for i in range(len(WALLPAPER_NAMES)):
                 if re.search("(^|\\W){}($|\\W)"
                              .format(re.escape(cfg["wallpaper_type"])),
-                             WALLPAPER_TYPES[i]):
+                             WALLPAPER_NAMES[i]):
                     self._wallpaper_combo.current(i)
             self.update_wallpaper_tab()
         if "lattice_parameters" in cfg:
             self._lattice_params.set(floats_to_str(cfg["lattice_parameters"]))
         if "frieze_type" in cfg:
-            for i in range(len(FRIEZE_TYPES)):
+            for i in range(len(FRIEZE_NAMES)):
                 if re.search("(^|\\W){}($|\\W)"
                              .format(re.escape(cfg["frieze_type"])),
-                             FRIEZE_TYPES[i]):
+                             FRIEZE_NAMES[i]):
                     self._frieze_combo.current(i)
         if "rosette" in cfg:
             self._rosette.set(cfg["rosette"])
@@ -1870,7 +1994,7 @@ Keyboard shortcuts:
                 "modulus": modulus,
                 "angle": angle,
                 "lattice": lattice,
-                "lattice_matrix": self.function.lattice_matrix,
+                "lattice_basis": self.function.lattice_basis,
                 "rotational_symmetry": self.function.rotational_symmetry,
                 "color_geometry": color_geometry,
                 "color_modulus": color_mod,
@@ -1910,7 +2034,7 @@ Keyboard shortcuts:
                     #
                     matrix=cfg3["matrix"],
                     rotational_symmetry=self.function.rotational_symmetry,
-                    lattice_matrix=self.function.lattice_matrix,
+                    lattice_basis=self.function.lattice_basis,
                     lattice=self.function.current_tab,
                     #
                     message_queue=self.message_queue)
@@ -1924,9 +2048,9 @@ Keyboard shortcuts:
                                 image=self.world._canvas.tk_img)
 
                 # draw tile
-                if self.function.lattice_matrix is not None:
+                if self.function.lattice_basis is not None:
 
-                    B = self.function.lattice_matrix
+                    B = self.function.lattice_basis
 
                     corner = self.world._canvas.coords(self.world._image_id)
                     xc = corner[0] - width / 2
@@ -2002,7 +2126,7 @@ Keyboard shortcuts:
                 "function": self.function.get_config(),
                 "params":
                     {"rotational_symmetry": self.function.rotational_symmetry,
-                     "lattice_matrix": self.function.lattice_matrix}
+                     "lattice_basis": self.function.lattice_basis}
                 }
 
         self.output_queue.put(config)
@@ -2032,7 +2156,7 @@ Keyboard shortcuts:
                 #
                 matrix=cfg3["matrix"],
                 rotational_symmetry=cfg4["rotational_symmetry"],
-                lattice_matrix=cfg4["lattice_matrix"],
+                lattice_basis=cfg4["lattice_basis"],
                 lattice=cfg3["tab"],
                 #
                 message_queue=self.message_queue)
@@ -2227,6 +2351,19 @@ def main():     # <<<1
                 function_config[k] = cfg[k]
         else:
             assert False
+
+    # M = {}
+    # t = 10
+    # for n in range(1, t+1):
+    #     M[(n, 0)] = (-1)**(n+1) * -1j/abs(n*pi)
+    #     M[(-n, 0)] = (-1)**(n+1) * 1j/abs(n*pi)
+    # for n in range(1, t+1):
+    #     M[(0, n)] = (-1)**(n+1) * 1/abs(n*pi)
+    #     M[(0, -n)] = (-1)**(n+1) * -1/abs(n*pi)
+
+    # function_config["matrix"] = M
+    # function_config["tab"] = "raw"
+    # color_config["modulus"] = 1.5
 
     gui = CreateSymmetry()
     gui.colorwheel.set_config(color_config)
