@@ -519,10 +519,8 @@ def add_symmetries(M, recipe):      # <<<2
         res = []
         l = map(lambda s: s.strip(), r.split("="))
         for snm in l:
-            print(snm)
             if re.match("^[-nm,]*$", snm):
                 nm = snm.replace("n", str(n)).replace("m", str(m))
-                print("nm =", nm)
                 res.append((1, literal_eval(nm)))
             else:
                 l = re.match("^([-{n+m1}]*)(.*)$", snm)
@@ -534,9 +532,7 @@ def add_symmetries(M, recipe):      # <<<2
                 if s == "":
                     s = -1
                 else:
-                    print("s =", s)
                     s = (-1)**(literal_eval(s) % 2)
-                print("NM =", nm)
                 res.append((s, literal_eval(nm)))
         return res
 
@@ -1337,7 +1333,7 @@ class Function(LabelFrame):     # <<<2
             if sub == "--":
                 return ""
             else:
-                return sub
+                return sub.split()[0]
         else:
             assert False
     # >>>3
@@ -1482,7 +1478,7 @@ class Function(LabelFrame):     # <<<2
         tmp2.pack()
         self._display_matrix = Listbox(tmp2, selectmode=MULTIPLE,
                                        font="TkFixedFont",
-                                       width=28, height=12)
+                                       width=28, height=11)
         self._display_matrix.pack(side=LEFT)
 
         scrollbar = Scrollbar(tmp2)
@@ -1501,6 +1497,8 @@ class Function(LabelFrame):     # <<<2
                                         width=17, font="TkFixedFont")
         self._change_entry.pack(padx=5, pady=5)
         self._change_entry.bind("<Return>", self.add_entry)
+
+        Button(tmp, text="reset", command=lambda *_: self.change_matrix({})).pack(padx=5, pady=5)
         # >>>4
 
         # random matrix     <<<4
@@ -1764,8 +1762,8 @@ class Function(LabelFrame):     # <<<2
                                  self._random_max_coeff.get()),
                 "random_noise": self._noise.get(),
                 "tab": self.current_tab,
-                "wallpaper_type": self._wallpaper_type.get(),
-                "color_group": self._color_reversing_color_pattern.get(),
+                "wallpaper_type": self.pattern,
+                "color_group": self.color_pattern,
                 "lattice_parameters": self._lattice_params.get(),
                 "frieze_type": self._frieze_type.get(),
                 "rosette": self._rosette.get(),
@@ -2412,10 +2410,10 @@ def main():     # <<<1
     # function_config["tab"] = "raw"
     # color_config["modulus"] = 1.5
 
-    color_config["modulus"] = 2
-    function_config["matrix"] = {(1,1): 1}
-    function_config["wallpaper_type"] = "p4"
-    function_config["color_group"] = "4*2"
+    # color_config["modulus"] = 2
+    # function_config["matrix"] = {(1,1): 1}
+    # function_config["wallpaper_type"] = "p4"
+    # function_config["color_group"] = "4*2"
 
     gui = CreateSymmetry()
     gui.colorwheel.set_config(color_config)
