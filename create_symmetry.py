@@ -62,54 +62,54 @@ FRIEZE_NAMES = [    # <<<1
 # >>>1
 
 WALLPAPER_NAMES = [     # <<<1
-        "o          --general",        # (p1)" + "   -- general",
-        "2222",     # (p2)",
-        "*×         --rhombic",       # (cm)" + "   -- rhombic",
-        "2*22",     # (cmm)",
-        "**         --rectangular",       # (pm)" + "   -- rectangular",
-        "××",       # (pg)",
-        "*2222",    # (pmm)",
-        "22*",      # (pmg)",
-        "22×",      # (pgg)",
-        "442        --square",      # (p4)" + "   -- square",
-        "*442",     # (p4m)",
-        "4*2",      # (p4g)",
-        "333        --hexagonal",      # (p3)" + "   -- hexagonal",
-        "3*3",      # (p31m)",
-        "*333",     # (p3m1)",
-        "632",      # (p6)",
-        "*632",     # (p6m)",
+       "o  (p1)" + "  -- general",
+        "2222  (p2)",
+        "*×  (cm)" + "  -- rhombic",
+        "2*22  (cmm)",
+        "**  (pm)" + "  -- rectangular",
+        "××  (pg)",
+        "*2222  (pmm)",
+        "22*  (pmg)",
+        "22×  (pgg)",
+        "442  (p4)" + "  -- square",
+        "*442  (p4m)",
+        "4*2  (p4g)",
+        "333  (p3)" + "  -- hexagonal",
+        "3*3  (p31m)",
+        "*333  (p3m1)",
+        "632  (p6)",
+        "*632  (p6m)",
         ]
 # >>>1
 
 FRIEZES = {    # <<<1
         "∞∞": {
             "IUC": "(p111)",
-            "recipe": []
+            "recipe": ""
             },
         "22∞": {
             "IUC": "(p211)",
-            "recipe": ["n,m", "-n,-m"]
+            "recipe": "n,m = -n,-m"
             },
         "∞∞*": {
             "IUC": "(p1m1)",
-            "recipe": ["n,m", "m,n"]
+            "recipe": "n,m = m,n"
             },
         "*∞": {
             "IUC": "(p11m)",
-            "recipe": ["n,m", "-m,-n"]
+            "recipe": "n,m = -m,-n"
             },
         "*22∞": {
             "IUC": "(p2mm)",
-            "recipe": ["n,m", "m,n", "-n,-m", "-m,-n"]
+            "recipe": "n,m = m,n = -n,-m = -m,-n"
             },
         "∞×": {
             "IUC": "(p11g)",
-            "recipe": ["n,m", "-{n+m}(-m,-n)"]
+            "recipe": "n,m = -{n+m}(-m,-n)"
             },
         "2*∞": {
             "IUC": "(p2mg)",
-            "recipe": ["n,m", "-n,-m", "-{n+m}(-m,-n)", "-{n+m}(m,n)"]
+            "recipe": "n,m = -n,-m = -{n+m}(-m,-n) = -{n+m}(m,n)"
             },
         }
 # >>>1
@@ -117,297 +117,323 @@ FRIEZES = {    # <<<1
 WALLPAPERS = {          # <<<1
         "o": {
               "IUC": "p1",
-              "recipe": [],
+              "recipe": "",
               "lattice": "general",
               # "basis": lambda *p:  [[1, -p[0]/p[1]], [0, 1/p[1]]]
               "basis": lambda *p:  [[1, 0], [p[0], p[1]]]
              },
         "2222": {
               "IUC": "p2",
-              "recipe": ["n,m", "-n,-m"],
+              "recipe": "n,m = -n,-m",
               "lattice": "general",
               # "basis": lambda *p:  [[1, -p[0]/p[1]], [0, 1/p[1]]]
               "basis": lambda *p:  [[1, 0], [p[0], p[1]]]
              },
         "*×": {
               "IUC": "cm",
-              "recipe": ["n,m", "m,n"],
+              "recipe": "n,m = m,n",
               "lattice": "rhombic",
               # "basis": lambda *p:  [[1, 1/(2*p[0])], [1, -1/(2*p[0])]]
-              "basis": lambda *p:  [[1, -p[0]], [1, p[0]]]
+              "basis": lambda *p:  [[1/2, p[0]/2], [1/2, -p[0]/2]]
              },
         "2*22": {
               "IUC": "cmm",
-              "recipe": ["n,m", "m,n", "-n,-m", "-m,-n"],
+              "recipe": "n,m = m,n = -n,-m = -m,-n",
               "lattice": "rhombic",
               # "basis": lambda *p:  [[1, 1/(2*p[0])], [1, -1/(2*p[0])]]
-              "basis": lambda *p:  [[1, -p[0]], [1, p[0]]]
+              "basis": lambda *p:  [[1/2, p[0]/2], [1/2, -p[0]/2]]
              },
         "**": {
               "IUC": "pm",
-              "recipe": ["n,m", "n,-m"],
+              "recipe": "n,m = n,-m",
               "lattice": "rectangular",
               # "basis": lambda *p:  [[1, 0], [0, 1/(p[0])]]
-              "basis": lambda *p:  [[1, 0], [0, p[0]]]
+              "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
              },
         "××": {
               "IUC": "pg",
-              "recipe": ["n,m", "-{n}(n,-m)"],
+              "recipe": "n,m = -{n}(n,-m)",
               "lattice": "rectangular",
               # "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
-              "basis": lambda *p:  [[1, 0], [0, p[0]]]
+              "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
              },
         "*2222": {
               "IUC": "pmm",
-              "recipe": ["n,m", "-n,-m", "-n,m", "n,-m"],
+              "recipe": "n,m = -n,-m = -n,m = n,-m",
               "lattice": "rectangular",
               # "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
-              "basis": lambda *p:  [[1, 0], [0, p[0]]]
+              "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
              },
         "22*": {
               "IUC": "pmg",
-              "recipe": ["n,m", "-n,-m", "-{n}(n,-m)", "-{n}(n,-m)"],
+              "recipe": "n,m = -n,-m = -{n}(n,-m) = -{n}(-n,m)",
               "lattice": "rectangular",
               # "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
-              "basis": lambda *p:  [[1, 0], [0, p[0]]]
+              "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
              },
         "22×": {
               "IUC": "pgg",
-              "recipe": ["n,m", "-n,-m", "-{n+m}(n,-m)", "-{n+m}(-n,m)"],
+              "recipe": "n,m = -n,-m = -{n+m}(n,-m) = -{n+m}(-n,m)",
               "lattice": "rectangular",
               # "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
-              "basis": lambda *p:  [[1, 0], [0, p[0]]]
+              "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
              },
         "442": {
               "IUC": "p4",
-              "recipe": [],
+              # "recipe": "",
+              "recipe": "n,m = m,-n = -n,-m = -m,n",
               "lattice": "square",
               "basis": lambda *p:  [[1, 0], [0, 1]]
              },
         "*442": {
               "IUC": "p4m",
-              "recipe": ["n,m", "m,n"],
+              # "recipe": "n,m = m,n",
+              "recipe": "n,m = m,-n = -n,-m = -m,n ; n,m = m,n",
               "lattice": "square",
               "basis": lambda *p:  [[1, 0], [0, 1]]
              },
         "4*2": {
               "IUC": "p4g",
-              "recipe": ["n,m", "-{n+m}(m,n)"],
+              # "recipe": "n,m = -{n+m}(m,n)",
+              "recipe": "n,m = m,-n = -n,-m = -m,n ; n,m = -{n+m}(m,n)",
               "lattice": "square",
               "basis": lambda *p:  [[1, 0], [0, 1]]
              },
         "333": {
               "IUC": "p3",
-              "recipe": [],
+              # "recipe": "",
+              "recipe": "n,m = m,-n-m = -n-m,n",
               "lattice": "hexagonal",
               # "basis": lambda *p:  [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
-              "basis": lambda *p:  [[2/sqrt(3), 0], [1/sqrt(3),1]]
+              "basis": lambda *p:  [[1, 0], [-1/2, sqrt(3)/2]]
              },
         "3*3": {
               "IUC": "p31m",
-              "recipe": ["n,m", "m,n"],
+              # "recipe": "n,m = m,n",
+              "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n",
               "lattice": "hexagonal",
               # "basis": lambda *p:  [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
-              "basis": lambda *p:  [[2/sqrt(3), 0], [1/sqrt(3),1]]
+              "basis": lambda *p:  [[1, 0], [-1/2, sqrt(3)/2]]
              },
         "*333": {
               "IUC": "p3m1",
-              "recipe": ["n,m", "-m,-n"],
+              # "recipe": "n,m = -m,-n",
+              "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -m,-n",
               "lattice": "hexagonal",
               # "basis": lambda *p:  [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
-              "basis": lambda *p:  [[2/sqrt(3), 0], [1/sqrt(3),1]]
+              "basis": lambda *p:  [[1, 0], [-1/2, sqrt(3)/2]]
              },
         "632": {
               "IUC": "p6",
-              "recipe": ["n,m", "-n,-m"],
+              # "recipe": "n,m = -n,-m",
+              "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -n,-m",
               "lattice": "hexagonal",
               # "basis": lambda *p:  [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
-              "basis": lambda *p:  [[2/sqrt(3), 0], [1/sqrt(3),1]]
+              "basis": lambda *p:  [[1, 0], [-1/2, sqrt(3)/2]]
              },
         "*632": {
               "IUC": "p6m",
-              "recipe": ["n,m", "m,n", "-n,-m", "-m,-n"],
+              # "recipe": "n,m = m,n = -n,-m = -m,-n",
+              "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n = -n,-m = -m,-n",
               "lattice": "hexagonal",
               # "basis": lambda *p:  [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
-              "basis": lambda *p:  [[2/sqrt(3), 0], [1/sqrt(3),1]]
+              "basis": lambda *p:  [[1, 0], [-1/2, sqrt(3)/2]]
              },
         }
 # >>>1
 
 COLOR_REVERSING_WALLPAPERS = {     # <<<1
         "o": [
-                {"subgroup": "o",
-                 "recipe": [],
+                {"color_group": "o",
+                 "recipe": "",
                  "parity": "1+n+m"}
             ],
         "2222": [
-                {"subgroup": "o",
-                 "recipe": ["n,m", "-n,-m"],
+                {"color_group": "o",
+                 "recipe": "n,m = -(-n,-m)",
                  "parity": ""},
-                {"subgroup": "2222",
-                 "recipe": ["n,m", "-n,-m"],
+                {"color_group": "2222",
+                 "recipe": "n,m = -n,-m",
                  "parity": "1+n+m"},
             ],
         "*×": [
-                {"subgroup": "××",
-                 "recipe": ["n,m", "-{m}(-n,m)"],
+                {"color_group": "××",
+                 "recipe": "n,m = -{m}(-n,m)",
                  "parity": "1+n+m"},
-                {"subgroup": "**",
-                 "recipe": ["n,m", "-n,m"],
+                {"color_group": "**",
+                 "recipe": "n,m = -n,m",
                  "parity": "1+n+m"},
-                {"subgroup": "o",
-                 "recipe": ["n,m", "-(m,n)"],
+                {"color_group": "o",
+                 "recipe": "n,m = -(m,n)",
                  "parity": ""}
             ],
         "2*22": [
-                {"subgroup": "2222",
-                 "recipe": ["n,m", "-(m,n)", "-n,-m"],
+                {"color_group": "2222",
+                 "recipe": "n,m = -(m,n) ; n,m = -n,-m",
                  "parity": ""},
-                {"subgroup": "*×",
-                 "recipe": ["n,m", "-(m,n)", "-n,-m"],
+                {"color_group": "*×",
+                 "recipe": "n,m = -(m,n) ; n,m = -(-n,-m)",
                  "parity": ""},
-                {"subgroup": "*2222",
-                 "recipe": ["n,m", "-n,m", "-n,-m"],
+                {"color_group": "*2222",
+                 "recipe": "n,m = -n,m ; n,m j -n,-m",
                  "parity": "n+m+1"},
-                {"subgroup": "22*",
-                 "recipe": ["n,m", "-{m}(-n,m)", "-n,-m"],
+                {"color_group": "22*",
+                 "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
                  "parity": "1+n+m"},
-                {"subgroup": "22×",
-                 "recipe": ["n,m", "-{n+m}(-n,m)", "-n,-m"],
+                {"color_group": "22×",
+                 "recipe": "n,m = -{n+m}(-n,m) ; n,mu = -n,-m",
                  "parity": "1+n+m"}
             ],
         "**": [
-                {"subgroup": "o",
-                 "recipe": ["n,m", "-n,m"],
+                {"color_group": "o",
+                 "recipe": "n,m = -(-n,m)",
                  "parity": ""},
-                {"subgroup": "××",
-                 "recipe": ["n,m", "-{m}(-n,m)"],
+                {"color_group": "××",
+                 "recipe": "n,m = -{m}(-n,m)",
                  "parity": "m+1"},
-                {"subgroup": "** (1)",
-                 "recipe": ["n,m", "-n,m"],
+                {"color_group": "** (1)",
+                 "recipe": "n,m = -n,m",
                  "parity": "n+1"},
-                {"subgroup": "** (2)",
-                 "recipe": ["n,m", "-n,m"],
+                {"color_group": "** (2)",
+                 "recipe": "n,m = -n,m",
                  "parity": "m+1"},
-                {"subgroup": "*×",
-                 "recipe": ["n,m", "m,n"],
+                {"color_group": "*×",
+                 "recipe": "n,m = m,n",
                  "parity": "1+n+m"}
             ],
         "××": [
-                {"subgroup": "o",
-                 "recipe": ["n,m", "-{m+1}(-n,m)"],
+                {"color_group": "o",
+                 "recipe": "n,m = -{m+1}(-n,m)",
                  "parity": ""},
-                {"subgroup": "××",
-                 "recipe": ["n,m", "-{m}(-n,m)"],
+                {"color_group": "××",
+                 "recipe": "n,m = -{m}(-n,m)",
                  "parity": "n+1"}
             ],
         "*2222": [
-                {"subgroup": "**",
-                 "recipe": ["n,m", "-n,m", "-n,-m"],
+                {"color_group": "**",
+                 "recipe": "n,m = -n,m ; n,m = -(-n,-m)",
                  "parity": ""},
-                {"subgroup": "2*22",
-                 "recipe": ["n,m", "m,n", "-n,-m"],
-                 "parity": "1+n+m"},
-                {"subgroup": "2222",
-                 "recipe": ["n,m", "-(-n,m)", "-n,-m"],
+                {"color_group": "2*22",
+                 "recipe": "n,m = m,n ; n,m = -n,-m",
+                 "parity": "1+n+m"},#
+                {"color_group": "2222",
+                 "recipe": "n,m = -(-n,m) ; n,m = -n,-m",
                  "parity": ""},
-                {"subgroup": "*2222",
-                 "recipe": ["n,m", "-n,m", "-n,-m"],
+                {"color_group": "*2222",
+                 "recipe": "n,m = -n,m ; n,m = -n,-m",
                  "parity": "n+1"},
-                {"subgroup": "22*",
-                 "recipe": ["n,m", "-{m}(-n,m)"],
+                {"color_group": "22*",
+                 "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
                  "parity": "m+1"}
             ],
         "22*": [
-                {"subgroup": "××",
-                 "recipe": ["n,m", "-{m}(-n,m)", "-n,-m"],
+                {"color_group": "××",
+                 "recipe": "n,m = -{m}(-n,m) ; n,m = -(-n,-m)",
                  "parity": ""},
-                {"subgroup": "**",
-                 "recipe": ["n,m", "-{m+1}(-n,m)", "-(-n,-m)"],
+                {"color_group": "**",
+                 "recipe": "n,m = -{m+1}(-n,m) ; n,m = -(-n,-m)",
                  "parity": ""},
-                {"subgroup": "2222",
-                 "recipe": ["n,m", "-{m+1}(m,n)", "-n,-m"],
+                {"color_group": "2222",
+                 "recipe": "n,m = -{m+1}(m,n) ; n,m = -n,-m",
                  "parity": ""},
-                {"subgroup": "22*",
-                 "recipe": ["n,m", "-{m}(-n,m)", "-n,-m"],
+                {"color_group": "22*",
+                 "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
                  "parity": "1+n"},
-                {"subgroup": "22×",
-                 "recipe": ["n,m", "-{n+m}(-n,m)", "-n,-m"],
+                {"color_group": "22×",
+                 "recipe": "n,m = -{n+m}(-n,m) ; n,m = -n,-m",
                  "parity": "1+n"}
             ],
         "22×": [
-                {"subgroup": "××",
-                 "recipe": ["n,m", "-{n+m}(-n,m)", "-n,-m"],
+                {"color_group": "××",
+                 "recipe": "n,m = -{n+m}(-n,m) ; n,m = -(-n,-m)",
                  "parity": ""},
-                {"subgroup": "2222",
-                 "recipe": ["n,m", "-{1+n+m}(m,n)", "-n,-m"],
+                {"color_group": "2222",
+                 "recipe": "n,m = -{1+n+m}(m,n) ; n,m = -n,-m",
                  "parity": ""}
             ],
         "442": [
-                {"subgroup": "2222",
-                 "recipe": ["n,m", "-(-m,n)"],
+                {"color_group": "2222",
+                 "recipe": "n,m = -(-m,n)",
                  "parity": ""},
-                {"subgroup": "442",
-                 "recipe": ["n,m", "-m,n"],
+                {"color_group": "442",
+                 "recipe": "n,m = -m,n",
                  "parity": "n+m+1"}
             ],
         "*442": [
-                {"subgroup": "*2222",
-                 "recipe": ["n,m", "-(-m,n)", "-(m,n)"],
+                {"color_group": "*2222",
+                 "recipe": "n,m = -(-m,n) ; n,m = -(m,n)",
                  "parity": ""},
-                {"subgroup": "2*22",
-                 "recipe": ["n,m", "-(-m,n)", "m,n"],
+                {"color_group": "2*22",
+                 "recipe": "n,m = -(-m,n) ; n,m = m,n",
                  "parity": ""},
-                {"subgroup": "442",
-                 "recipe": ["n,m", "-m,n", "-(m,n)"],
+                {"color_group": "442",
+                 "recipe": "n,m = -m,n ; n,m = -(m,n)",
                  "parity": ""},
-                {"subgroup": "*442",
-                 "recipe": ["n,m", "-m,n", "m,n"],
+                {"color_group": "*442",
+                 "recipe": "n,m = -m,n ; n,m = m,n",
                  "parity": "1+n+m"},
-                {"subgroup": "4*2",
-                 "recipe": ["n,m", "-m,n", "-{n+m}(m,n)"],
+                {"color_group": "4*2",
+                 "recipe": "n,m = -m,n ; n,m = -{n+m}(m,n)",
                  "parity": "1+n+m"}
                 ],
         "4*2": [
-                {"subgroup": "22×",
-                 "recipe": ["n,m", "-(-m,n)", "-{1+n+m}(m,n)"],
+                {"color_group": "22×",
+                 "recipe": "n,m = -(-m,n) ; n,m = -{1+n+m}(m,n)",
                  "parity": ""},
-                {"subgroup": "2*22",
-                 "recipe": ["n,m", "-(-m,n)", "-{n+m}(m,n)"],
+                {"color_group": "2*22",
+                 "recipe": "n,m = -(-m,n) ; n,m = -{n+m}(m,n)",
                  "parity": ""},
-                {"subgroup": "442",
-                 "recipe": ["n,m", "-m,n", "-{n+m+1}(m,n)"],
+                {"color_group": "442",
+                 "recipe": "n,m = -m,n ; n,m = -{n+m+1}(m,n)",
                  "parity": ""}
                 ],
         "333": [],
         "3*3": [
-                {"subgroup": "333",
-                 "recipe": ["n,m", "m,-n-m", "-n-m,n", "-(m,n)"],
+                {"color_group": "333",
+                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(m,n)",
                  "parity": ""}
                 ],
         "*333": [
-                {"subgroup": "333",
-                 "recipe": ["n,m", "m,-n-m", "-n-m,n", "-m,-n"],
+                {"color_group": "333",
+                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-m,-n)",
                  "parity": ""}
                 ],
         "632": [
-                {"subgroup": "333",
-                 "recipe": ["n,m", "m,-n-m", "-n-m,n", "-n,-m"],
+                {"color_group": "333",
+                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-n,-m)",
                  "parity": ""}
                 ],
         "*632": [
-                {"subgroup": "3*3",
-                 "recipe": ["n,m", "m,-n-m", "-n-m,n", "m,n", "-n,-m"],
+                {"color_group": "3*3",
+                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n ; n,m = -(-n,-m)",
                  "parity": ""},
-                {"subgroup": "*333",
-                 "recipe": ["n,m", "m,-n-m", "-n-m,n", "-m,-n", "-(-n,-m)"],
+                {"color_group": "*333",
+                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -m,-n ; n,m = -(-n,-m)",
                  "parity": ""},
-                {"subgroup": "632",
-                 "recipe": ["n,m", "m,-n-m", "-n-m,n", "-n,-m", "-(m,n)"],
+                {"color_group": "632",
+                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -n,-m ; n,m = -(m,n)",
                  "parity": ""}
                 ],
         }
 # >>>1
+
+def invert(C):
+    R = {}
+    for p in WALLPAPER_NAMES:
+        R[p.split()[0]] = []
+    for p in C:
+        for sub in C[p]:
+            s = sub["color_group"].split()[0]
+            sub["color_group"] = p
+            R[s].append(sub)
+    return R
+def pr(M):
+    for p in M:
+        for sub in M[p]:
+            print(sub)
+# pr(COLOR_REVERSING_WALLPAPERS)
+COLOR_REVERSING_WALLPAPERS = invert(COLOR_REVERSING_WALLPAPERS)
+# pr(COLOR_REVERSING_WALLPAPERS)
 
 assert set(FRIEZES.keys()).isdisjoint(set(WALLPAPERS.keys()))
 
@@ -489,42 +515,51 @@ def parse_matrix(s):        # <<<2
 
 def add_symmetries(M, recipe):      # <<<2
     """return a matrix computed from ``M`` by adding symmetries given by ``recipe``
-``recipe`` can be of the form ["n,m", "-n,-m", "-(m,n), -{n+m}(n,m)"]...
+``recipe`` can be of the form "n,m = -n,-m = -(m,n) ; n,m = -{n+m}(n,m)"...
 """
-    def others(n, m, recipe):
+    def others(n, m, r):
+        if r == "":
+            return [(1, (n, m))]
         res = []
-        for snm in recipe:
+        l = map(lambda s: s.strip(), r.split("="))
+        for snm in l:
+            print(snm)
             if re.match("^[-nm,]*$", snm):
                 nm = snm.replace("n", str(n)).replace("m", str(m))
+                print("nm =", nm)
                 res.append((1, literal_eval(nm)))
             else:
-                r = re.match("^([-{n+m1}]*)(.*)$", snm)
-                s = r.group(1)
-                nm = r.group(2)
-                nm = nm.replace("n", str(n)).replace("m", str(m))
+                l = re.match("^([-{n+m1}]*)(.*)$", snm)
+                s = l.group(1)
                 s = s.replace("-", "").replace("{", "").replace("}", "")
                 s = s.replace("n", str(n)).replace("m", str(m))
+                nm = l.group(2)
+                nm = nm.replace("n", str(n)).replace("m", str(m))
                 if s == "":
                     s = -1
                 else:
+                    print("s =", s)
                     s = (-1)**(literal_eval(s) % 2)
+                print("NM =", nm)
                 res.append((s, literal_eval(nm)))
         return res
 
-    R = {}
-    if recipe == []:
-        return M
-    for n, m in M:
-        if (n, m) in R:
-            continue
-        indices = others(n, m, recipe)
-        coeffs = [M[nm] for (s, nm) in indices if nm in M]
-        coeff = sum(coeffs) / len(indices)
-        # coeff = sum(coeffs) / len(coeffs)
-        for s, nm in indices:
-            R[nm] = s * coeff
+    R1 = M
+    R2 = {}
+    for r in recipe.split(";"):
+        for n, m in R1:
+            if (n, m) in R2:
+                continue
+            indices = others(n, m, r)
+            coeffs = [R1[nm] for (s, nm) in indices if nm in R1]
+            # coeff = sum(coeffs) / len(indices)
+            coeff = sum(coeffs) / len(coeffs)
+            for s, nm in indices:
+                R2[nm] = s * coeff
+        R1 = R2
+        R2 = {}
 
-    return R
+    return R1
 # >>>2
 # >>>1
 
@@ -702,7 +737,9 @@ def make_world(                   # <<<2
         res = make_rosette(zs, matrix, message_queue)
     elif lattice == "frieze":
         res = make_frieze(zs, matrix, message_queue)
-    elif lattice == "wallpaper" or lattice == "raw":
+    elif lattice == "wallpaper":
+        res = make_wallpaper(zs, matrix, lattice_basis, 1, message_queue)
+    elif lattice == "raw":
         res = make_wallpaper(zs, matrix, lattice_basis, rotational_symmetry,
                              message_queue)
 
@@ -1350,7 +1387,7 @@ class Function(LabelFrame):     # <<<2
         self._wallpaper_type = StringVar()
 
         Label(wallpaper_tab,
-              text="wallpaper pattern").pack(padx=5, pady=(20, 0))
+              text="symmetry group").pack(padx=5, pady=(20, 0))
         self._wallpaper_combo = Combobox(
                 wallpaper_tab, width=17, exportselection=0,
                 textvariable=self._wallpaper_type,
@@ -1371,7 +1408,7 @@ class Function(LabelFrame):     # <<<2
                                    self.update_wallpaper_tab)
 
         Label(wallpaper_tab,
-              text="color reverting pattern").pack(padx=5, pady=(20, 0))
+              text="color symmetry group").pack(padx=5, pady=(20, 0))
         self._color_reversing_subpattern = StringVar()
         self._color_reversing_combo = Combobox(
                 wallpaper_tab, width=6, exportselection=0,
@@ -1674,7 +1711,7 @@ class Function(LabelFrame):     # <<<2
         pattern = self.pattern
         CRW = COLOR_REVERSING_WALLPAPERS
         self._color_reversing_combo.configure(
-                values=["--"] + [g["subgroup"] for g in CRW[pattern]]
+                values=["--"] + [g["color_group"] for g in CRW[pattern]]
                 )
         self._color_reversing_combo.current(0)
     # >>>3
@@ -1697,18 +1734,20 @@ class Function(LabelFrame):     # <<<2
         elif self.current_tab == "frieze":
             M = add_symmetries(M, FRIEZES[pattern]["recipe"])
         elif self.current_tab == "wallpaper":
+            M = add_symmetries(M, WALLPAPERS[pattern]["recipe"])
             subpattern = self.sub_pattern
-
             if subpattern:
+                # M = add_symmetries(M, WALLPAPERS[pattern]["recipe"])
+                # M = add_symmetries(M, WALLPAPERS[subpattern]["recipe"])
                 sub, = [sub
                         for sub in COLOR_REVERSING_WALLPAPERS[pattern]
-                        if sub["subgroup"] == subpattern]
+                        if sub["color_group"] == subpattern]
                 parity = sub["parity"]
                 if parity:
                     keys = list(M.keys())
                     for (n, m) in keys:
                         e = parity.replace("n", str(n)) .replace("m", str(m))
-                        if literal_eval(e) % 2 == 0:
+                        if literal_eval(e) % 2 == 1:
                             del M[(n, m)]
                 M = add_symmetries(M, sub["recipe"])
             else:
@@ -1728,6 +1767,7 @@ class Function(LabelFrame):     # <<<2
                 "random_noise": self._noise.get(),
                 "tab": self.current_tab,
                 "wallpaper_type": self._wallpaper_type.get(),
+                "color_group": self._color_reversing_subpattern.get(),
                 "lattice_parameters": self._lattice_params.get(),
                 "frieze_type": self._frieze_type.get(),
                 "rosette": self._rosette.get(),
@@ -1762,18 +1802,25 @@ class Function(LabelFrame):     # <<<2
                 self._tabs.select(0)
         if "wallpaper_type" in cfg:
             for i in range(len(WALLPAPER_NAMES)):
-                if re.search("(^|\\W){}($|\\W)"
-                             .format(re.escape(cfg["wallpaper_type"])),
-                             WALLPAPER_NAMES[i]):
+                tmp = WALLPAPER_NAMES[i]
+                tmp = tmp.replace("(", " ").replace(")", " ")
+                tmp = tmp.split()
+                if cfg["wallpaper_type"] in tmp:
                     self._wallpaper_combo.current(i)
             self.update_wallpaper_tab()
+        if "color_group" in cfg:
+            l = self._color_reversing_combo.cget("values")
+            for i in range(len(l)):
+                if l[i] == cfg["color_group"]:
+                    self._color_reversing_combo.current(i),
         if "lattice_parameters" in cfg:
             self._lattice_params.set(floats_to_str(cfg["lattice_parameters"]))
         if "frieze_type" in cfg:
             for i in range(len(FRIEZE_NAMES)):
-                if re.search("(^|\\W){}($|\\W)"
-                             .format(re.escape(cfg["frieze_type"])),
-                             FRIEZE_NAMES[i]):
+                tmp = FRIEZE_NAMES[i]
+                tmp = tmp.replace("(", " ").replace(")", " ")
+                tmp = tmp.split()
+                if cfg["frieze_type"] in tmp:
                     self._frieze_combo.current(i)
         if "rosette" in cfg:
             self._rosette.set(cfg["rosette"])
@@ -2364,6 +2411,11 @@ def main():     # <<<1
     # function_config["matrix"] = M
     # function_config["tab"] = "raw"
     # color_config["modulus"] = 1.5
+
+    color_config["modulus"] = 2
+    function_config["matrix"] = { (1,1): 1 }
+    function_config["wallpaper_type"] = "333"
+    function_config["color_group"] = "632"
 
     gui = CreateSymmetry()
     gui.colorwheel.set_config(color_config)
