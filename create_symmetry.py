@@ -50,65 +50,33 @@ DEFAULT_COLOR = "black"
 FILENAME_TEMPLATE = "output-{:03}"
 
 
-FRIEZE_NAMES = [    # <<<1
-        "∞∞",       # (p111)",
-        "22∞",      # (p211)",
-        "∞∞*",      # (p1m1)",
-        "*∞",       # (p11m)",
-        "*22∞",     # (p2mm)",
-        "∞×",       # (p11g)",
-        "2*∞",      # (p2mg)",
-        ]
-# >>>1
-
-WALLPAPER_NAMES = [     # <<<1
-       "o  (p1)" + "  -- general",
-        "2222  (p2)",
-        "*×  (cm)" + "  -- rhombic",
-        "2*22  (cmm)",
-        "**  (pm)" + "  -- rectangular",
-        "××  (pg)",
-        "*2222  (pmm)",
-        "22*  (pmg)",
-        "22×  (pgg)",
-        "442  (p4)" + "  -- square",
-        "*442  (p4m)",
-        "4*2  (p4g)",
-        "333  (p3)" + "  -- hexagonal",
-        "3*3  (p31m)",
-        "*333  (p3m1)",
-        "632  (p6)",
-        "*632  (p6m)",
-        ]
-# >>>1
-
 FRIEZES = {    # <<<1
         "∞∞": {
-            "IUC": "(p111)",
+            "IUC": "p111",
             "recipe": ""
             },
         "22∞": {
-            "IUC": "(p211)",
+            "IUC": "p211",
             "recipe": "n,m = -n,-m"
             },
         "∞∞*": {
-            "IUC": "(p1m1)",
+            "IUC": "p1m1",
             "recipe": "n,m = m,n"
             },
         "*∞": {
-            "IUC": "(p11m)",
+            "IUC": "p11m",
             "recipe": "n,m = -m,-n"
             },
         "*22∞": {
-            "IUC": "(p2mm)",
+            "IUC": "p2mm",
             "recipe": "n,m = m,n = -n,-m = -m,-n"
             },
         "∞×": {
-            "IUC": "(p11g)",
+            "IUC": "p11g",
             "recipe": "n,m = -{n+m}(-m,-n)"
             },
         "2*∞": {
-            "IUC": "(p2mg)",
+            "IUC": "p2mg",
             "recipe": "n,m = -n,-m = -{n+m}(-m,-n) = -{n+m}(m,n)"
             },
         }
@@ -242,200 +210,228 @@ WALLPAPERS = {          # <<<1
         }
 # >>>1
 
+assert set(FRIEZES.keys()).isdisjoint(set(WALLPAPERS.keys()))
+
+FRIEZE_NAMES = [    # <<<1
+        "∞∞",
+        "22∞",
+        "∞∞*",
+        "*∞",
+        "*22∞",
+        "∞×",
+        "2*∞",
+        ]
+for i in range(len(FRIEZE_NAMES)):
+    p = FRIEZE_NAMES[i]
+    iuc = FRIEZES[p]["IUC"]
+    FRIEZE_NAMES[i] = "{} ({})".format(p, iuc)
+# >>>1
+
+WALLPAPER_NAMES = [     # <<<1
+        "o",       # general
+        "2222",
+        "*×",      # rhombic
+        "2*22",
+        "**",      # rectangular
+        "××",
+        "*2222",
+        "22*",
+        "22×",
+        "442",     # square
+        "*442",
+        "4*2",
+        "333",     # hexagonal
+        "3*3",
+        "*333",
+        "632",
+        "*632",
+        ]
+_l = None
+for i in range(len(WALLPAPER_NAMES)):
+    p = WALLPAPER_NAMES[i]
+    iuc = WALLPAPERS[p]["IUC"]
+    l = WALLPAPERS[p]["lattice"]
+    WALLPAPER_NAMES[i] = "{} ({}) {}".format(p,
+                                             iuc,
+                                             "" if _l == l else ("-- "+l))
+    _l = l
+# >>>1
+
 COLOR_REVERSING_WALLPAPERS = {     # <<<1
-        "o": [
-                {"color_group": "o",
-                 "recipe": "",
-                 "parity": "1+n+m"}
-            ],
-        "2222": [
-                {"color_group": "o",
-                 "recipe": "n,m = -(-n,-m)",
-                 "parity": ""},
-                {"color_group": "2222",
-                 "recipe": "n,m = -n,-m",
-                 "parity": "1+n+m"},
-            ],
-        "*×": [
-                {"color_group": "××",
-                 "recipe": "n,m = -{m}(-n,m)",
-                 "parity": "1+n+m"},
-                {"color_group": "**",
-                 "recipe": "n,m = -n,m",
-                 "parity": "1+n+m"},
-                {"color_group": "o",
-                 "recipe": "n,m = -(m,n)",
-                 "parity": ""}
-            ],
-        "2*22": [
-                {"color_group": "2222",
-                 "recipe": "n,m = -(m,n) ; n,m = -n,-m",
-                 "parity": ""},
-                {"color_group": "*×",
-                 "recipe": "n,m = -(m,n) ; n,m = -(-n,-m)",
-                 "parity": ""},
-                {"color_group": "*2222",
-                 "recipe": "n,m = -n,m ; n,m j -n,-m",
-                 "parity": "n+m+1"},
-                {"color_group": "22*",
-                 "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
-                 "parity": "1+n+m"},
-                {"color_group": "22×",
-                 "recipe": "n,m = -{n+m}(-n,m) ; n,mu = -n,-m",
-                 "parity": "1+n+m"}
-            ],
-        "**": [
-                {"color_group": "o",
-                 "recipe": "n,m = -(-n,m)",
-                 "parity": ""},
-                {"color_group": "××",
-                 "recipe": "n,m = -{m}(-n,m)",
-                 "parity": "m+1"},
-                {"color_group": "** (1)",
-                 "recipe": "n,m = -n,m",
-                 "parity": "n+1"},
-                {"color_group": "** (2)",
-                 "recipe": "n,m = -n,m",
-                 "parity": "m+1"},
-                {"color_group": "*×",
-                 "recipe": "n,m = m,n",
-                 "parity": "1+n+m"}
-            ],
-        "××": [
-                {"color_group": "o",
-                 "recipe": "n,m = -{m+1}(-n,m)",
-                 "parity": ""},
-                {"color_group": "××",
-                 "recipe": "n,m = -{m}(-n,m)",
-                 "parity": "n+1"}
-            ],
         "*2222": [
-                {"color_group": "**",
-                 "recipe": "n,m = -n,m ; n,m = -(-n,-m)",
-                 "parity": ""},
-                {"color_group": "2*22",
-                 "recipe": "n,m = m,n ; n,m = -n,-m",
-                 "parity": "1+n+m"},#
-                {"color_group": "2222",
-                 "recipe": "n,m = -(-n,m) ; n,m = -n,-m",
+                {"color_group": "*442",
+                 "recipe": "n,m = -(-m,n) ; n,m = -(m,n)",
                  "parity": ""},
                 {"color_group": "*2222",
                  "recipe": "n,m = -n,m ; n,m = -n,-m",
                  "parity": "n+1"},
-                {"color_group": "22*",
-                 "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
-                 "parity": "m+1"}
+                {"color_group": "2*22",
+                 "recipe": "n,m = -n,m ; n,m j -n,-m",
+                 "parity": "n+m+1"}
             ],
-        "22*": [
+        "××": [
                 {"color_group": "××",
-                 "recipe": "n,m = -{m}(-n,m) ; n,m = -(-n,-m)",
-                 "parity": ""},
-                {"color_group": "**",
-                 "recipe": "n,m = -{m+1}(-n,m) ; n,m = -(-n,-m)",
-                 "parity": ""},
-                {"color_group": "2222",
-                 "recipe": "n,m = -{m+1}(m,n) ; n,m = -n,-m",
-                 "parity": ""},
-                {"color_group": "22*",
-                 "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
-                 "parity": "1+n"},
+                 "recipe": "n,m = -{m}(-n,m)",
+                 "parity": "n+1"},
                 {"color_group": "22×",
-                 "recipe": "n,m = -{n+m}(-n,m) ; n,m = -n,-m",
-                 "parity": "1+n"}
-            ],
-        "22×": [
-                {"color_group": "××",
                  "recipe": "n,m = -{n+m}(-n,m) ; n,m = -(-n,-m)",
                  "parity": ""},
-                {"color_group": "2222",
-                 "recipe": "n,m = -{1+n+m}(m,n) ; n,m = -n,-m",
+                {"color_group": "22*",
+                 "recipe": "n,m = -{m}(-n,m) ; n,m = -(-n,-m)",
+                 "parity": ""},
+                {"color_group": "*×",
+                 "recipe": "n,m = -{m}(-n,m)",
+                 "parity": "1+n+m"},
+                {"color_group": "**",
+                 "recipe": "n,m = -{m}(-n,m)",
+                 "parity": "m+1"}
+            ],
+        "*333": [
+                {"color_group": "*632",
+                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -m,-n ; n,m = -(-n,-m)",
                  "parity": ""}
             ],
-        "442": [
+        "22×": [
+                {"color_group": "2*22",
+                 "recipe": "n,m = -{n+m}(-n,m) ; n,mu = -n,-m",
+                 "parity": "1+n+m"},
+                {"color_group": "22*",
+                 "recipe": "n,m = -{n+m}(-n,m) ; n,m = -n,-m",
+                 "parity": "1+n"},
+                {"color_group": "4*2",
+                 "recipe": "n,m = -(-m,n) ; n,m = -{1+n+m}(m,n)",
+                 "parity": ""}
+            ],
+        "22*": [
+                {"color_group": "*2222",
+                 "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
+                 "parity": "m+1"},
+                {"color_group": "2*22",
+                 "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
+                 "parity": "1+n+m"},
+                {"color_group": "22*",
+                 "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
+                 "parity": "1+n"}
+            ],
+        "2222": [
+                {"color_group": "*2222",
+                 "recipe": "n,m = -(-n,m) ; n,m = -n,-m",
+                 "parity": ""},
+                {"color_group": "22×",
+                 "recipe": "n,m = -{1+n+m}(m,n) ; n,m = -n,-m",
+                 "parity": ""},
+                {"color_group": "2*22",
+                 "recipe": "n,m = -(m,n) ; n,m = -n,-m",
+                 "parity": ""},
                 {"color_group": "2222",
+                 "recipe": "n,m = -n,-m",
+                 "parity": "1+n+m"},
+                {"color_group": "22*",
+                 "recipe": "n,m = -{m+1}(m,n) ; n,m = -n,-m",
+                 "parity": ""},
+                {"color_group": "442",
                  "recipe": "n,m = -(-m,n)",
+                 "parity": ""}
+            ],
+        "632": [
+                {"color_group": "*632",
+                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -n,-m ; n,m = -(m,n)",
+                 "parity": ""}
+            ],
+        "**": [
+                {"color_group": "*2222",
+                 "recipe": "n,m = -n,m ; n,m = -(-n,-m)",
+                 "parity": ""},
+                {"color_group": "22*",
+                 "recipe": "n,m = -{m+1}(-n,m) ; n,m = -(-n,-m)",
+                 "parity": ""},
+                {"color_group": "*×",
+                 "recipe": "n,m = -n,m",
+                 "parity": "1+n+m"},
+                {"color_group": "**",
+                 "recipe": "n,m = -n,m",
+                 "parity": "n+1"},
+                {"color_group": "**",
+                 "recipe": "n,m = -n,m",
+                 "parity": "m+1"}
+            ],
+        "3*3": [
+                {"color_group": "*632",
+                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n ; n,m = -(-n,-m)",
+                 "parity": ""}
+            ],
+        "4*2": [
+                {"color_group": "*442",
+                 "recipe": "n,m = -m,n ; n,m = -{n+m}(m,n)",
+                 "parity": "1+n+m"}
+            ],
+        "2*22": [
+                {"color_group": "*442",
+                 "recipe": "n,m = -(-m,n) ; n,m = m,n",
+                 "parity": ""},
+                {"color_group": "*2222",
+                 "recipe": "n,m = m,n ; n,m = -n,-m",
+                 "parity": "1+n+m"},
+                {"color_group": "4*2",
+                 "recipe": "n,m = -(-m,n) ; n,m = -{n+m}(m,n)",
+                 "parity": ""}
+            ],
+        "333": [
+                {"color_group": "*333",
+                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-m,-n)",
+                 "parity": ""},
+                {"color_group": "632",
+                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-n,-m)",
+                 "parity": ""},
+                {"color_group": "3*3",
+                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(m,n)",
+                 "parity": ""}
+            ],
+        "o": [
+                {"color_group": "××",
+                 "recipe": "n,m = -{m+1}(-n,m)",
+                 "parity": ""},
+                {"color_group": "2222",
+                 "recipe": "n,m = -(-n,-m)",
+                 "parity": ""},
+                {"color_group": "o",
+                 "recipe": "",
+                 "parity": "1+n+m"},
+                {"color_group": "*×",
+                 "recipe": "n,m = -(m,n)",
+                 "parity": ""},
+                {"color_group": "**",
+                 "recipe": "n,m = -(-n,m)",
+                 "parity": ""}
+            ],
+        "*×": [
+                {"color_group": "2*22",
+                 "recipe": "n,m = -(m,n) ; n,m = -(-n,-m)",
+                 "parity": ""},
+                {"color_group": "**",
+                 "recipe": "n,m = m,n",
+                 "parity": "1+n+m"}
+            ],
+        "442": [
+                {"color_group": "*442",
+                 "recipe": "n,m = -m,n ; n,m = -(m,n)",
+                 "parity": ""},
+                {"color_group": "4*2",
+                 "recipe": "n,m = -m,n ; n,m = -{n+m+1}(m,n)",
                  "parity": ""},
                 {"color_group": "442",
                  "recipe": "n,m = -m,n",
                  "parity": "n+m+1"}
             ],
         "*442": [
-                {"color_group": "*2222",
-                 "recipe": "n,m = -(-m,n) ; n,m = -(m,n)",
-                 "parity": ""},
-                {"color_group": "2*22",
-                 "recipe": "n,m = -(-m,n) ; n,m = m,n",
-                 "parity": ""},
-                {"color_group": "442",
-                 "recipe": "n,m = -m,n ; n,m = -(m,n)",
-                 "parity": ""},
                 {"color_group": "*442",
                  "recipe": "n,m = -m,n ; n,m = m,n",
-                 "parity": "1+n+m"},
-                {"color_group": "4*2",
-                 "recipe": "n,m = -m,n ; n,m = -{n+m}(m,n)",
                  "parity": "1+n+m"}
-                ],
-        "4*2": [
-                {"color_group": "22×",
-                 "recipe": "n,m = -(-m,n) ; n,m = -{1+n+m}(m,n)",
-                 "parity": ""},
-                {"color_group": "2*22",
-                 "recipe": "n,m = -(-m,n) ; n,m = -{n+m}(m,n)",
-                 "parity": ""},
-                {"color_group": "442",
-                 "recipe": "n,m = -m,n ; n,m = -{n+m+1}(m,n)",
-                 "parity": ""}
-                ],
-        "333": [],
-        "3*3": [
-                {"color_group": "333",
-                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(m,n)",
-                 "parity": ""}
-                ],
-        "*333": [
-                {"color_group": "333",
-                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-m,-n)",
-                 "parity": ""}
-                ],
-        "632": [
-                {"color_group": "333",
-                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-n,-m)",
-                 "parity": ""}
-                ],
-        "*632": [
-                {"color_group": "3*3",
-                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n ; n,m = -(-n,-m)",
-                 "parity": ""},
-                {"color_group": "*333",
-                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -m,-n ; n,m = -(-n,-m)",
-                 "parity": ""},
-                {"color_group": "632",
-                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -n,-m ; n,m = -(m,n)",
-                 "parity": ""}
-                ],
-        }
+            ],
+        "*632": []
+}
 # >>>1
 
-def invert(C):
-    R = {}
-    for p in WALLPAPER_NAMES:
-        R[p.split()[0]] = []
-    for p in C:
-        for sub in C[p]:
-            s = sub["color_group"].split()[0]
-            sub["color_group"] = p
-            R[s].append(sub)
-    return R
-def pr(M):
-    for p in M:
-        for sub in M[p]:
-            print(sub)
-# pr(COLOR_REVERSING_WALLPAPERS)
-COLOR_REVERSING_WALLPAPERS = invert(COLOR_REVERSING_WALLPAPERS)
-# pr(COLOR_REVERSING_WALLPAPERS)
-
-assert set(FRIEZES.keys()).isdisjoint(set(WALLPAPERS.keys()))
 
 ###
 # utility functions
@@ -1335,9 +1331,9 @@ class Function(LabelFrame):     # <<<2
     # >>>3
 
     @property
-    def sub_pattern(self):          # <<<3
+    def color_pattern(self):          # <<<3
         if self.current_tab == "wallpaper":
-            sub = self._color_reversing_subpattern.get()
+            sub = self._color_reversing_color_pattern.get()
             if sub == "--":
                 return ""
             else:
@@ -1409,10 +1405,10 @@ class Function(LabelFrame):     # <<<2
 
         Label(wallpaper_tab,
               text="color symmetry group").pack(padx=5, pady=(20, 0))
-        self._color_reversing_subpattern = StringVar()
+        self._color_reversing_color_pattern = StringVar()
         self._color_reversing_combo = Combobox(
-                wallpaper_tab, width=6, exportselection=0,
-                textvariable=self._color_reversing_subpattern,
+                wallpaper_tab, width=10, exportselection=0,
+                textvariable=self._color_reversing_color_pattern,
                 state="readonly",
                 values=["--"]
                 )
@@ -1710,8 +1706,12 @@ class Function(LabelFrame):     # <<<2
         # color reversing combo
         pattern = self.pattern
         CRW = COLOR_REVERSING_WALLPAPERS
+        color_groups = []
         self._color_reversing_combo.configure(
-                values=["--"] + [g["color_group"] for g in CRW[pattern]]
+                values=["--"] + ["{} ({})"
+                                 .format(g["color_group"],
+                                         WALLPAPERS[g["color_group"]]["IUC"])
+                                 for g in CRW[pattern]]
                 )
         self._color_reversing_combo.current(0)
     # >>>3
@@ -1735,13 +1735,11 @@ class Function(LabelFrame):     # <<<2
             M = add_symmetries(M, FRIEZES[pattern]["recipe"])
         elif self.current_tab == "wallpaper":
             M = add_symmetries(M, WALLPAPERS[pattern]["recipe"])
-            subpattern = self.sub_pattern
-            if subpattern:
-                # M = add_symmetries(M, WALLPAPERS[pattern]["recipe"])
-                # M = add_symmetries(M, WALLPAPERS[subpattern]["recipe"])
+            color_pattern = self.color_pattern
+            if color_pattern:
                 sub, = [sub
                         for sub in COLOR_REVERSING_WALLPAPERS[pattern]
-                        if sub["color_group"] == subpattern]
+                        if sub["color_group"] == color_pattern]
                 parity = sub["parity"]
                 if parity:
                     keys = list(M.keys())
@@ -1767,7 +1765,7 @@ class Function(LabelFrame):     # <<<2
                 "random_noise": self._noise.get(),
                 "tab": self.current_tab,
                 "wallpaper_type": self._wallpaper_type.get(),
-                "color_group": self._color_reversing_subpattern.get(),
+                "color_group": self._color_reversing_color_pattern.get(),
                 "lattice_parameters": self._lattice_params.get(),
                 "frieze_type": self._frieze_type.get(),
                 "rosette": self._rosette.get(),
@@ -1811,7 +1809,9 @@ class Function(LabelFrame):     # <<<2
         if "color_group" in cfg:
             l = self._color_reversing_combo.cget("values")
             for i in range(len(l)):
-                if l[i] == cfg["color_group"]:
+                tmp = l[i].replace("(", "").replace(")", "")
+                tmp = tmp.split()
+                if cfg["color_group"] in tmp:
                     self._color_reversing_combo.current(i),
         if "lattice_parameters" in cfg:
             self._lattice_params.set(floats_to_str(cfg["lattice_parameters"]))
@@ -2413,9 +2413,9 @@ def main():     # <<<1
     # color_config["modulus"] = 1.5
 
     color_config["modulus"] = 2
-    function_config["matrix"] = { (1,1): 1 }
-    function_config["wallpaper_type"] = "333"
-    function_config["color_group"] = "632"
+    function_config["matrix"] = {(1,1): 1}
+    function_config["wallpaper_type"] = "p4"
+    function_config["color_group"] = "4*2"
 
     gui = CreateSymmetry()
     gui.colorwheel.set_config(color_config)
