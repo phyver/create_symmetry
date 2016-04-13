@@ -92,7 +92,7 @@ WALLPAPERS = {          # <<<1
              },
         "2222": {
               "IUC": "p2",
-              "recipe": "n,m = -n,-m",
+              "recipe": "n,m = -n, -m",
               "lattice": "general",
               # "basis": lambda *p:  [[1, -p[0]/p[1]], [0, 1/p[1]]]
               "basis": lambda *p:  [[1, 0], [p[0], p[1]]]
@@ -519,11 +519,11 @@ def add_symmetries(M, recipe):      # <<<2
         res = []
         l = map(lambda s: s.strip(), r.split("="))
         for snm in l:
-            if re.match("^[-nm,]*$", snm):
+            if re.match("^[-nm, ]*$", snm):
                 nm = snm.replace("n", str(n)).replace("m", str(m))
                 res.append((1, literal_eval(nm)))
             else:
-                l = re.match("^([-{n+m1}]*)(.*)$", snm)
+                l = re.match("^([-{n+m1}]*)\(.*\)$", snm)
                 s = l.group(1)
                 s = s.replace("-", "").replace("{", "").replace("}", "")
                 s = s.replace("n", str(n)).replace("m", str(m))
