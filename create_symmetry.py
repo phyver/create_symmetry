@@ -238,62 +238,86 @@ SPHERE_GROUPS = {   # <<<1
         "*332": {
             "alt_name": "Td",
             "recipe": "",
+            "parity": "",
+            "average": [],
             "type": "tetrahedral"
             },
         "3*2": {
             "alt_name": "",
             "recipe": "",
+            "parity": "",
+            "average": [],
             "type": ""
             },
         "*432": {
             "alt_name": "",
             "recipe": "",
+            "parity": "",
+            "average": [],
             "type": ""
             },
         "*532": {
             "alt_name": "",
             "recipe": "",
+            "parity": "",
+            "average": [],
             "type": ""
             },
         "NN": {
             "alt_name": "",
             "recipe": "",
+            "parity": "",
+            "average": [],
             "type": ""
             },
         "22N": {
             "alt_name": "",
             "recipe": "",
+            "parity": "",
+            "average": [],
             "type": ""
             },
         "NN*": {
             "alt_name": "",
             "recipe": "",
+            "parity": "",
+            "average": [],
             "type": ""
             },
         "*N": {
             "alt_name": "",
             "recipe": "",
+            "parity": "",
+            "average": [],
             "type": ""
             },
         "*22N": {
             "alt_name": "",
             "recipe": "",
+            "parity": "",
+            "average": [],
             "type": ""
             },
         "N×": {
             "alt_name": "",
             "recipe": "",
+            "parity": "",
+            "average": [],
             "type": ""
             },
         "2*N": {
             "alt_name": "",
             "recipe": "",
+            "parity": "",
+            "average": [],
             "type": ""
             },
         }
 # >>>1
 
 assert set(FRIEZES.keys()).isdisjoint(set(WALLPAPERS.keys()))
+assert set(SPHERE_GROUPS.keys()).isdisjoint(set(WALLPAPERS.keys()))
+assert set(SPHERE_GROUPS.keys()).isdisjoint(set(FRIEZES.keys()))
 
 FRIEZE_NAMES = [    # <<<1
         "∞∞",
@@ -341,177 +365,177 @@ for i in range(len(WALLPAPER_NAMES)):
 # >>>1
 
 COLOR_REVERSING_WALLPAPERS = {     # <<<1
-        "*2222": [
-                {"color_group": "*442",
-                 "recipe": "n,m = -(-m,n) ; n,m = -(m,n)",
-                 "parity": ""},
-                {"color_group": "*2222",
-                 "recipe": "n,m = -n,m ; n,m = -n,-m",
-                 "parity": "n = 1 mod 2"},
-                {"color_group": "2*22",
-                 "recipe": "n,m = -n,m ; n,m j -n,-m",
-                 "parity": "n+m = 1 mod 2"}
-            ],
-        "××": [
-                {"color_group": "××",
-                 "recipe": "n,m = -{m}(-n,m)",
-                 "parity": "n = 1 mod 2"},
-                {"color_group": "22×",
-                 "recipe": "n,m = -{n+m}(-n,m) ; n,m = -(-n,-m)",
-                 "parity": ""},
-                {"color_group": "22*",
-                 "recipe": "n,m = -{m}(-n,m) ; n,m = -(-n,-m)",
-                 "parity": ""},
-                {"color_group": "*×",
-                 "recipe": "n,m = -{m}(-n,m)",
-                 "parity": "n+m = 1 mod 2"},
-                {"color_group": "**",
-                 "recipe": "n,m = -{m}(-n,m)",
-                 "parity": "m = 1 mod 2"}
-            ],
-        "*333": [
-                {"color_group": "*632",
-                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -m,-n ; n,m = -(-n,-m)",
-                 "parity": ""}
-            ],
-        "22×": [
-                {"color_group": "2*22",
-                 "recipe": "n,m = -{n+m}(-n,m) ; n,mu = -n,-m",
-                 "parity": "n+m = 1 mod 2"},
-                {"color_group": "22*",
-                 "recipe": "n,m = -{n+m}(-n,m) ; n,m = -n,-m",
-                 "parity": "n = 1 mod 2"},
-                {"color_group": "4*2",
-                 "recipe": "n,m = -(-m,n) ; n,m = -{1+n+m}(m,n)",
-                 "parity": ""}
-            ],
-        "22*": [
-                {"color_group": "*2222",
-                 "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
-                 "parity": "m = 1 mod 2"},
-                {"color_group": "2*22",
-                 "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
-                 "parity": "n+m = 1 mod 2"},
-                {"color_group": "22*",
-                 "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
-                 "parity": "n = 1 mod 2"}
-            ],
-        "2222": [
-                {"color_group": "*2222",
-                 "recipe": "n,m = -(-n,m) ; n,m = -n,-m",
-                 "parity": ""},
-                {"color_group": "22×",
-                 "recipe": "n,m = -{1+n+m}(m,n) ; n,m = -n,-m",
-                 "parity": ""},
-                {"color_group": "2*22",
-                 "recipe": "n,m = -(m,n) ; n,m = -n,-m",
-                 "parity": ""},
-                {"color_group": "2222",
-                 "recipe": "n,m = -n,-m",
-                 "parity": "n+m = 1 mod 2"},
-                {"color_group": "22*",
-                 "recipe": "n,m = -{m+1}(m,n) ; n,m = -n,-m",
-                 "parity": ""},
-                {"color_group": "442",
-                 "recipe": "n,m = -(-m,n)",
-                 "parity": ""}
-            ],
-        "632": [
-                {"color_group": "*632",
-                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -n,-m ; n,m = -(m,n)",
-                 "parity": ""}
-            ],
-        "**": [
-                {"color_group": "*2222",
-                 "recipe": "n,m = -n,m ; n,m = -(-n,-m)",
-                 "parity": ""},
-                {"color_group": "22*",
-                 "recipe": "n,m = -{m+1}(-n,m) ; n,m = -(-n,-m)",
-                 "parity": ""},
-                {"color_group": "*×",
-                 "recipe": "n,m = -n,m",
-                 "parity": "n+m = 1 mod 2"},
-                {"color_group": "**",
-                 "recipe": "n,m = -n,m",
-                 "parity": "n = 1 mod 2"},
-                {"color_group": "**",
-                 "recipe": "n,m = -n,m",
-                 "parity": "m = 1 mod 2"}
-            ],
-        "3*3": [
-                {"color_group": "*632",
-                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n ; n,m = -(-n,-m)",
-                 "parity": ""}
-            ],
-        "4*2": [
-                {"color_group": "*442",
-                 "recipe": "n,m = -m,n ; n,m = -{n+m}(m,n)",
-                 "parity": "n+m = 1 mod 2"}
-            ],
-        "2*22": [
-                {"color_group": "*442",
-                 "recipe": "n,m = -(-m,n) ; n,m = m,n",
-                 "parity": ""},
-                {"color_group": "*2222",
-                 "recipe": "n,m = m,n ; n,m = -n,-m",
-                 "parity": "n+m = 1 mod 2"},
-                {"color_group": "4*2",
-                 "recipe": "n,m = -(-m,n) ; n,m = -{n+m}(m,n)",
-                 "parity": ""}
-            ],
-        "333": [
-                {"color_group": "*333",
-                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-m,-n)",
-                 "parity": ""},
-                {"color_group": "632",
-                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-n,-m)",
-                 "parity": ""},
-                {"color_group": "3*3",
-                 "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(m,n)",
-                 "parity": ""}
-            ],
-        "o": [
-                {"color_group": "××",
-                 "recipe": "n,m = -{m+1}(-n,m)",
-                 "parity": ""},
-                {"color_group": "2222",
-                 "recipe": "n,m = -(-n,-m)",
-                 "parity": ""},
-                {"color_group": "o",
-                 "recipe": "",
-                 "parity": "n+m = 1 mod 2"},
-                {"color_group": "*×",
-                 "recipe": "n,m = -(m,n)",
-                 "parity": ""},
-                {"color_group": "**",
-                 "recipe": "n,m = -(-n,m)",
-                 "parity": ""}
-            ],
-        "*×": [
-                {"color_group": "2*22",
-                 "recipe": "n,m = -(m,n) ; n,m = -(-n,-m)",
-                 "parity": ""},
-                {"color_group": "**",
-                 "recipe": "n,m = m,n",
-                 "parity": "n+m = 1 mod 2"}
-            ],
-        "442": [
-                {"color_group": "*442",
-                 "recipe": "n,m = -m,n ; n,m = -(m,n)",
-                 "parity": ""},
-                {"color_group": "4*2",
-                 "recipe": "n,m = -m,n ; n,m = -{n+m+1}(m,n)",
-                 "parity": ""},
-                {"color_group": "442",
-                 "recipe": "n,m = -m,n",
-                 "parity": "n+m = 1 mod 2"}
-            ],
-        "*442": [
-                {"color_group": "*442",
-                 "recipe": "n,m = -m,n ; n,m = m,n",
-                 "parity": "n+m = 1 mod 2"}
-            ],
-        "*632": []
+        "*2222": {
+                "*442": {
+                    "recipe": "n,m = -(-m,n) ; n,m = -(m,n)",
+                    "parity": ""},
+                "*2222": {
+                    "recipe": "n,m = -n,m ; n,m = -n,-m",
+                    "parity": "n = 1 mod 2"},
+                "2*22": {
+                    "recipe": "n,m = -n,m ; n,m j -n,-m",
+                    "parity": "n+m = 1 mod 2"}
+            },
+        "××": {
+                "××": {
+                    "recipe": "n,m = -{m}(-n,m)",
+                    "parity": "n = 1 mod 2"},
+                "22×": {
+                    "recipe": "n,m = -{n+m}(-n,m) ; n,m = -(-n,-m)",
+                    "parity": ""},
+                "22*": {
+                    "recipe": "n,m = -{m}(-n,m) ; n,m = -(-n,-m)",
+                    "parity": ""},
+                "*×": {
+                    "recipe": "n,m = -{m}(-n,m)",
+                    "parity": "n+m = 1 mod 2"},
+                "**": {
+                    "recipe": "n,m = -{m}(-n,m)",
+                    "parity": "m = 1 mod 2"}
+            },
+        "*333": {
+                "*632": {
+                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -m,-n ; n,m = -(-n,-m)",
+                    "parity": ""}
+            },
+        "22×": {
+                "2*22": {
+                    "recipe": "n,m = -{n+m}(-n,m) ; n,mu = -n,-m",
+                    "parity": "n+m = 1 mod 2"},
+                "22*": {
+                    "recipe": "n,m = -{n+m}(-n,m) ; n,m = -n,-m",
+                    "parity": "n = 1 mod 2"},
+                "4*2": {
+                    "recipe": "n,m = -(-m,n) ; n,m = -{1+n+m}(m,n)",
+                    "parity": ""}
+            },
+        "22*": {
+                "*2222": {
+                    "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
+                    "parity": "m = 1 mod 2"},
+                "2*22": {
+                    "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
+                    "parity": "n+m = 1 mod 2"},
+                "22*": {
+                    "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
+                    "parity": "n = 1 mod 2"}
+            },
+        "2222": {
+                "*2222": {
+                    "recipe": "n,m = -(-n,m) ; n,m = -n,-m",
+                    "parity": ""},
+                "22×": {
+                    "recipe": "n,m = -{1+n+m}(m,n) ; n,m = -n,-m",
+                    "parity": ""},
+                "2*22": {
+                    "recipe": "n,m = -(m,n) ; n,m = -n,-m",
+                    "parity": ""},
+                "2222": {
+                    "recipe": "n,m = -n,-m",
+                    "parity": "n+m = 1 mod 2"},
+                "22*": {
+                    "recipe": "n,m = -{m+1}(m,n) ; n,m = -n,-m",
+                    "parity": ""},
+                "442": {
+                    "recipe": "n,m = -(-m,n)",
+                    "parity": ""}
+            },
+        "632": {
+                "*632": {
+                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -n,-m ; n,m = -(m,n)",
+                    "parity": ""}
+            },
+        "**": {
+                "*2222": {
+                    "recipe": "n,m = -n,m ; n,m = -(-n,-m)",
+                    "parity": ""},
+                "22*": {
+                    "recipe": "n,m = -{m+1}(-n,m) ; n,m = -(-n,-m)",
+                    "parity": ""},
+                "*×": {
+                    "recipe": "n,m = -n,m",
+                    "parity": "n+m = 1 mod 2"},
+                "**": {
+                    "recipe": "n,m = -n,m",
+                    "parity": "n = 1 mod 2"},
+                "**": {
+                    "recipe": "n,m = -n,m",
+                    "parity": "m = 1 mod 2"}
+            },
+        "3*3": {
+                "*632": {
+                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n ; n,m = -(-n,-m)",
+                    "parity": ""}
+            },
+        "4*2": {
+                "*442": {
+                    "recipe": "n,m = -m,n ; n,m = -{n+m}(m,n)",
+                    "parity": "n+m = 1 mod 2"}
+            },
+        "2*22": {
+                "*442": {
+                    "recipe": "n,m = -(-m,n) ; n,m = m,n",
+                    "parity": ""},
+                "*2222": {
+                    "recipe": "n,m = m,n ; n,m = -n,-m",
+                    "parity": "n+m = 1 mod 2"},
+                "4*2": {
+                    "recipe": "n,m = -(-m,n) ; n,m = -{n+m}(m,n)",
+                    "parity": ""}
+            },
+        "333": {
+                "*333": {
+                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-m,-n)",
+                    "parity": ""},
+                "632": {
+                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-n,-m)",
+                    "parity": ""},
+                "3*3": {
+                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(m,n)",
+                    "parity": ""}
+            },
+        "o": {
+                "××": {
+                    "recipe": "n,m = -{m+1}(-n,m)",
+                    "parity": ""},
+                "2222": {
+                    "recipe": "n,m = -(-n,-m)",
+                    "parity": ""},
+                "o": {
+                    "recipe": "",
+                    "parity": "n+m = 1 mod 2"},
+                "*×": {
+                    "recipe": "n,m = -(m,n)",
+                    "parity": ""},
+                "**": {
+                    "recipe": "n,m = -(-n,m)",
+                    "parity": ""}
+            },
+        "*×": {
+                "2*22": {
+                    "recipe": "n,m = -(m,n) ; n,m = -(-n,-m)",
+                    "parity": ""},
+                "**": {
+                    "recipe": "n,m = m,n",
+                    "parity": "n+m = 1 mod 2"}
+            },
+        "442": {
+                "*442": {
+                    "recipe": "n,m = -m,n ; n,m = -(m,n)",
+                    "parity": ""},
+                "4*2": {
+                    "recipe": "n,m = -m,n ; n,m = -{n+m+1}(m,n)",
+                    "parity": ""},
+                "442": {
+                    "recipe": "n,m = -m,n",
+                    "parity": "n+m = 1 mod 2"}
+            },
+        "*442": {
+                "*442": {
+                    "recipe": "n,m = -m,n ; n,m = m,n",
+                    "parity": "n+m = 1 mod 2"}
+            },
+        "*632": {}
 }
 # >>>1
 
@@ -658,7 +682,7 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
 
     parity = parity.strip()
     if parity:
-        print(parity)
+        # print(parity)
         r = re.match("^([-+nm ()0-9]*)\s*==?\s*([0-9]+)\s*mod\s*([0-9]+)",
                      parity)
         if r:
@@ -671,7 +695,7 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
         else:
             assert False
 
-        print("{} = {} (mod {})".format(parity, equal, modulo))
+        # print("{} = {} (mod {})".format(parity, equal, modulo))
         keys = list(R1.keys())
         for (n, m) in keys:
             s = parity.replace("n", str(n)) .replace("m", str(m))
@@ -681,6 +705,7 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
     return R1
 # >>>2
 # >>>1
+
 
 ###
 # making an image from a transformation and a colorwheel
@@ -717,10 +742,10 @@ def apply_color(        # <<<2
         geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
         modulus="1",
         angle="0",
-        default_color="black"):
+        color="black"):
 
-    if isinstance(default_color, str):
-        default_color = getrgb(default_color)
+    if isinstance(color, str):
+        color = getrgb(color)
 
     rho = modulus * complex(cos(angle*pi/180), sin(angle*pi/180))
     x_min, x_max, y_min, y_max = geometry
@@ -735,7 +760,7 @@ def apply_color(        # <<<2
     color_im = PIL.Image.new("RGB",
                              (width+1,
                               height+1),
-                             color=default_color)
+                             color=color)
     color_im.paste(tmp, (1, 1))
 
     res = res / rho
@@ -745,11 +770,11 @@ def apply_color(        # <<<2
     ys = np.rint((y_max - res.imag) / delta_y).astype(int)
 
     # increase all coordinates by 1: 0 will be used for pixels in the border
-    # with ``default_color``
+    # with ``color``
     xs = xs + 1
     ys = ys + 1
 
-    # replace too big / too small values with 0, to get the ``default_color``
+    # replace too big / too small values with 0, to get the ``color``
     np.place(xs, xs < 0, [0])
     np.place(xs, xs >= width, [0])
     np.place(ys, ys < 0, [0])
@@ -768,10 +793,22 @@ def apply_color(        # <<<2
 # >>>2
 
 
-def make_rosette(zs, matrix,                # <<<2
-                 message_queue=None):
-    res = np.zeros(zs.shape, complex)
+def make_rosette_image(zs,                # <<<2
+                       matrix,
+                       pattern,
+                       N=5,
+                       unwind=False,
+                       message_queue=None):
+
+    matrix = add_symmetries(matrix,
+                            FRIEZES[pattern]["recipe"],
+                            parity="n-m = 0 mod {}".format(N))
+
+    if unwind:
+        zs = np.exp(1j * zs)
     zsc = np.conj(zs)
+
+    res = np.zeros(zs.shape, complex)
     w1, w2 = 1, len(matrix)
     for (n, m) in matrix:
         res = res + matrix[(n, m)] * zs**n * zsc**m
@@ -782,42 +819,30 @@ def make_rosette(zs, matrix,                # <<<2
 # >>>2
 
 
-def make_frieze(zs, matrix,             # <<<2
-                message_queue=None):
-    res = np.zeros(zs.shape, complex)
-    ezs = np.exp(1j * zs)
-    ezsc = np.conj(ezs)
-    w1, w2 = 1, len(matrix)
-    for (n, m) in matrix:
-        res = res + matrix[(n, m)] * ezs**n * ezsc**m
-        if message_queue is not None:
-            message_queue.put("wave {}/{}".format(w1, w2))
-        w1 += 1
-    return res
-# >>>2
+def make_wallpaper_image(zs,     # <<<2
+                         matrix,
+                         pattern,
+                         lattice_params=None,      # additional parameters
+                         color_pattern="",
+                         message_queue=None):
 
+    if color_pattern:
+        cp = COLOR_REVERSING_WALLPAPERS[pattern][color_pattern]
+        matrix = add_symmetries(matrix, cp["recipe"], cp["parity"])
+    else:
+        matrix = add_symmetries(matrix, WALLPAPERS[pattern]["recipe"])
 
-def make_wallpaper(zs, matrix, lattice_basis, rotational_symmetry,     # <<<2
-                   message_queue=None):
+    lattice_basis = WALLPAPERS[pattern]["basis"](*lattice_params)
     C = invert22(lattice_basis)
+
     res = np.zeros(zs.shape, complex)
 
     w1, w2 = 1, len(matrix)
     for (n, m) in matrix:
-        ZS = np.zeros(zs.shape, complex)
-
-        for k in range(0, rotational_symmetry):
-            rho = complex(cos(2*pi*k/rotational_symmetry),
-                          sin(2*pi*k/rotational_symmetry))
-            _tmp = zs * rho
-            _xs = _tmp.real
-            _ys = _tmp.imag
-            _tmp = (n*(C[0][0]*_xs+C[1][0]*_ys) +
-                    m*(C[0][1]*_xs+C[1][1]*_ys))
-            ZS += np.exp(2j*pi*_tmp)
-        ZS = ZS / rotational_symmetry
-        res += matrix[(n, m)] * ZS
-
+        xs = zs.real
+        ys = zs.imag
+        res += matrix[(n, m)] * np.exp(2j*pi*(n*(C[0][0]*xs+C[1][0]*ys) +
+                                              m*(C[0][1]*xs+C[1][1]*ys)))
         if message_queue is not None:
             message_queue.put("wave {}/{}".format(w1, w2))
         w1 += 1
@@ -825,12 +850,19 @@ def make_wallpaper(zs, matrix, lattice_basis, rotational_symmetry,     # <<<2
 # >>>2
 
 
-def make_stereographic_sphere(zs, matrix, coeff=None, order=None, message_queue=None):      # <<<2
+def make_sphere_image(zs, matrix, pattern, N=5, message_queue=None):      # <<<2
 
-    coeff = [[1, 1j], [1, -1j]]     # FIXME
-    order = 3                       # FIXME
-    average = [([[1, 1j],[1, -1j]], 3), ([[phi*(1-phi*1j), 1+2j], [sqrt(5), phi*(1-phi*1j)]], 5)]
-    # average = [([[phi*(1-phi*1j), 1+2j], [sqrt(5), phi*(1-phi*1j)]], 5)]
+    recipe = SPHERE_GROUPS[pattern]["recipe"]
+    parity = SPHERE_GROUPS[pattern]["parity"].replace("N", str(N))
+    matrix = add_symmetries(matrix, recipe, parity)
+
+    average = SPHERE_GROUPS[pattern]["average"]
+
+    # FIXME
+    remove_far = True
+    average = [([[1, 1j], [1, -1j]], 3),]
+               # ([[phi*(1-phi*1j), 1+2j],
+               #   [sqrt(5), phi*(1-phi*1j)]], 5)]
 
     res = np.zeros(zs.shape, complex)
     for coeff, order in average:
@@ -841,53 +873,90 @@ def make_stereographic_sphere(zs, matrix, coeff=None, order=None, message_queue=
             for (n, m) in matrix:
                 res = res + matrix[(n, m)] * _zs**n * _zsc**m / order
             _zs = (a*_zs + b) / (c*_zs + d)
-    return res
-    # return res / (np.sqrt(np.conj(res)*res + 1))
+
+    if not remove_far:
+        return res
+    else:
+        return res / (np.sqrt(np.conj(res)*res + 1))
 # >>>2
 
-def make_world(                   # <<<2
-        color_filename=None,                  # image for the colorwheel image
-        color_geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
-        color_modulus="1",
-        color_angle="0",
-        default_color="black",
-        #
-        size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),     # size of the output image
-        modulus="1",
-        angle="0",
-        geometry=(-2, 2, -2, 2),                # coordinates of the world
-        #
-        matrix=None,                        # the matrix of the transformation
-        lattice_basis=None,
-        lattice=None,
-        rotational_symmetry=1,
-        #
-        message_queue=None,
-        ):
 
-    if not matrix:
-        raise(Error("no matrix given"))
-    if not color_filename:
-        raise(Error("no colorwheel given"))
+def make_lattice_image(zs, matrix, basis=None, N=1, message_queue=None):
 
-    zs = make_coordinates_array(size, geometry, modulus, angle)
+    if basis is None:
+        basis = [[1, 0], [0, 1]]
 
-    if lattice == "rosette":
-        res = make_rosette(zs, matrix, message_queue)
-    elif lattice == "frieze":
-        res = make_frieze(zs, matrix, message_queue)
-    elif lattice == "wallpaper":
-        res = make_wallpaper(zs, matrix, lattice_basis, 1, message_queue)
-    elif lattice == "raw":
-        res = make_wallpaper(zs, matrix, lattice_basis, rotational_symmetry,
-                             message_queue)
-    elif lattice == "sphere":
-        res = make_stereographic_sphere(zs, matrix, message_queue)
+    B = invert22(basis)
 
-    return apply_color(res, color_filename,
-                       color_geometry, color_modulus, color_angle,
-                       default_color)
+    res = np.zeros(zs.shape, complex)
+    w1, w2 = 1, len(matrix)
+    for (n, m) in matrix:
+        ZS = np.zeros(zs.shape, complex)
 
+        for k in range(0, N):
+            rho = complex(cos(2*pi*k/N),
+                          sin(2*pi*k/N))
+            _tmp = zs * rho
+            _xs = _tmp.real
+            _ys = _tmp.imag
+            _tmp = (n*(B[0][0]*_xs+B[1][0]*_ys) +
+                    m*(B[0][1]*_xs+B[1][1]*_ys))
+            ZS += np.exp(2j*pi*_tmp)
+        ZS = ZS / N
+        res += matrix[(n, m)] * ZS
+
+        if message_queue is not None:
+            message_queue.put("wave {}/{}".format(w1, w2))
+        w1 += 1
+    return res
+##
+
+def make_image(color=None, world=None, pattern="", matrix=None, message_queue=None, **params):     # <<<2
+    # TODO: add color, world and function parameter to keep config, instead
+    # of taking it from self...
+
+    try:
+        zs = make_coordinates_array(world["size"],
+                                    world["geometry"],
+                                    world["modulus"],
+                                    world["angle"])
+
+        if pattern in FRIEZES:
+            res = make_rosette_image(zs,
+                                     matrix,
+                                     pattern,
+                                     N=params["N"],
+                                     unwind=not params["rosette"],
+                                     message_queue=message_queue)
+        elif pattern in WALLPAPERS:
+            res = make_wallpaper_image(zs,
+                                       matrix,
+                                       pattern,
+                                       lattice_params=params["lattice_params"],
+                                       color_pattern=params["color_pattern"],
+                                       message_queue=message_queue)
+        elif pattern in SPHERE_GROUPS:
+            res = make_sphere_image(zs,
+                                    matrix,
+                                    pattern,
+                                    N=params["N"],
+                                    message_queue=message_queue)
+        else:
+            res = make_lattice_image(zs,
+                                     matrix,
+                                     basis=params.pop("basis", [[1, 0], [0, 1]]),
+                                     N=params["N"],
+                                     message_queue=message_queue)
+
+        return apply_color(res,
+                           color["filename"],
+                           color["geometry"],
+                           color["modulus"],
+                           color["angle"],
+                           color["color"]
+                           )
+    except Exception as e:
+        raise Error("error during make_image: {}".format(e))
 # >>>2
 # >>>1
 
@@ -1433,10 +1502,7 @@ class Function(LabelFrame):     # <<<2
         if ("wallpaper" in self._tabs.tab(self._tabs.select(), "text")):
             return "wallpaper"
         elif ("frieze" in self._tabs.tab(self._tabs.select(), "text")):
-            if self._rosette.get():
-                return "rosette"
-            else:
-                return "frieze"
+            return "frieze"
         elif ("raw" in self._tabs.tab(self._tabs.select(), "text")):
             return "raw"
         elif ("sphere" in self._tabs.tab(self._tabs.select(), "text")):
@@ -1447,23 +1513,24 @@ class Function(LabelFrame):     # <<<2
 
     @property
     def rotational_symmetry(self):      # <<<3
-        if self.current_tab == "rosette":
-            return self._rosette_rotation.get()
-        elif self.current_tab == "raw":
+        if self.current_tab == "raw":
             return self._raw_rotation.get()
         elif self.current_tab == "wallpaper":
             return 1
         elif self.current_tab == "frieze":
-            return 1
+            if self._rosette.get():
+                return self._rosette_rotation.get()
+            else:
+                return 1
         elif self.current_tab == "sphere":
-            return 1
+            return self._sphere_N.get()
         else:
             assert False
     # >>>3
 
     @property
     def pattern(self):          # <<<3
-        if self.current_tab == "frieze" or self.current_tab == "rosette":
+        if self.current_tab == "frieze":
             return self._frieze_type.get().split()[0]
         elif self.current_tab == "wallpaper":
             return self._wallpaper_type.get().split()[0]
@@ -1498,8 +1565,6 @@ class Function(LabelFrame):     # <<<2
             v2 = [v2[0], v2[1]]
             return [v1, v2]
         elif self.current_tab == "frieze":
-            return None
-        elif self.current_tab == "rosette":
             return None
         elif self.current_tab == "sphere":
             return None
@@ -1896,8 +1961,8 @@ class Function(LabelFrame):     # <<<2
         color_groups = []
         self._color_reversing_combo.configure(
                 values=["--"] + ["{} ({})"
-                                 .format(g["color_group"],
-                                         WALLPAPERS[g["color_group"]]["alt_name"])
+                                 .format(g,
+                                         WALLPAPERS[g]["alt_name"])
                                  for g in CRW[pattern]]
                 )
         self._color_reversing_combo.current(0)
@@ -1911,7 +1976,7 @@ class Function(LabelFrame):     # <<<2
         M = self.matrix
         pattern = self.pattern
 
-        if self.current_tab == "rosette":
+        if self.current_tab == "frieze" and self._rosette.get():
             p = self.rotational_symmetry
             keys = list(M.keys())
             for (n, m) in keys:
@@ -1924,40 +1989,64 @@ class Function(LabelFrame):     # <<<2
             M = add_symmetries(M, WALLPAPERS[pattern]["recipe"])
             color_pattern = self.color_pattern
             if color_pattern:
-                sub, = [sub
-                        for sub in COLOR_REVERSING_WALLPAPERS[pattern]
-                        if sub["color_group"] == color_pattern]
+                sub = COLOR_REVERSING_WALLPAPERS[pattern][color_pattern]
                 parity = sub["parity"]
                 M = add_symmetries(M, sub["recipe"], parity)
             else:
                 M = add_symmetries(M, WALLPAPERS[pattern]["recipe"])
         elif self.current_tab == "sphere":
-            print("SPHERE, pattern =", pattern, "parity =", SPHERE_GROUPS[pattern]["parity"])
+            # print("SPHERE, pattern =", pattern, "parity =", SPHERE_GROUPS[pattern]["parity"])
             M = add_symmetries(M, SPHERE_GROUPS[pattern]["recipe"], SPHERE_GROUPS[pattern]["parity"])
 
 
         self.change_matrix(M)
     # >>>3
 
+    def get_pattern_params(self):       # <<<3
+        if self.current_tab == "frieze":
+            return {"N": self._rosette_rotation.get(),
+                    "rosette": self._rosette.get()}
+        elif self.current_tab == "wallpaper":
+            return {"lattice_params": self._lattice_params.get(),
+                    "color_pattern": self.color_pattern}
+        elif self.current_tab == "sphere":
+            return {"N": self._sphere_N.get()}
+        elif self.current_tab == "raw":
+            return {"N": self._raw_rotation.get(),
+                    "basis": [self._basis_matrix1.get(),
+                              self._basis_matrix2.get()]}
+        else:
+            assert False
+    # >>>3
+
     def get_config(self):           # <<<3
         return {
                 "matrix": self.matrix,
+                #
                 "random_nb_coeff": self._random_nb_coeff.get(),
                 "random_degre": (self._random_min_degre.get(),
                                  self._random_max_degre.get()),
                 "random_coeff": (self._random_min_coeff.get(),
                                  self._random_max_coeff.get()),
                 "random_noise": self._noise.get(),
+                #
                 "tab": self.current_tab,
-                "wallpaper_type": self.pattern,
-                "color_group": self.color_pattern,
+                # wallpaper tab
+                "wallpaper_pattern": self._wallpaper_type.get().split()[0],
                 "lattice_parameters": self._lattice_params.get(),
-                "frieze_type": self._frieze_type.get(),
+                "color_pattern": self._color_reversing_color_pattern.get().split()[0],
+                # frieze tab
+                "frieze_pattern": self._frieze_type.get(),
                 "rosette": self._rosette.get(),
                 "rosette_rotation": self._rosette_rotation.get(),
+                # raw tab
                 "raw_basis": [self._basis_matrix1.get(),
                               self._basis_matrix2.get()],
                 "raw_rotation": self._raw_rotation.get(),
+                # sphere tab
+                "sphere_pattern": self._sphere_type.get().split()[0],
+                "sphere_N": self._sphere_N.get(),
+                "sphere_projection": self._stereographic.get(),
                 }
     # >>>3
 
@@ -1985,29 +2074,29 @@ class Function(LabelFrame):     # <<<2
                 self._tabs.select(3)
             else:
                 self._tabs.select(0)
-        if "wallpaper_type" in cfg:
+        if "wallpaper_pattern" in cfg:
             for i in range(len(WALLPAPER_NAMES)):
                 tmp = WALLPAPER_NAMES[i]
                 tmp = tmp.replace("(", " ").replace(")", " ")
                 tmp = tmp.split()
-                if cfg["wallpaper_type"] in tmp:
+                if cfg["wallpaper_pattern"] in tmp:
                     self._wallpaper_combo.current(i)
             self.update_wallpaper_tab()
-        if "color_group" in cfg:
+        if "color_pattern" in cfg:
             l = self._color_reversing_combo.cget("values")
             for i in range(len(l)):
                 tmp = l[i].replace("(", "").replace(")", "")
                 tmp = tmp.split()
-                if cfg["color_group"] in tmp:
+                if cfg["color_pattern"] in tmp:
                     self._color_reversing_combo.current(i),
         if "lattice_parameters" in cfg:
             self._lattice_params.set(floats_to_str(cfg["lattice_parameters"]))
-        if "frieze_type" in cfg:
+        if "frieze_pattern" in cfg:
             for i in range(len(FRIEZE_NAMES)):
                 tmp = FRIEZE_NAMES[i]
                 tmp = tmp.replace("(", " ").replace(")", " ")
                 tmp = tmp.split()
-                if cfg["frieze_type"] in tmp:
+                if cfg["frieze_pattern"] in tmp:
                     self._frieze_combo.current(i)
         if "rosette" in cfg:
             self._rosette.set(cfg["rosette"])
@@ -2019,6 +2108,17 @@ class Function(LabelFrame):     # <<<2
         if "raw_rotation" in cfg:
             self._raw_rotation.set(cfg["raw_rotation"])
         self.set_rosette()
+        if "sphere_pattern" in cfg:
+            for i in range(len(SPHERE_NAMES)):
+                tmp = SPHERE_NAMES[i]
+                tmp = tmp.replace("(", " ").replace(")", " ")
+                tmp = tmp.split()
+                if cfg["sphere_pattern"] in tmp:
+                    self._sphere_combo.current(i)
+        if "sphere_N" in cfg:
+            self._sphere_N.set(cfg["sphere_N"])
+        if "sphere_projection" in cfg:
+            self._stereographic.set(cfg["sphere_projection"])
     # >>>3
 # >>>2
 
@@ -2198,46 +2298,6 @@ Keyboard shortcuts:
         self.wait_window(dialog)
     # >>>3
 
-    def get_image_parameters(self):      # <<<3
-        geometry = self.world.geometry
-        modulus = self.world.modulus
-        angle = self.world.angle
-
-        color_geometry = self.colorwheel.geometry
-        color_mod = self.colorwheel.modulus
-        color_ang = self.colorwheel.angle
-
-        default_color = self.colorwheel.color
-
-        lattice = self.function.current_tab
-        pattern = self.function.pattern
-
-        matrix = self.function.matrix
-        if not matrix:
-            raise Error("missing parameter: matrix")
-
-        if not self.colorwheel.filename:
-            raise Error("missing parameter: colorwheel")
-
-        pattern = self.function.pattern
-
-        return {
-                "matrix": matrix,
-                "color_filename": self.colorwheel.filename,
-                "geometry": geometry,
-                "modulus": modulus,
-                "angle": angle,
-                "lattice": lattice,
-                "lattice_basis": self.function.lattice_basis,
-                "rotational_symmetry": self.function.rotational_symmetry,
-                "color_geometry": color_geometry,
-                "color_modulus": color_mod,
-                "color_angle": color_ang,
-                "default_color": default_color,
-                "pattern": pattern,
-                }
-    # >>>3
-
     def make_preview(self, *args):      # <<<3
 
         ratio = self.world.width / self.world.height
@@ -2249,29 +2309,18 @@ Keyboard shortcuts:
             height = PREVIEW_SIZE
 
         try:
-            cfg1 = self.colorwheel.get_config()
-            cfg2 = self.world.get_config()
-            cfg3 = self.function.get_config()
-
             def make_preview_thread():
-                image = make_world(
-                    color_filename=cfg1["filename"],
-                    color_geometry=cfg1["geometry"],
-                    color_modulus=cfg1["modulus"],
-                    color_angle=cfg1["angle"],
-                    default_color=cfg1["color"],
-                    #
-                    size=(width, height),
-                    modulus=cfg2["modulus"],
-                    angle=cfg2["angle"],
-                    geometry=cfg2["geometry"],
-                    #
-                    matrix=cfg3["matrix"],
-                    rotational_symmetry=self.function.rotational_symmetry,
-                    lattice_basis=self.function.lattice_basis,
-                    lattice=self.function.current_tab,
-                    #
-                    message_queue=self.message_queue)
+                color = self.colorwheel.get_config()
+                world = self.world.get_config()
+                world["size"] = (width, height)
+                params = self.function.get_pattern_params()
+
+                image = make_image(color=color,
+                                   world=world,
+                                   pattern=self.function.pattern,
+                                   matrix=self.function.matrix,
+                                   message_queue=self.message_queue,
+                                   **params)
 
                 # FIXME: methode change_preview in World class
                 self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
@@ -2351,16 +2400,13 @@ Keyboard shortcuts:
     # >>>3
 
     def make_output(self, *args):      # <<<3
-        width = self.world.width
-        height = self.world.height
-
         config = {
                 "color": self.colorwheel.get_config(),
                 "world": self.world.get_config(),
                 "function": self.function.get_config(),
-                "params":
-                    {"rotational_symmetry": self.function.rotational_symmetry,
-                     "lattice_basis": self.function.lattice_basis}
+                "params": self.function.get_pattern_params(),
+                "pattern": self.function.pattern,
+                "matrix": self.function.matrix,
                 }
 
         self.output_queue.put(config)
@@ -2371,29 +2417,17 @@ Keyboard shortcuts:
 
         filename_template = config["world"]["filename"]
 
-        cfg1 = config["color"]
-        cfg2 = config["world"]
-        cfg3 = config["function"]
-        cfg4 = config["params"]
-
-        image = make_world(
-                color_filename=cfg1["filename"],
-                color_geometry=cfg1["geometry"],
-                color_modulus=cfg1["modulus"],
-                color_angle=cfg1["angle"],
-                default_color=cfg1["color"],
-                #
-                size=cfg2["size"],
-                modulus=cfg2["modulus"],
-                angle=cfg2["angle"],
-                geometry=cfg2["geometry"],
-                #
-                matrix=cfg3["matrix"],
-                rotational_symmetry=cfg4["rotational_symmetry"],
-                lattice_basis=cfg4["lattice_basis"],
-                lattice=cfg3["tab"],
-                #
-                message_queue=self.message_queue)
+        color = config["color"]
+        world = config["world"]
+        params = config["params"]
+        pattern = config["pattern"]
+        matrix = config["matrix"]
+        image = make_image(color=color,
+                           world=world,
+                           pattern=pattern,
+                           matrix=matrix,
+                           message_queue=self.message_queue,
+                           **params)
 
         nb = 1
         while True:
@@ -2406,7 +2440,7 @@ Keyboard shortcuts:
         if message_queue is not None:
             message_queue.put("saved file {}".format(filename+".jpg"))
 
-        config["function"]["matrix"] = matrix_to_list(config["function"]["matrix"])
+        config["function"]["matrix"] = matrix_to_list(config["matrix"])
         cmd = ("""#!/bin/sh
 CREATE_SYM={prog_path:}
 
@@ -2426,6 +2460,7 @@ $CREATE_SYM --color-config='{color_config:}' \\
         cs.write(cmd)
         cs.close()
     # >>>3
+
 # >>>2
 # >>>1
 
@@ -2608,8 +2643,8 @@ def main():     # <<<1
 
     # color_config["modulus"] = 2
     function_config["matrix"] = {(1,-1): .6j, (-1,1): .6j, (2,0): -1/3, (-2,0): -1/3}
-    # function_config["wallpaper_type"] = "p4"
-    # function_config["color_group"] = "4*2"
+    # function_config["pattern"] = "p4"
+    # function_config["color_pattern"] = "4*2"
 
     gui = CreateSymmetry()
     gui.colorwheel.set_config(color_config)
