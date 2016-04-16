@@ -28,7 +28,7 @@ from ast import literal_eval
 
 # math
 from cmath import exp
-from math import sqrt, pi, sin, cos
+from math import sqrt, pi, sin, cos, asin, acos, atan2
 from random import randint, uniform, shuffle
 
 # multiprocessing
@@ -698,6 +698,48 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
 
     return R1
 # >>>2
+
+def rotation_matrix(x, y, z):       # <<<2
+    # see https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
+    # a = cos(y)*cos(z)
+    # b = -cos(y)*sin(z)
+    # c = sin(y)
+    # d = cos(x)*sin(z) + cos(z)*sin(x)*sin(y)
+    # e = cos(x)*cos(z) - sin(x)*sin(y)*sin(z)
+    # f = -cos(y)*sin(x)
+    # g = sin(x)*sin(z) - cos(x)*cos(z)*sin(y)
+    # h = cos(z)*sin(x) + cos(x)*sin(y)*sin(z)
+    # i = cos(x)*cos(y)
+    a = cos(x)*cos(y)
+    b = cos(x)*sin(y)*sin(z) - cos(z)*sin(x)
+    c = sin(x)*sin(z) + cos(x)*cos(z)*sin(y)
+    d = cos(y)*sin(x)
+    e = cos(x)*cos(z) + sin(x)*sin(y)*sin(z)
+    f = cos(z)*sin(x)*sin(y) - cos(x)*sin(z)
+    g = -sin(y)
+    h = cos(y)*sin(z)
+    i = cos(y)*cos(z)
+    return [[a, b, c], [d, e, f], [g, h, i]]
+# >>>2
+
+
+def tait_angle(R):                  # <<<2
+    # see http://stackoverflow.com/questions/18433801/converting-a-3x3-matrix-to-euler-tait-bryan-angles-pitch-yaw-roll
+    theta_z = atan2(R[2][1], R[2][2])
+    theta_y = -asin(R[2][0])
+    theta_x = atan2(R[1][0], R[0][0])
+    return theta_x, theta_y, theta_z
+# >>>2
+
+
+def mult_M(M1, M2):
+    assert len(M1[0]) == len(M2)
+    R = [[0]*len(M2[0]) for i in range(len(M1))]
+    for i in range(len(M1)):
+        for j in range(len(M2[0])):
+            for k in range(len(M2)):
+                R[i][j] += M1[i][k] * M2[k][j]
+    return R
 # >>>1
 
 
@@ -851,6 +893,7 @@ def make_sphere_image(zs,
                       stereographic=True,
                       theta_x=0,
                       theta_y=0,
+                      theta_z=0,
                       message_queue=None):      # <<<2
 
     if not stereographic:
@@ -860,22 +903,14 @@ def make_sphere_image(zs,
 
         theta_x = theta_x * pi / 180
         theta_y = theta_y * pi / 180
+        theta_z = theta_z * pi / 180
+        R = rotation_matrix(theta_x, theta_y, theta_z)
 
-        _x = x
-        _y = cos(theta_x)*y + sin(theta_x)*z
-        _z = -sin(theta_x)*y + cos(theta_x)*z
-        x = _x
-        y = _y
-        z = _z
+        _x = R[0][0]*x + R[0][1]*y + R[0][2]*z
+        _y = R[1][0]*x + R[1][1]*y + R[1][2]*z
+        _z = R[2][0]*x + R[2][1]*y + R[2][2]*z
 
-        _x = cos(theta_y)*x - sin(theta_y)*z
-        _y = y
-        _z = sin(theta_y)*x + cos(theta_y)*z
-        x = _x
-        y = _y
-        z = _z
-
-        zs = x/(1-z) + 1j*y/(1-z)
+        zs = _x/(1-_z) + 1j*_y/(1-_z)
 
     recipe = SPHERE_GROUPS[pattern]["recipe"]
     parity = SPHERE_GROUPS[pattern]["parity"].replace("N", str(N))
@@ -985,6 +1020,7 @@ def make_image(color=None,
                                     stereographic=params["stereographic"],
                                     theta_x=params["theta_x"],
                                     theta_y=params["theta_y"],
+                                    theta_z=params["theta_z"],
                                     message_queue=message_queue)
         else:
             res = make_lattice_image(zs,
@@ -1776,6 +1812,12 @@ class Function(LabelFrame):     # <<<2
                                    convert=float,
                                    width=5)
         self._theta_y.pack(padx=5, pady=5)
+        self._theta_z = LabelEntry(sphere_tab,
+                                   label="rotation z (°)",
+                                   value="0",
+                                   convert=float,
+                                   width=5)
+        self._theta_z.pack(padx=5, pady=5)
 
         Button(sphere_tab, text="make matrix",
                command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=10)
@@ -2036,9 +2078,11 @@ class Function(LabelFrame):     # <<<2
         if self._stereographic.get():
             self._theta_x.disable()
             self._theta_y.disable()
+            self._theta_z.disable()
         else:
             self._theta_x.enable()
             self._theta_y.enable()
+            self._theta_z.enable()
     # >>>3
 
     def make_matrix(self):       # <<<3
@@ -2087,6 +2131,7 @@ class Function(LabelFrame):     # <<<2
                     "stereographic": self._stereographic.get(),
                     "theta_x": self._theta_x.get(),
                     "theta_y": self._theta_y.get(),
+                    "theta_z": self._theta_z.get(),
                     }
         elif self.current_tab == "raw":
             return {"N": self._raw_rotation.get(),
@@ -2202,6 +2247,8 @@ class Function(LabelFrame):     # <<<2
             self._theta_x.set(cfg["sphere_theta_x"])
         if "sphere_theta_y" in cfg:
             self._theta_y.set(cfg["sphere_theta_y"])
+        if "sphere_theta_z" in cfg:
+            self._theta_z.set(cfg["sphere_theta_z"])
     # >>>3
 # >>>2
 
@@ -2281,6 +2328,10 @@ class CreateSymmetry(Tk):      # <<<2
                                                self.make_preview))
         self.bind("<Control-Key-Down>", sequence(self.translate_rotate(0, 1),
                                                  self.make_preview))
+        self.bind("<Control-z>", sequence(self.translate_rotate(0, 0, -1),
+                                          self.make_preview))
+        self.bind("<Control-Z>", sequence(self.translate_rotate(0, 0, 1),
+                                          self.make_preview))
         self.bind("<Control-0>", sequence(self.world.reset_geometry,
                                           self.make_preview))
         # >>>4
@@ -2542,13 +2593,26 @@ $CREATE_SYM --color-config='{color_config:}' \\
         cs.close()
     # >>>3
 
-    def translate_rotate(self, dx, dy):
+    def translate_rotate(self, dx, dy, dz=0):
         def t_r(*args):
             if self.function.current_tab == "sphere":
-                theta_x = self.function._theta_x.get()
-                theta_y = self.function._theta_y.get()
-                self.function._theta_x.set(floats_to_str([theta_x+10*dy]))
-                self.function._theta_y.set(floats_to_str([theta_y-10*dx]))
+                theta_x = self.function._theta_x.get()*pi/180
+                theta_y = self.function._theta_y.get()*pi/180
+                theta_z = self.function._theta_z.get()*pi/180
+                R1 = rotation_matrix(theta_x, theta_y, theta_z)
+
+                R2 = rotation_matrix(10*dz*pi/180, 10*dx*pi/180, -10*dy*pi/180)
+
+                R = mult_M(R1, R2)
+                theta_x, theta_y, theta_z = tait_angle(R)
+
+                theta_x = round(theta_x * 180 / pi)
+                theta_y = round(theta_y * 180 / pi)
+                theta_z = round(theta_z * 180 / pi)
+
+                self.function._theta_x.set(floats_to_str([theta_x]))
+                self.function._theta_y.set(floats_to_str([theta_y]))
+                self.function._theta_z.set(floats_to_str([theta_z]))
             else:
                 self.world.translate(dx/10, dy/10)
         return t_r
