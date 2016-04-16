@@ -2065,13 +2065,15 @@ class Function(LabelFrame):     # <<<2
             assert False
 
         # color reversing combo
-        CRW = COLOR_REVERSING_WALLPAPERS
+        CRW = COLOR_REVERSING_WALLPAPERS[pattern]
+        names = [p.split()[0] for p in WALLPAPER_NAMES]
+        c_names = [p for p in names if p in CRW]
         color_groups = []
         self._color_reversing_combo.configure(
                 values=["--"] + ["{} ({})"
                                  .format(g,
                                          WALLPAPERS[g]["alt_name"])
-                                 for g in CRW[pattern]]
+                                 for g in c_names]
                 )
         self._color_reversing_combo.current(0)
     # >>>3
