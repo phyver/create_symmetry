@@ -239,20 +239,20 @@ SPHERE_GROUPS = {   # <<<1
             },
         "3*2": {
             "alt_name": "Th",
-            "recipe": "",
-            "parity": "",
+            "recipe": "n,m = -n,-m ; n,m = -m,-n",
+            "parity": "n-m = 0 mod 2",
             "type": ""
             },
         "*432": {
             "alt_name": "Oh",
-            "recipe": "",
-            "parity": "",
+            "recipe": "n,m = -n,-m ; n,m = -m,-n",
+            "parity": "n-m = 0 mod 4",
             "type": ""
             },
         "*532": {
             "alt_name": "Ih",
-            "recipe": "",
-            "parity": "",
+            "recipe": "n,m = -n,-m ; n,m = -m,-n",
+            "parity": "n-m = 0 mod 2",
             "type": ""
             },
         "NN": {
