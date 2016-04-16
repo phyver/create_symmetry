@@ -641,17 +641,23 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
                     nm = snm.replace("n", str(n)).replace("m", str(m))
                     res.append((1, literal_eval(nm)))
                 else:
-                    l = re.match("^([-i])([-{n+m1} ]*)(\(.*\))$", snm)
-                    s = l.group(1)
-                    e = l.group(2)
+                    # print("snm", snm)
+                    _r = re.match("^([-i])([-{n+m1} ]*)(\(.*\))$", snm)
+                    s = _r.group(1)
+                    # print("s = '{}'".format(s))
+                    e = _r.group(2)
+                    # print("e = '{}'".format(e))
                     e = e.replace("{", "").replace("}", "")
                     e = e.replace("n", str(n)).replace("m", str(m))
-                    nm = l.group(3)
+                    nm = _r.group(3)
+                    # print("nm = '{}'".format(nm))
                     nm = nm.replace("n", str(n)).replace("m", str(m))
                     if s == "-":
                         s = -1
                     elif s == "i":
                         s = 1j
+                    if e == "":
+                        e = "1"
                     e = s**(literal_eval(e))
                     res.append((e, literal_eval(nm)))
         except Exception as e:
