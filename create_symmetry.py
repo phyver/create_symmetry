@@ -1217,7 +1217,7 @@ class ColorWheel(LabelFrame):   # <<<2
             self._filename.config(text=os.path.basename(filename))
             width, height = self._image.size
             ratio = width / height
-            if ratio > 1:
+            if ratio < 1:
                 self._x_min.set(COLOR_GEOMETRY[0])
                 self._x_max.set(COLOR_GEOMETRY[1])
                 self._y_min.set(COLOR_GEOMETRY[2] / ratio)
