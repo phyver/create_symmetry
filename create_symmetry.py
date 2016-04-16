@@ -50,6 +50,7 @@ DEFAULT_COLOR = "black"
 FILENAME_TEMPLATE = "output-{:03}"
 
 phi = (1 + sqrt(5)) / 2
+remove_default = True      # TODO: deal with that from the GUI
 
 FRIEZES = {    # <<<1
         "∞∞": {
@@ -60,11 +61,11 @@ FRIEZES = {    # <<<1
             "alt_name": "p211",
             "recipe": "n,m = -n,-m"
             },
-        "∞∞*": {
+        "*∞∞": {
             "alt_name": "p1m1",
             "recipe": "n,m = m,n"
             },
-        "*∞": {
+        "∞*": {
             "alt_name": "p11m",
             "recipe": "n,m = -m,-n"
             },
@@ -216,100 +217,84 @@ SPHERE_GROUPS = {   # <<<1
             "alt_name": "T",
             "recipe": "n,m = -n,-m",
             "parity": "n-m = 0 mod 2",
-            "average": [([[1, 1j],[1, -1j]], 3)],
             "type": "tetrahedral"
             },
         "432": {
             "alt_name": "O",
             "recipe": "n,m = -n,-m",
             "parity": "n-m = 0 mod 4",
-            "average": [([[1, 1j],[1, -1j]], 3)],
             "type": "octahedral"
             },
         "532": {
             "alt_name": "I",
             "recipe": "n,m = -n,-m",
             "parity": "n-m = 0 mod 2",
-            "average": [([[1, 1j],[1, -1j]], 3),
-                        ([[phi*(1-phi*1j), 1+2j],
-                           [sqrt(5), phi*(1-phi*1j)]], 5)],
             "type": "icosahedral"
             },
         "*332": {
             "alt_name": "Td",
             "recipe": "",
             "parity": "",
-            "average": [],
             "type": "tetrahedral"
             },
         "3*2": {
-            "alt_name": "",
+            "alt_name": "Th",
             "recipe": "",
             "parity": "",
-            "average": [],
             "type": ""
             },
         "*432": {
-            "alt_name": "",
+            "alt_name": "Oh",
             "recipe": "",
             "parity": "",
-            "average": [],
             "type": ""
             },
         "*532": {
-            "alt_name": "",
+            "alt_name": "Ih",
             "recipe": "",
             "parity": "",
-            "average": [],
             "type": ""
             },
         "NN": {
-            "alt_name": "",
+            "alt_name": "Cn",
             "recipe": "",
-            "parity": "",
-            "average": [],
+            "parity": "n-m = 0 mod N",
             "type": ""
             },
         "22N": {
-            "alt_name": "",
+            "alt_name": "Dn",
             "recipe": "",
-            "parity": "",
-            "average": [],
+            "parity": "n-m = 0 mod N",
             "type": ""
             },
-        "NN*": {
+        "*NN": {
             "alt_name": "",
-            "recipe": "",
-            "parity": "",
-            "average": [],
+            "recipe": "Cnv",
+            "parity": "n-m = 0 mod N",
             "type": ""
             },
-        "*N": {
-            "alt_name": "",
+        "N*": {
+            "alt_name": "Cnh",
             "recipe": "",
-            "parity": "",
-            "average": [],
+            "parity": "n-m = 0 mod N",
             "type": ""
             },
         "*22N": {
-            "alt_name": "",
+            "alt_name": "Dnh",
             "recipe": "",
-            "parity": "",
-            "average": [],
+            "parity": "n-m = 0 mod N",
             "type": ""
             },
         "N×": {
-            "alt_name": "",
+            "alt_name": "S2n",
             "recipe": "",
-            "parity": "",
-            "average": [],
+            "parity": "n-m = 0 mod N",
             "type": ""
             },
         "2*N": {
-            "alt_name": "",
+            "alt_name": "Dnd",
             "recipe": "",
-            "parity": "",
-            "average": [],
+            "parity": "n-m = 0 mod N",
             "type": ""
             },
         }
@@ -322,16 +307,16 @@ assert set(SPHERE_GROUPS.keys()).isdisjoint(set(FRIEZES.keys()))
 FRIEZE_NAMES = [    # <<<1
         "∞∞",
         "22∞",
-        "∞∞*",
-        "*∞",
+        "*∞∞",
+        "∞*",
         "*22∞",
         "∞×",
         "2*∞",
         ]
 for i in range(len(FRIEZE_NAMES)):
     p = FRIEZE_NAMES[i]
-    iuc = FRIEZES[p]["alt_name"]
-    FRIEZE_NAMES[i] = "{} ({})".format(p, iuc)
+    alt_name = FRIEZES[p]["alt_name"]
+    FRIEZE_NAMES[i] = "{} ({})".format(p, alt_name)
 # >>>1
 
 WALLPAPER_NAMES = [     # <<<1
@@ -356,10 +341,10 @@ WALLPAPER_NAMES = [     # <<<1
 _l = None
 for i in range(len(WALLPAPER_NAMES)):
     p = WALLPAPER_NAMES[i]
-    iuc = WALLPAPERS[p]["alt_name"]
+    alt_name = WALLPAPERS[p]["alt_name"]
     l = WALLPAPERS[p]["lattice"]
     WALLPAPER_NAMES[i] = "{} ({}) {}".format(p,
-                                             iuc,
+                                             alt_name,
                                              "" if _l == l else ("-- "+l))
     _l = l
 # >>>1
@@ -542,20 +527,24 @@ COLOR_REVERSING_WALLPAPERS = {     # <<<1
 SPHERE_NAMES = [    # <<<1
         "332",
         "432",
-        "3*2",
         "532",
+        "3*2",
         "*332",
         "*432",
         "*532",
         #
         "NN",
         "22N",
-        "NN*",
-        "*N",
+        "*NN",
+        "N*",
         "*22N",
         "N×",
         "2*N",
         ]
+for i in range(len(SPHERE_NAMES)):
+    p = SPHERE_NAMES[i]
+    alt_name = SPHERE_GROUPS[p]["alt_name"]
+    SPHERE_NAMES[i] = "{} ({})".format(p, alt_name)
 # >>>1
 
 ###
@@ -850,34 +839,42 @@ def make_wallpaper_image(zs,     # <<<2
 # >>>2
 
 
-def make_sphere_image(zs, matrix, pattern, N=5, message_queue=None):      # <<<2
+def make_sphere_image(zs, matrix, pattern, N=5, stereographic=True, message_queue=None):      # <<<2
+
+    print(stereographic)
+    if not stereographic:
+        hs = 1 - zs.real**2 - zs.imag**2
+        hs = np.sqrt(hs)
+        zs = zs.real/(1-hs) + 1j*zs.imag/(1-hs)
 
     recipe = SPHERE_GROUPS[pattern]["recipe"]
     parity = SPHERE_GROUPS[pattern]["parity"].replace("N", str(N))
     matrix = add_symmetries(matrix, recipe, parity)
 
-    average = SPHERE_GROUPS[pattern]["average"]
-
-    # FIXME
-    remove_far = True
-    average = [([[1, 1j], [1, -1j]], 3),]
-               # ([[phi*(1-phi*1j), 1+2j],
-               #   [sqrt(5), phi*(1-phi*1j)]], 5)]
+    if "T" in SPHERE_GROUPS[pattern]["alt_name"]:
+        average = [([[1, 0], [0, 1]], 1), ([[1, 1j], [1, -1j]], 3)]
+    elif "O" in SPHERE_GROUPS[pattern]["alt_name"]:
+        average = [([[1, 0], [0, 1]], 1), ([[1, 1j], [1, -1j]], 3)]
+    elif "I" in SPHERE_GROUPS[pattern]["alt_name"]:
+        average = [([[1, 1j], [1, -1j]], 3),
+                   ([[phi*(1-phi*1j), 1+2j],
+                     [sqrt(5), phi*(1-phi*1j)]], 5)]
+    else:
+        average = [([[1, 0], [0, 1]], 1), ([[1, 0], [0, 1]], 1)]
 
     res = np.zeros(zs.shape, complex)
-    for coeff, order in average:
-        [a, b], [c, d] = coeff
-        _zs = np.copy(zs)
-        for i in range(order):
-            _zsc = np.conj(_zs)
+    [a, b], [c, d] = average[0][0]
+    [e, f], [g, h] = average[1][0]
+    # TODO: it doesn't work if I swapp the 2 loops! Why???
+    for i in range(average[1][1]):
+        for j in range(average[0][1]):
+            zsc = np.conj(zs)
             for (n, m) in matrix:
-                res = res + matrix[(n, m)] * _zs**n * _zsc**m / order
-            _zs = (a*_zs + b) / (c*_zs + d)
+                res = res + matrix[(n, m)] * zs**n * zsc**m
+            zs = (a*zs + b) / (c*zs + d)
+        zs = (e*zs + f) / (g*zs + h)
 
-    if not remove_far:
-        return res
-    else:
-        return res / (np.sqrt(np.conj(res)*res + 1))
+    return res / (average[0][1]*average[1][1])
 # >>>2
 
 
@@ -940,6 +937,7 @@ def make_image(color=None, world=None, pattern="", matrix=None, message_queue=No
                                     matrix,
                                     pattern,
                                     N=params["N"],
+                                    stereographic=params["stereographic"],
                                     message_queue=message_queue)
         else:
             res = make_lattice_image(zs,
@@ -947,6 +945,9 @@ def make_image(color=None, world=None, pattern="", matrix=None, message_queue=No
                                      basis=params.pop("basis", [[1, 0], [0, 1]]),
                                      N=params["N"],
                                      message_queue=message_queue)
+
+        if remove_default:
+            res = res / (np.sqrt(np.conj(res)*res + 1))
 
         return apply_color(res,
                            color["filename"],
@@ -1711,7 +1712,7 @@ class Function(LabelFrame):     # <<<2
         self._sphere_N.pack(padx=5, pady=5)
 
         self._stereographic = BooleanVar()
-        self._stereographic.set(False)
+        self._stereographic.set(True)
 
         stereographic_button = Checkbutton(sphere_tab, text="stereographic projection",
                                      variable=self._stereographic,
@@ -2010,7 +2011,8 @@ class Function(LabelFrame):     # <<<2
             return {"lattice_params": self._lattice_params.get(),
                     "color_pattern": self.color_pattern}
         elif self.current_tab == "sphere":
-            return {"N": self._sphere_N.get()}
+            return {"N": self._sphere_N.get(),
+                    "stereographic": self._stereographic.get()}
         elif self.current_tab == "raw":
             return {"N": self._raw_rotation.get(),
                     "basis": [self._basis_matrix1.get(),
@@ -2639,6 +2641,7 @@ def main():     # <<<1
 
     # function_config["matrix"] = M
     function_config["tab"] = "sphere"
+    function_config["sphere_pattern"] = "532"
     # color_config["modulus"] = 1.5
 
     # color_config["modulus"] = 2
