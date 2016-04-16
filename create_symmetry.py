@@ -1703,6 +1703,8 @@ class Function(LabelFrame):     # <<<2
                                       values=SPHERE_NAMES)
         self._sphere_combo.pack(padx=5, pady=5)
         self._sphere_combo.current(0)
+        self._sphere_combo.bind("<<ComboboxSelected>>",
+                                   self.update_sphere_tab)
 
         self._sphere_N = LabelEntry(sphere_tab,
                                     label="N",
@@ -1810,6 +1812,7 @@ class Function(LabelFrame):     # <<<2
 
         # make sure the layout reflects the selected options    <<<4
         self.update_wallpaper_tab()
+        self.update_sphere_tab()
         self.set_rosette()
         # >>>4
     # >>>3
@@ -1967,6 +1970,14 @@ class Function(LabelFrame):     # <<<2
                                  for g in CRW[pattern]]
                 )
         self._color_reversing_combo.current(0)
+    # >>>3
+
+    def update_sphere_tab(self, *args):        # <<<3
+        if "N" in self.pattern:
+            self._sphere_N.enable()
+        else:
+            self._sphere_N.disable()
+
     # >>>3
 
     def make_matrix(self):       # <<<3
