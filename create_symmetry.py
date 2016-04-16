@@ -233,8 +233,8 @@ SPHERE_GROUPS = {   # <<<1
             },
         "*332": {
             "alt_name": "Td",
-            "recipe": "",
-            "parity": "",
+            "recipe": "n,m = -n,-m ; n,m = i{n-m}(m,n)",
+            "parity": "n-m = 0 mod 2",
             "type": "tetrahedral"
             },
         "3*2": {
@@ -263,37 +263,37 @@ SPHERE_GROUPS = {   # <<<1
             },
         "22N": {
             "alt_name": "Dn",
-            "recipe": "",
+            "recipe": "n,m = -n,-m",
             "parity": "n-m = 0 mod N",
             "type": ""
             },
         "*NN": {
-            "alt_name": "",
-            "recipe": "Cnv",
+            "alt_name": "Cnv",
+            "recipe": "n,m = m,n",
             "parity": "n-m = 0 mod N",
             "type": ""
             },
         "N*": {
             "alt_name": "Cnh",
-            "recipe": "",
+            "recipe": "n,m = -m,-n",
             "parity": "n-m = 0 mod N",
             "type": ""
             },
         "*22N": {
             "alt_name": "Dnh",
-            "recipe": "",
+            "recipe": "n,m = m,n = -n,-m = -m,-n",
             "parity": "n-m = 0 mod N",
             "type": ""
             },
         "N×": {
             "alt_name": "S2n",
-            "recipe": "",
+            "recipe": "n,m = -{n+m}(-m,-n)",
             "parity": "n-m = 0 mod N",
             "type": ""
             },
         "2*N": {
             "alt_name": "Dnd",
-            "recipe": "",
+            "recipe": "n,m = -n,-m = -{n+m}(-m,-n) = -{n+m}(m,n)",
             "parity": "n-m = 0 mod N",
             "type": ""
             },
@@ -638,17 +638,19 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
                     nm = snm.replace("n", str(n)).replace("m", str(m))
                     res.append((1, literal_eval(nm)))
                 else:
-                    l = re.match("^([-{n+m1} ]*)(\(.*\))$", snm)
+                    l = re.match("^([-i])([-{n+m1} ]*)(\(.*\))$", snm)
                     s = l.group(1)
-                    s = s.replace("-", "").replace("{", "").replace("}", "")
-                    s = s.replace("n", str(n)).replace("m", str(m))
-                    nm = l.group(2)
+                    e = l.group(2)
+                    e = e.replace("{", "").replace("}", "")
+                    e = e.replace("n", str(n)).replace("m", str(m))
+                    nm = l.group(3)
                     nm = nm.replace("n", str(n)).replace("m", str(m))
-                    if s == "":
+                    if s == "-":
                         s = -1
-                    else:
-                        s = (-1)**(literal_eval(s) % 2)
-                    res.append((s, literal_eval(nm)))
+                    elif s == "i":
+                        s = 1j
+                    e = s**(literal_eval(e))
+                    res.append((e, literal_eval(nm)))
         except Exception as e:
             raise Error("cannot compute indices for recipe '{}': {}"
                         .format(r, e))
@@ -1747,13 +1749,13 @@ class Function(LabelFrame):     # <<<2
 
         self._theta_x = LabelEntry(sphere_tab,
                                    label="rotation x (°)",
-                                   value="0",
+                                   value="15",
                                    convert=float,
                                    width=5)
         self._theta_x.pack(padx=5, pady=5)
         self._theta_y = LabelEntry(sphere_tab,
                                    label="rotation y (°)",
-                                   value="0",
+                                   value="15",
                                    convert=float,
                                    width=5)
         self._theta_y.pack(padx=5, pady=5)
@@ -2712,7 +2714,7 @@ def main():     # <<<1
 
     # function_config["matrix"] = M
     function_config["tab"] = "sphere"
-    function_config["sphere_pattern"] = "532"
+    function_config["sphere_pattern"] = "*332"
     # color_config["modulus"] = 1.5
 
     # color_config["modulus"] = 2
