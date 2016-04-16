@@ -380,7 +380,8 @@ COLOR_REVERSING_WALLPAPERS = {     # <<<1
             },
         "*333": {
                 "*632": {
-                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -m,-n ; n,m = -(-n,-m)",
+                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -m,-n ; "
+                              "n,m = -(-n,-m)",
                     "parity": ""}
             },
         "22×": {
@@ -427,7 +428,8 @@ COLOR_REVERSING_WALLPAPERS = {     # <<<1
             },
         "632": {
                 "*632": {
-                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -n,-m ; n,m = -(m,n)",
+                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -n,-m ; "
+                              "n,m = -(m,n)",
                     "parity": ""}
             },
         "**": {
@@ -449,7 +451,8 @@ COLOR_REVERSING_WALLPAPERS = {     # <<<1
             },
         "3*3": {
                 "*632": {
-                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n ; n,m = -(-n,-m)",
+                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n ; "
+                              "n,m = -(-n,-m)",
                     "parity": ""}
             },
         "4*2": {
@@ -546,6 +549,7 @@ for i in range(len(SPHERE_NAMES)):
     alt_name = SPHERE_GROUPS[p]["alt_name"]
     SPHERE_NAMES[i] = "{} ({})".format(p, alt_name)
 # >>>1
+
 
 ###
 # utility functions
@@ -841,7 +845,14 @@ def make_wallpaper_image(zs,     # <<<2
 # >>>2
 
 
-def make_sphere_image(zs, matrix, pattern, N=5, stereographic=True, theta_x=0, theta_y=0, message_queue=None):      # <<<2
+def make_sphere_image(zs,
+                      matrix,
+                      pattern,
+                      N=5,
+                      stereographic=True,
+                      theta_x=0,
+                      theta_y=0,
+                      message_queue=None):      # <<<2
 
     if not stereographic:
         x = zs.real
@@ -865,9 +876,7 @@ def make_sphere_image(zs, matrix, pattern, N=5, stereographic=True, theta_x=0, t
         y = _y
         z = _z
 
-
         zs = x/(1-z) + 1j*y/(1-z)
-
 
     recipe = SPHERE_GROUPS[pattern]["recipe"]
     parity = SPHERE_GROUPS[pattern]["parity"].replace("N", str(N))
@@ -928,9 +937,14 @@ def make_lattice_image(zs, matrix, basis=None, N=1, message_queue=None):
             message_queue.put("wave {}/{}".format(w1, w2))
         w1 += 1
     return res
-##
 
-def make_image(color=None, world=None, pattern="", matrix=None, message_queue=None, **params):     # <<<2
+
+def make_image(color=None,
+               world=None,
+               pattern="",
+               matrix=None,
+               message_queue=None,
+               **params):     # <<<2
     # TODO: add color, world and function parameter to keep config, instead
     # of taking it from self...
 
@@ -1683,10 +1697,10 @@ class Function(LabelFrame):     # <<<2
         rosette_button.pack(padx=5, pady=5)
 
         self._rosette_rotation = LabelEntry(frieze_tab,
-                                               label="symmetries",
-                                               value=5,
-                                               convert=int,
-                                               width=2)
+                                            label="symmetries",
+                                            value=5,
+                                            convert=int,
+                                            width=2)
         self._rosette_rotation.pack(padx=5, pady=5)
 
         Button(frieze_tab, text="make matrix",
@@ -1764,7 +1778,6 @@ class Function(LabelFrame):     # <<<2
                command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=10)
         # >>>4
 
-
         # display matrix    <<<4
         tmp = LabelFrame(self, text="matrix")
         tmp.grid(row=0, column=1, rowspan=2, sticky=N+S,  padx=5, pady=5)
@@ -1793,7 +1806,9 @@ class Function(LabelFrame):     # <<<2
         self._change_entry.pack(padx=5, pady=5)
         self._change_entry.bind("<Return>", self.add_entry)
 
-        Button(tmp, text="reset", command=lambda *_: self.change_matrix({})).pack(padx=5, pady=5)
+        Button(tmp,
+               text="reset",
+               command=lambda *_: self.change_matrix({})).pack(padx=5, pady=5)
         # >>>4
 
         # random matrix     <<<4
@@ -1965,7 +1980,8 @@ class Function(LabelFrame):     # <<<2
     # >>>3
 
     def update_wallpaper_tab(self, *args):        # <<<3
-        lattice = WALLPAPERS[self.pattern]["lattice"]
+        pattern = self._wallpaper_type.get().split()[0]
+        lattice = WALLPAPERS[pattern]["lattice"]
         if lattice == "general":
             self._lattice_params.enable()
             # self._lattice_params.label_widget.config(text="xsi, eta")
@@ -1998,7 +2014,6 @@ class Function(LabelFrame):     # <<<2
             assert False
 
         # color reversing combo
-        pattern = self.pattern
         CRW = COLOR_REVERSING_WALLPAPERS
         color_groups = []
         self._color_reversing_combo.configure(
@@ -2050,9 +2065,9 @@ class Function(LabelFrame):     # <<<2
             else:
                 M = add_symmetries(M, WALLPAPERS[pattern]["recipe"])
         elif self.current_tab == "sphere":
-            # print("SPHERE, pattern =", pattern, "parity =", SPHERE_GROUPS[pattern]["parity"])
-            M = add_symmetries(M, SPHERE_GROUPS[pattern]["recipe"], SPHERE_GROUPS[pattern]["parity"])
-
+            M = add_symmetries(M,
+                               SPHERE_GROUPS[pattern]["recipe"],
+                               SPHERE_GROUPS[pattern]["parity"])
 
         self.change_matrix(M)
     # >>>3
@@ -2703,8 +2718,9 @@ def main():     # <<<1
         else:
             assert False
 
-    # M = {}
+    # the "identity" function with waves, with period (1,0) / (0,1)
     # t = 10
+    # M = {}
     # for n in range(1, t+1):
     #     M[(n, 0)] = (-1)**(n+1) * -1j/abs(n*pi)
     #     M[(-n, 0)] = (-1)**(n+1) * 1j/abs(n*pi)
@@ -2713,12 +2729,11 @@ def main():     # <<<1
     #     M[(0, -n)] = (-1)**(n+1) * -1/abs(n*pi)
 
     # function_config["matrix"] = M
-    function_config["tab"] = "sphere"
-    function_config["sphere_pattern"] = "*332"
+    # function_config["tab"] = "sphere"
+    # function_config["sphere_pattern"] = "*332"
     # color_config["modulus"] = 1.5
 
     # color_config["modulus"] = 2
-    function_config["matrix"] = {(1,-1): .6j, (-1,1): .6j, (2,0): -1/3, (-2,0): -1/3}
     # function_config["pattern"] = "p4"
     # function_config["color_pattern"] = "4*2"
 
