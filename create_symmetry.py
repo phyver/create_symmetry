@@ -839,13 +839,33 @@ def make_wallpaper_image(zs,     # <<<2
 # >>>2
 
 
-def make_sphere_image(zs, matrix, pattern, N=5, stereographic=True, message_queue=None):      # <<<2
+def make_sphere_image(zs, matrix, pattern, N=5, stereographic=True, theta_x=0, theta_y=0, message_queue=None):      # <<<2
 
-    print(stereographic)
     if not stereographic:
-        hs = 1 - zs.real**2 - zs.imag**2
-        hs = np.sqrt(hs)
-        zs = zs.real/(1-hs) + 1j*zs.imag/(1-hs)
+        x = zs.real
+        y = zs.imag
+        z = np.sqrt(1 - x**2 - y**2)
+
+        theta_x = theta_x * pi / 180
+        theta_y = theta_y * pi / 180
+
+        _x = x
+        _y = cos(theta_x)*y + sin(theta_x)*z
+        _z = -sin(theta_x)*y + cos(theta_x)*z
+        x = _x
+        y = _y
+        z = _z
+
+        _x = cos(theta_y)*x - sin(theta_y)*z
+        _y = y
+        _z = sin(theta_y)*x + cos(theta_y)*z
+        x = _x
+        y = _y
+        z = _z
+
+
+        zs = x/(1-z) + 1j*y/(1-z)
+
 
     recipe = SPHERE_GROUPS[pattern]["recipe"]
     parity = SPHERE_GROUPS[pattern]["parity"].replace("N", str(N))
@@ -938,11 +958,13 @@ def make_image(color=None, world=None, pattern="", matrix=None, message_queue=No
                                     pattern,
                                     N=params["N"],
                                     stereographic=params["stereographic"],
+                                    theta_x=params["theta_x"],
+                                    theta_y=params["theta_y"],
                                     message_queue=message_queue)
         else:
             res = make_lattice_image(zs,
                                      matrix,
-                                     basis=params.pop("basis", [[1, 0], [0, 1]]),
+                                     basis=params["basis"],
                                      N=params["N"],
                                      message_queue=message_queue)
 
@@ -1704,7 +1726,7 @@ class Function(LabelFrame):     # <<<2
         self._sphere_combo.pack(padx=5, pady=5)
         self._sphere_combo.current(0)
         self._sphere_combo.bind("<<ComboboxSelected>>",
-                                   self.update_sphere_tab)
+                                self.update_sphere_tab)
 
         self._sphere_N = LabelEntry(sphere_tab,
                                     label="N",
@@ -1714,13 +1736,27 @@ class Function(LabelFrame):     # <<<2
         self._sphere_N.pack(padx=5, pady=5)
 
         self._stereographic = BooleanVar()
-        self._stereographic.set(True)
+        self._stereographic.set(False)
 
-        stereographic_button = Checkbutton(sphere_tab, text="stereographic projection",
-                                     variable=self._stereographic,
-                                     onvalue=True, offvalue=False)
+        stereographic_button = Checkbutton(sphere_tab,
+                                           text="stereographic projection",
+                                           variable=self._stereographic,
+                                           onvalue=True, offvalue=False,
+                                           command=self.update_sphere_tab)
         stereographic_button.pack(padx=5, pady=5)
 
+        self._theta_x = LabelEntry(sphere_tab,
+                                   label="rotation x (°)",
+                                   value="0",
+                                   convert=float,
+                                   width=5)
+        self._theta_x.pack(padx=5, pady=5)
+        self._theta_y = LabelEntry(sphere_tab,
+                                   label="rotation y (°)",
+                                   value="0",
+                                   convert=float,
+                                   width=5)
+        self._theta_y.pack(padx=5, pady=5)
 
         Button(sphere_tab, text="make matrix",
                command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=10)
@@ -1977,7 +2013,12 @@ class Function(LabelFrame):     # <<<2
             self._sphere_N.enable()
         else:
             self._sphere_N.disable()
-
+        if self._stereographic.get():
+            self._theta_x.disable()
+            self._theta_y.disable()
+        else:
+            self._theta_x.enable()
+            self._theta_y.enable()
     # >>>3
 
     def make_matrix(self):       # <<<3
@@ -2023,7 +2064,10 @@ class Function(LabelFrame):     # <<<2
                     "color_pattern": self.color_pattern}
         elif self.current_tab == "sphere":
             return {"N": self._sphere_N.get(),
-                    "stereographic": self._stereographic.get()}
+                    "stereographic": self._stereographic.get(),
+                    "theta_x": self._theta_x.get(),
+                    "theta_y": self._theta_y.get(),
+                    }
         elif self.current_tab == "raw":
             return {"N": self._raw_rotation.get(),
                     "basis": [self._basis_matrix1.get(),
@@ -2060,6 +2104,8 @@ class Function(LabelFrame):     # <<<2
                 "sphere_pattern": self._sphere_type.get().split()[0],
                 "sphere_N": self._sphere_N.get(),
                 "sphere_projection": self._stereographic.get(),
+                "sphere_theta_x": self._theta_x.get(),
+                "sphere_theta_y": self._theta_x.get(),
                 }
     # >>>3
 
@@ -2132,6 +2178,10 @@ class Function(LabelFrame):     # <<<2
             self._sphere_N.set(cfg["sphere_N"])
         if "sphere_projection" in cfg:
             self._stereographic.set(cfg["sphere_projection"])
+        if "sphere_theta_x" in cfg:
+            self._theta_x.set(cfg["sphere_theta_x"])
+        if "sphere_theta_y" in cfg:
+            self._theta_y.set(cfg["sphere_theta_y"])
     # >>>3
 # >>>2
 
@@ -2192,12 +2242,10 @@ class CreateSymmetry(Tk):      # <<<2
 
         self.bind("<Control-n>", sequence(self.function.add_noise))
         self.bind("<Control-N>", sequence(self.function.add_noise,
-                                          self.function.make_matrix,
                                           self.make_preview))
 
         self.bind("<Control-g>", sequence(self.function.new_random_matrix))
         self.bind("<Control-G>", sequence(self.function.new_random_matrix,
-                                          self.function.make_matrix,
                                           self.make_preview))
 
         self.bind("<Control-Key-minus>", sequence(self.world.zoom(2**.1),
@@ -2205,13 +2253,13 @@ class CreateSymmetry(Tk):      # <<<2
         self.bind("<Control-Key-plus>", sequence(self.world.zoom(2**-.1),
                                                  self.make_preview))
 
-        self.bind("<Control-Key-Left>", sequence(self.world.translate(.1, 0),
+        self.bind("<Control-Key-Left>", sequence(self.translate_rotate(1, 0),
                                                  self.make_preview))
-        self.bind("<Control-Key-Right>", sequence(self.world.translate(-.1, 0),
+        self.bind("<Control-Key-Right>", sequence(self.translate_rotate(-1, 0),
                                                   self.make_preview))
-        self.bind("<Control-Key-Up>", sequence(self.world.translate(0, -.1),
+        self.bind("<Control-Key-Up>", sequence(self.translate_rotate(0, -1),
                                                self.make_preview))
-        self.bind("<Control-Key-Down>", sequence(self.world.translate(0, .1),
+        self.bind("<Control-Key-Down>", sequence(self.translate_rotate(0, 1),
                                                  self.make_preview))
         self.bind("<Control-0>", sequence(self.world.reset_geometry,
                                           self.make_preview))
@@ -2288,7 +2336,7 @@ Keyboard shortcuts:
   Control-N     add noise to matrix and display preview
 
   Control-g     generate random matrix
-  Control-G     generate random matrix, add symmetries and display preview
+  Control-G     generate random matrix and display preview
 
   Control--     zoom out the result file and display preview
   Control-+     zoom in the result file and display preview
@@ -2296,7 +2344,7 @@ Keyboard shortcuts:
   Control-0     reset geometry of output and display preview
 
   Control-Up    translate the result and display preview
-  Control-Down
+  Control-Down  (for spherical patterns, rotate instead)
   Control-Right
   Control-Left
 """)
@@ -2473,6 +2521,18 @@ $CREATE_SYM --color-config='{color_config:}' \\
         cs.write(cmd)
         cs.close()
     # >>>3
+
+    def translate_rotate(self, dx, dy):
+        def t_r(*args):
+            print(dx, dy)
+            if self.function.current_tab == "sphere":
+                theta_x = self.function._theta_x.get()
+                theta_y = self.function._theta_y.get()
+                self.function._theta_x.set(floats_to_str([theta_x+10*dy]))
+                self.function._theta_y.set(floats_to_str([theta_y-10*dx]))
+            else:
+                self.world.translate(dx/10, dy/10)
+        return t_r
 
 # >>>2
 # >>>1
