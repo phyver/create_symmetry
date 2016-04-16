@@ -49,7 +49,6 @@ WORLD_GEOMETRY = (-2, 2, -2, 2)
 DEFAULT_COLOR = "black"
 FILENAME_TEMPLATE = "output-{:03}"
 
-phi = (1 + sqrt(5)) / 2
 remove_default = True      # TODO: deal with that from the GUI
 
 FRIEZES = {    # <<<1
@@ -887,6 +886,7 @@ def make_sphere_image(zs,
     elif "O" in SPHERE_GROUPS[pattern]["alt_name"]:
         average = [([[1, 0], [0, 1]], 1), ([[1, 1j], [1, -1j]], 3)]
     elif "I" in SPHERE_GROUPS[pattern]["alt_name"]:
+        phi = (1 + sqrt(5)) / 2
         average = [([[1, 1j], [1, -1j]], 3),
                    ([[phi*(1-phi*1j), 1+2j],
                      [sqrt(5), phi*(1-phi*1j)]], 5)]
@@ -897,11 +897,20 @@ def make_sphere_image(zs,
     [a, b], [c, d] = average[0][0]
     [e, f], [g, h] = average[1][0]
     # TODO: it doesn't work if I swapp the 2 loops! Why???
+
     for i in range(average[1][1]):
         for j in range(average[0][1]):
             zsc = np.conj(zs)
+            w1, w2 = 1, len(matrix)
             for (n, m) in matrix:
                 res = res + matrix[(n, m)] * zs**n * zsc**m
+                if message_queue is not None:
+                    message_queue.put("coset {}/{}, wave {}/{}"
+                                      .format(i*average[0][1]+j+1,
+                                              average[0][1] * average[1][1],
+                                              w1,
+                                              w2))
+                w1 += 1
             zs = (a*zs + b) / (c*zs + d)
         zs = (e*zs + f) / (g*zs + h)
 
@@ -1458,15 +1467,13 @@ class World(LabelFrame):     # <<<2
     # >>>3
 
     def translate(self, dx, dy):    # <<<3
-        def translate_tmp(*args):
-            x_min, x_max, y_min, y_max = self.geometry
-            delta_x = x_max - x_min
-            delta_y = y_max - y_min
-            self._x_min.set(x_min + dx * delta_x)
-            self._x_max.set(x_max + dx * delta_x)
-            self._y_min.set(y_min + dy * delta_y)
-            self._y_max.set(y_max + dy * delta_y)
-        return translate_tmp
+        x_min, x_max, y_min, y_max = self.geometry
+        delta_x = x_max - x_min
+        delta_y = y_max - y_min
+        self._x_min.set(x_min + dx * delta_x)
+        self._x_max.set(x_max + dx * delta_x)
+        self._y_min.set(y_min + dy * delta_y)
+        self._y_max.set(y_max + dy * delta_y)
     # >>>3
 
     def reset_geometry(self, *args):        # <<<3
@@ -1619,14 +1626,14 @@ class Function(LabelFrame):     # <<<2
         wallpaper_tab = Frame(self._tabs)
         self._tabs.add(wallpaper_tab, text="wallpaper")
 
+        sphere_tab = Frame(self._tabs)
+        self._tabs.add(sphere_tab, text="sphere")
+
         frieze_tab = Frame(self._tabs)
         self._tabs.add(frieze_tab, text="frieze")
 
         raw_tab = Frame(self._tabs)
         self._tabs.add(raw_tab, text="raw")
-
-        sphere_tab = Frame(self._tabs)
-        self._tabs.add(sphere_tab, text="sphere")
 
         # hyper_tab = Frame(self._tabs)
         # self._tabs.add(hyper_tab, text="hyperbolic")
@@ -1715,7 +1722,7 @@ class Function(LabelFrame):     # <<<2
                                          convert=str_to_floats,
                                          width=10)
         self._basis_matrix1.grid(row=0, column=0, sticky=E,
-                                 padx=5, pady=(5, 0))
+                                 padx=5, pady=(20, 0))
         self._basis_matrix2.grid(row=1, column=0, sticky=E,
                                  padx=5, pady=(0, 5))
 
@@ -1724,12 +1731,12 @@ class Function(LabelFrame):     # <<<2
                                         value=1,
                                         convert=int,
                                         width=3)
-        self._raw_rotation.grid(row=2, column=0, padx=5, pady=5)
+        self._raw_rotation.grid(row=2, column=0, padx=5, pady=20)
         # >>>4
 
         # sphere tab        <<<4
         Label(sphere_tab,
-              text="sphere pattern").pack(padx=5, pady=(20, 0))
+              text="symmetry group").pack(padx=5, pady=(20, 0))
         self._sphere_type = StringVar()
         self._sphere_combo = Combobox(sphere_tab, width=15, exportselection=0,
                                       textvariable=self._sphere_type,
@@ -1818,25 +1825,25 @@ class Function(LabelFrame):     # <<<2
         self._random_nb_coeff.pack(padx=5, pady=5)
 
         self._random_min_degre = LabelEntry(tmp, label="min degre",
-                                            value=-6,
+                                            value=-3,
                                             convert=int,
                                             width=4)
         self._random_min_degre.pack(padx=5, pady=5)
 
         self._random_max_degre = LabelEntry(tmp, label="max degre",
-                                            value=6,
+                                            value=3,
                                             convert=int,
                                             width=4)
         self._random_max_degre.pack(padx=5, pady=5)
 
         self._random_min_coeff = LabelEntry(tmp, label="min coefficient",
-                                            value=-.1,
+                                            value=-.3,
                                             convert=float,
                                             width=4)
         self._random_min_coeff.pack(padx=5, pady=5)
 
         self._random_max_coeff = LabelEntry(tmp, label="max coefficient",
-                                            value=.1,
+                                            value=.3,
                                             convert=float,
                                             width=4)
         self._random_max_coeff.pack(padx=5, pady=5)
@@ -2138,11 +2145,11 @@ class Function(LabelFrame):     # <<<2
         if "tab" in cfg:
             if cfg["tab"] == "wallpaper":
                 self._tabs.select(0)
-            elif cfg["tab"] == "frieze":
-                self._tabs.select(1)
-            elif cfg["tab"] == "raw":
-                self._tabs.select(2)
             elif cfg["tab"] == "sphere":
+                self._tabs.select(1)
+            elif cfg["tab"] == "frieze":
+                self._tabs.select(2)
+            elif cfg["tab"] == "raw":
                 self._tabs.select(3)
             else:
                 self._tabs.select(0)
@@ -2537,7 +2544,6 @@ $CREATE_SYM --color-config='{color_config:}' \\
 
     def translate_rotate(self, dx, dy):
         def t_r(*args):
-            print(dx, dy)
             if self.function.current_tab == "sphere":
                 theta_x = self.function._theta_x.get()
                 theta_y = self.function._theta_y.get()
