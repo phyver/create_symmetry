@@ -2164,7 +2164,7 @@ class Function(LabelFrame):     # <<<2
                 # wallpaper tab
                 "wallpaper_pattern": self._wallpaper_type.get().split()[0],
                 "lattice_parameters": self._lattice_params.get(),
-                "color_pattern": self._color_reversing_color_pattern.get().split()[0],
+                "wallpaper_color_pattern": self._color_reversing_color_pattern.get().split()[0],
                 # frieze tab
                 "frieze_pattern": self._frieze_type.get(),
                 "rosette": self._rosette.get(),
@@ -2214,12 +2214,12 @@ class Function(LabelFrame):     # <<<2
                 if cfg["wallpaper_pattern"] in tmp:
                     self._wallpaper_combo.current(i)
             self.update_wallpaper_tab()
-        if "color_pattern" in cfg:
+        if "wallpaper_color_pattern" in cfg:
             l = self._color_reversing_combo.cget("values")
             for i in range(len(l)):
                 tmp = l[i].replace("(", "").replace(")", "")
                 tmp = tmp.split()
-                if cfg["color_pattern"] in tmp:
+                if cfg["wallpaper_color_pattern"] in tmp:
                     self._color_reversing_combo.current(i),
         if "lattice_parameters" in cfg:
             self._lattice_params.set(floats_to_str(cfg["lattice_parameters"]))
@@ -2809,7 +2809,7 @@ def main():     # <<<1
 
     # color_config["modulus"] = 2
     # function_config["pattern"] = "p4"
-    # function_config["color_pattern"] = "4*2"
+    # function_config["wallpaper_color_pattern"] = "4*2"
 
     gui = CreateSymmetry()
     gui.colorwheel.set_config(color_config)
