@@ -1125,6 +1125,8 @@ class ColorWheel(LabelFrame):   # <<<2
                                  width=10,
                                  convert=getrgb)
         self._color.grid(row=0, column=0, padx=5, pady=5)
+        self._color.bind("<Return>", self.update_defaultcolor)
+        self._color.bind("<FocusOut>", self.update_defaultcolor)
 
         self._filename = Label(self, text="...")
         self._filename.grid(row=1, column=0, padx=5, pady=5)
@@ -1199,13 +1201,7 @@ class ColorWheel(LabelFrame):   # <<<2
     # >>>3
 
     def update_defaultcolor(self, *args):     # <<<3
-        try:
-            c = self.color
-            self._canvas.config(bg="#{:02x}{:02x}{:02x}".format(*c))
-            self._color.config(foreground="black")
-        except Exception as e:
-            error("error: '{}'".format(e))
-            self._color.config(foreground="red")
+        self._canvas.config(bg="#{:02x}{:02x}{:02x}".format(*self.color))
     # >>>3
 
     def change_colorwheel(self, filename):  # <<<3
