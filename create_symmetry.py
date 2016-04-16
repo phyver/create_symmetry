@@ -47,7 +47,7 @@ COLOR_SIZE = 200
 COLOR_GEOMETRY = (-1, 1, -1, 1)
 WORLD_GEOMETRY = (-2, 2, -2, 2)
 DEFAULT_COLOR = "black"
-FILENAME_TEMPLATE = "output-{:03}"
+FILENAME_TEMPLATE = "output"
 
 remove_default = True      # TODO: deal with that from the GUI
 
@@ -2571,14 +2571,14 @@ Keyboard shortcuts:
 
         nb = 1
         while True:
-            filename = filename_template.format(nb)
-            if (not os.path.exists(filename+".jpg") and
-                    not os.path.exists(filename+".sh")):
+            if (not os.path.exists(filename+suf+".jpg") and
+                    not os.path.exists(filename+suf+".sh")):
                 break
             nb += 1
-        image.save(filename + ".jpg")
+            suf = "-{:03}".format(nb)
+        image.save(filename + suf + ".jpg")
         if message_queue is not None:
-            message_queue.put("saved file {}".format(filename+".jpg"))
+            message_queue.put("saved file {}".format(filename+suf+".jpg"))
 
         config["function"]["matrix"] = matrix_to_list(config["matrix"])
         cmd = ("""#!/bin/sh
@@ -2596,7 +2596,7 @@ $CREATE_SYM --color-config='{color_config:}' \\
            function_config=json.dumps(config["function"], separators=(",", ":")),
            ))
 
-        cs = open(filename + ".sh", mode="w")
+        cs = open(filename + suf + ".sh", mode="w")
         cs.write(cmd)
         cs.close()
     # >>>3
