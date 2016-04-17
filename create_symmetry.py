@@ -49,8 +49,6 @@ WORLD_GEOMETRY = (-2, 2, -2, 2)
 DEFAULT_COLOR = "black"
 FILENAME_TEMPLATE = "output"
 
-remove_default = True      # TODO: deal with that from the GUI
-
 FRIEZES = {    # <<<1
         "∞∞": {
             "alt_name": "p111",
@@ -88,124 +86,102 @@ WALLPAPERS = {          # <<<1
               "alt_name": "p1",
               "recipe": "",
               "lattice": "general",
-              # "basis": lambda *p:  [[1, -p[0]/p[1]], [0, 1/p[1]]]
               "basis": lambda *p:  [[1, 0], [p[0], p[1]]]
              },
         "2222": {
               "alt_name": "p2",
               "recipe": "n,m = -n, -m",
               "lattice": "general",
-              # "basis": lambda *p:  [[1, -p[0]/p[1]], [0, 1/p[1]]]
               "basis": lambda *p:  [[1, 0], [p[0], p[1]]]
              },
         "*×": {
               "alt_name": "cm",
               "recipe": "n,m = m,n",
               "lattice": "rhombic",
-              # "basis": lambda *p:  [[1, 1/(2*p[0])], [1, -1/(2*p[0])]]
               "basis": lambda *p:  [[1/2, p[0]/2], [1/2, -p[0]/2]]
              },
         "2*22": {
               "alt_name": "cmm",
               "recipe": "n,m = m,n = -n,-m = -m,-n",
               "lattice": "rhombic",
-              # "basis": lambda *p:  [[1, 1/(2*p[0])], [1, -1/(2*p[0])]]
               "basis": lambda *p:  [[1/2, p[0]/2], [1/2, -p[0]/2]]
              },
         "**": {
               "alt_name": "pm",
               "recipe": "n,m = n,-m",
               "lattice": "rectangular",
-              # "basis": lambda *p:  [[1, 0], [0, 1/(p[0])]]
               "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
              },
         "××": {
               "alt_name": "pg",
               "recipe": "n,m = -{n}(n,-m)",
               "lattice": "rectangular",
-              # "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
               "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
              },
         "*2222": {
               "alt_name": "pmm",
               "recipe": "n,m = -n,-m = -n,m = n,-m",
               "lattice": "rectangular",
-              # "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
               "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
              },
         "22*": {
               "alt_name": "pmg",
               "recipe": "n,m = -n,-m = -{n}(n,-m) = -{n}(-n,m)",
               "lattice": "rectangular",
-              # "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
               "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
              },
         "22×": {
               "alt_name": "pgg",
               "recipe": "n,m = -n,-m = -{n+m}(n,-m) = -{n+m}(-n,m)",
               "lattice": "rectangular",
-              # "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
               "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
              },
         "442": {
               "alt_name": "p4",
-              # "recipe": "",
               "recipe": "n,m = m,-n = -n,-m = -m,n",
               "lattice": "square",
               "basis": lambda *p:  [[1, 0], [0, 1]]
              },
         "*442": {
               "alt_name": "p4m",
-              # "recipe": "n,m = m,n",
               "recipe": "n,m = m,-n = -n,-m = -m,n ; n,m = m,n",
               "lattice": "square",
               "basis": lambda *p:  [[1, 0], [0, 1]]
              },
         "4*2": {
               "alt_name": "p4g",
-              # "recipe": "n,m = -{n+m}(m,n)",
               "recipe": "n,m = m,-n = -n,-m = -m,n ; n,m = -{n+m}(m,n)",
               "lattice": "square",
               "basis": lambda *p:  [[1, 0], [0, 1]]
              },
         "333": {
               "alt_name": "p3",
-              # "recipe": "",
               "recipe": "n,m = m,-n-m = -n-m,n",
               "lattice": "hexagonal",
-              # "basis": lambda *p:  [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
               "basis": lambda *p:  [[1, 0], [-1/2, sqrt(3)/2]]
              },
         "3*3": {
               "alt_name": "p31m",
-              # "recipe": "n,m = m,n",
               "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n",
               "lattice": "hexagonal",
-              # "basis": lambda *p:  [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
               "basis": lambda *p:  [[1, 0], [-1/2, sqrt(3)/2]]
              },
         "*333": {
               "alt_name": "p3m1",
-              # "recipe": "n,m = -m,-n",
               "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -m,-n",
               "lattice": "hexagonal",
-              # "basis": lambda *p:  [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
               "basis": lambda *p:  [[1, 0], [-1/2, sqrt(3)/2]]
              },
         "632": {
               "alt_name": "p6",
-              # "recipe": "n,m = -n,-m",
               "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -n,-m",
               "lattice": "hexagonal",
-              # "basis": lambda *p:  [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
               "basis": lambda *p:  [[1, 0], [-1/2, sqrt(3)/2]]
              },
         "*632": {
               "alt_name": "p6m",
-              # "recipe": "n,m = m,n = -n,-m = -m,-n",
               "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n = -n,-m = -m,-n",
               "lattice": "hexagonal",
-              # "basis": lambda *p:  [[1, 1/sqrt(3)], [0, 2/sqrt(3)]]
               "basis": lambda *p:  [[1, 0], [-1/2, sqrt(3)/2]]
              }
         }
@@ -534,7 +510,6 @@ SPHERE_NAMES = [    # <<<1
         "*332",
         "*432",
         "*532",
-        #
         "NN",
         "22N",
         "*NN",
@@ -705,17 +680,9 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
     return R1
 # >>>2
 
+
 def rotation_matrix(x, y, z):       # <<<2
     # see https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
-    # a = cos(y)*cos(z)
-    # b = -cos(y)*sin(z)
-    # c = sin(y)
-    # d = cos(x)*sin(z) + cos(z)*sin(x)*sin(y)
-    # e = cos(x)*cos(z) - sin(x)*sin(y)*sin(z)
-    # f = -cos(y)*sin(x)
-    # g = sin(x)*sin(z) - cos(x)*cos(z)*sin(y)
-    # h = cos(z)*sin(x) + cos(x)*sin(y)*sin(z)
-    # i = cos(x)*cos(y)
     a = cos(x)*cos(y)
     b = cos(x)*sin(y)*sin(z) - cos(z)*sin(x)
     c = sin(x)*sin(z) + cos(x)*cos(z)*sin(y)
@@ -755,8 +722,8 @@ def mult_M(M1, M2):
 def make_coordinates_array(         # <<<2
         size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),
         geometry=WORLD_GEOMETRY,
-        modulus="1",
-        angle="0",
+        modulus=1,
+        angle=0,
         ):
     rho = modulus * complex(cos(angle*pi/180), sin(angle*pi/180))
 
@@ -765,14 +732,19 @@ def make_coordinates_array(         # <<<2
     delta_x = (x_max-x_min) / (width-1)
     delta_y = (y_max-y_min) / (height-1)
 
-    xs = np.arange(width)
-    xs = x_min + xs*delta_x
+    xs = np.arange(width, dtype='float64')
+    # xs = x_min + xs*delta_x
+    np.multiply(delta_x, xs, out=xs)
+    np.add(x_min, xs, out=xs)
 
-    ys = np.arange(height)
-    ys = y_max - ys*delta_y
+    ys = np.arange(height, dtype='float64')
+    # ys = y_max - ys*delta_y
+    np.multiply(delta_y, ys, out=ys)
+    np.subtract(y_max, ys, out=ys)
 
     zs = xs[:, None] + 1j*ys
-    zs = zs / rho
+    # zs = zs / rho
+    np.divide(zs, rho, out=zs)
 
     return zs
 # >>>2
@@ -805,7 +777,8 @@ def apply_color(        # <<<2
                              color=color)
     color_im.paste(tmp, (1, 1))
 
-    res = res / rho
+    # res = res / rho
+    np.divide(res, rho, out=res)
 
     # convert the ``res`` array into pixel coordinates
     xs = np.rint((res.real - x_min) / delta_x).astype(int)
@@ -813,8 +786,10 @@ def apply_color(        # <<<2
 
     # increase all coordinates by 1: 0 will be used for pixels in the border
     # with ``color``
-    xs = xs + 1
-    ys = ys + 1
+    # xs = xs + 1
+    np.add(xs, 1, out=xs)
+    # ys = ys + 1
+    np.add(ys, 1, out=ys)
 
     # replace too big / too small values with 0, to get the ``color``
     np.place(xs, xs < 0, [0])
@@ -847,13 +822,16 @@ def make_rosette_image(zs,                # <<<2
                             parity="n-m = 0 mod {}".format(N))
 
     if unwind:
-        zs = np.exp(1j * zs)
+        # zs = np.exp(1j * zs)
+        zs.multiply(1j, zs)
+        np.exp(zs, out=zs)
     zsc = np.conj(zs)
 
     res = np.zeros(zs.shape, complex)
     w1, w2 = 1, len(matrix)
     for (n, m) in matrix:
-        res = res + matrix[(n, m)] * zs**n * zsc**m
+        # res += matrix[(n, m)] * zs**n * zsc**m
+        np.add(res,  matrix[(n, m)] * zs**n * zsc**m, out=res)
         if message_queue is not None:
             message_queue.put("wave {}/{}".format(w1, w2))
         w1 += 1
@@ -883,8 +861,12 @@ def make_wallpaper_image(zs,     # <<<2
     for (n, m) in matrix:
         xs = zs.real
         ys = zs.imag
-        res += matrix[(n, m)] * np.exp(2j*pi*(n*(C[0][0]*xs+C[1][0]*ys) +
-                                              m*(C[0][1]*xs+C[1][1]*ys)))
+        # res += matrix[(n, m)] * np.exp(2j*pi*(n*(C[0][0]*xs+C[1][0]*ys) +
+        #                                       m*(C[0][1]*xs+C[1][1]*ys)))
+        np.add(res,
+               matrix[(n, m)] * np.exp(2j*pi*(n*(C[0][0]*xs+C[1][0]*ys) +
+                                              m*(C[0][1]*xs+C[1][1]*ys))),
+               out=res)
         if message_queue is not None:
             message_queue.put("wave {}/{}".format(w1, w2))
         w1 += 1
@@ -944,7 +926,8 @@ def make_sphere_image(zs,
             zsc = np.conj(zs)
             w1, w2 = 1, len(matrix)
             for (n, m) in matrix:
-                res = res + matrix[(n, m)] * zs**n * zsc**m
+                # res += matrix[(n, m)] * zs**n * zsc**m
+                np.add(res, matrix[(n, m)] * zs**n * zsc**m, out=res)
                 if message_queue is not None:
                     message_queue.put("coset {}/{}, wave {}/{}"
                                       .format(i*average[0][1]+j+1,
@@ -952,10 +935,13 @@ def make_sphere_image(zs,
                                               w1,
                                               w2))
                 w1 += 1
-            zs = (a*zs + b) / (c*zs + d)
-        zs = (e*zs + f) / (g*zs + h)
+            # zs = (a*zs + b) / (c*zs + d)
+            np.divide(zs, (a*zs + b) / (c*zs + d), out=zs)
+        # zs = (e*zs + f) / (g*zs + h)
+        np.divide(zs, (e*zs + f) / (g*zs + h), out=zs)
 
-    return res / (average[0][1]*average[1][1])
+    np.divide(res, average[0][1]*average[1][1], out=res)
+    return res
 # >>>2
 
 
@@ -979,9 +965,15 @@ def make_lattice_image(zs, matrix, basis=None, N=1, message_queue=None):
             _ys = _tmp.imag
             _tmp = (n*(B[0][0]*_xs+B[1][0]*_ys) +
                     m*(B[0][1]*_xs+B[1][1]*_ys))
-            ZS += np.exp(2j*pi*_tmp)
-        ZS = ZS / N
-        res += matrix[(n, m)] * ZS
+            # ZS += np.exp(2j*pi*_tmp)
+            np.multiply(_tmp, 2j*pi, out=_tmp)
+            np.exp(_tmp, out=_tmp)
+            np.add(ZS, _tmp, out=ZS)
+        # ZS = ZS / N
+        np.divide(ZS, N, out=ZS)
+        # res += matrix[(n, m)] * ZS
+        np.multiply(ZS, matrix[(n, m)], out=ZS)
+        np.add(res, ZS, out=res)
 
         if message_queue is not None:
             message_queue.put("wave {}/{}".format(w1, w2))
@@ -994,6 +986,7 @@ def make_image(color=None,
                pattern="",
                matrix=None,
                message_queue=None,
+               stretch_color=False,
                **params):     # <<<2
     # TODO: add color, world and function parameter to keep config, instead
     # of taking it from self...
@@ -1035,8 +1028,9 @@ def make_image(color=None,
                                      N=params["N"],
                                      message_queue=message_queue)
 
-        if remove_default:
-            res = res / (np.sqrt(np.conj(res)*res + 1))
+        if stretch_color:
+            # res = res / np.sqrt(1 + res.real**2 * res.imag**2)
+            np.divide(res, np.sqrt(1 + res.real**2 * res.imag**2), out=res)
 
         return apply_color(res,
                            color["filename"],
@@ -1165,6 +1159,11 @@ class ColorWheel(LabelFrame):   # <<<2
         return self._color.get()
     # >>>3
 
+    @property
+    def stretch(self):    # <<<3
+        return self._stretch_color.get()
+    # >>>3
+
     def __init__(self, root):        # <<<3
 
         LabelFrame.__init__(self, root)
@@ -1179,11 +1178,18 @@ class ColorWheel(LabelFrame):   # <<<2
         self._color.bind("<Return>", self.update_defaultcolor)
         self._color.bind("<FocusOut>", self.update_defaultcolor)
 
+        self._stretch_color = BooleanVar()
+        self._stretch_color.set(False)
+        Checkbutton(self, text="stretch unit disk",
+                    variable=self._stretch_color,
+                    onvalue=True, offvalue=False,
+                    command=lambda: self.change_colorwheel(self.filename)).grid(row=1,column=0, padx=5, pady=5)
+
         self._filename = Label(self, text="...")
-        self._filename.grid(row=1, column=0, padx=5, pady=5)
+        self._filename.grid(row=2, column=0, padx=5, pady=5)
 
         self._canvas = Canvas(self, width=200, height=200, bg="white")
-        self._canvas.grid(row=2, column=0, padx=5, pady=5)
+        self._canvas.grid(row=3, column=0, padx=5, pady=5)
         for i in range(5, COLOR_SIZE, 10):
             for j in range(5, COLOR_SIZE, 10):
                 self._canvas.create_line(i-1, j, i+2, j, fill="gray")
@@ -1193,11 +1199,11 @@ class ColorWheel(LabelFrame):   # <<<2
         self._canvas.bind("<Double-Button-1>", self.choose_colorwheel)
 
         Button(self, text="choose file",
-               command=self.choose_colorwheel).grid(row=3, column=0,
+               command=self.choose_colorwheel).grid(row=4, column=0,
                                                     padx=5, pady=5)
 
         coord_frame = LabelFrame(self, text="coordinates")
-        coord_frame.grid(row=4, column=0, sticky=E+W, padx=5, pady=5)
+        coord_frame.grid(row=5, column=0, sticky=E+W, padx=5, pady=5)
         coord_frame.columnconfigure(0, weight=1)
         coord_frame.columnconfigure(1, weight=1)
 
@@ -1230,7 +1236,7 @@ class ColorWheel(LabelFrame):   # <<<2
                                                  padx=5, pady=5)
 
         transformation_frame = LabelFrame(self, text="transformation")
-        transformation_frame.grid(row=5, column=0, sticky=E+W, padx=5, pady=5)
+        transformation_frame.grid(row=6, column=0, sticky=E+W, padx=5, pady=5)
         self._modulus = LabelEntry(transformation_frame, label="modulus",
                                    value=1,
                                    convert=float,
@@ -1256,9 +1262,44 @@ class ColorWheel(LabelFrame):   # <<<2
     # >>>3
 
     def change_colorwheel(self, filename):  # <<<3
+        if filename is None:
+            return
         try:
-            img = PIL.Image.open(filename)
-            img.thumbnail((COLOR_SIZE, COLOR_SIZE), PIL.Image.ANTIALIAS)
+            if self.stretch:
+                self._x_min.disable()
+                self._x_max.disable()
+                self._y_min.disable()
+                self._y_max.disable()
+                zs = make_coordinates_array(
+                        size=(PREVIEW_SIZE, PREVIEW_SIZE),
+                        geometry=(-7, 7, -7, 7))
+                np.divide(zs, np.sqrt(1 + zs.real**2 + zs.imag**2), out=zs)
+                img = apply_color(zs,
+                                  filename,
+                                  self.geometry,
+                                  self.modulus,
+                                  self.angle,
+                                  self.color)
+            else:
+                self._x_min.enable()
+                self._x_max.enable()
+                self._y_min.enable()
+                self._y_max.enable()
+                img = PIL.Image.open(filename)
+                img.thumbnail((COLOR_SIZE, COLOR_SIZE), PIL.Image.ANTIALIAS)
+                width, height = img.size
+                ratio = width / height
+                if ratio < 1:
+                    self._x_min.set(COLOR_GEOMETRY[0])
+                    self._x_max.set(COLOR_GEOMETRY[1])
+                    self._y_min.set(COLOR_GEOMETRY[2] / ratio)
+                    self._y_max.set(COLOR_GEOMETRY[3] / ratio)
+                else:
+                    self._x_min.set(COLOR_GEOMETRY[0] * ratio)
+                    self._x_max.set(COLOR_GEOMETRY[1] * ratio)
+                    self._y_min.set(COLOR_GEOMETRY[2])
+                    self._y_max.set(COLOR_GEOMETRY[3])
+
             self._image = img
             tk_img = PIL.ImageTk.PhotoImage(img)
             self._tk_image = tk_img     # prevent garbage collection
@@ -1266,20 +1307,8 @@ class ColorWheel(LabelFrame):   # <<<2
             self._canvas.create_image((100, 100), image=tk_img)
             self.filename = filename
             self._filename.config(text=os.path.basename(filename))
-            width, height = self._image.size
-            ratio = width / height
-            if ratio < 1:
-                self._x_min.set(COLOR_GEOMETRY[0])
-                self._x_max.set(COLOR_GEOMETRY[1])
-                self._y_min.set(COLOR_GEOMETRY[2] / ratio)
-                self._y_max.set(COLOR_GEOMETRY[3] / ratio)
-            else:
-                self._x_min.set(COLOR_GEOMETRY[0] * ratio)
-                self._x_max.set(COLOR_GEOMETRY[1] * ratio)
-                self._y_min.set(COLOR_GEOMETRY[2])
-                self._y_max.set(COLOR_GEOMETRY[3])
         except Exception as e:
-            error("problem while opening {} for color image: {}"
+            error("problem while loading {} for color image: {}"
                   .format(filename, e))
     # >>>3
 
@@ -1325,15 +1354,11 @@ class ColorWheel(LabelFrame):   # <<<2
                 "geometry": self.geometry,
                 "modulus": self.modulus,
                 "angle": self.angle,
+                "stretch": self.stretch,
                 }
     # >>>3
 
     def set_config(self, cfg):      # <<<3
-        if "filename" in cfg:
-            self.change_colorwheel(cfg["filename"])
-        if "color" in cfg:
-            self._color.set(cfg["color"])
-            self.update_defaultcolor()
         if "geometry" in cfg:
             g = cfg["geometry"]
             self._x_min.set(g[0])
@@ -1344,6 +1369,13 @@ class ColorWheel(LabelFrame):   # <<<2
             self._modulus.set(cfg["modulus"])
         if "angle" in cfg:
             self._angle.set(cfg["angle"])
+        if "stretch" in cfg:
+            self._stretch_color.set(cfg["stretch"])
+        if "color" in cfg:
+            self._color.set(cfg["color"])
+            self.update_defaultcolor()
+        if "filename" in cfg:
+            self.change_colorwheel(cfg["filename"])
     # >>>3
 # >>>2
 
@@ -2035,20 +2067,14 @@ class Function(LabelFrame):     # <<<2
         lattice = WALLPAPERS[pattern]["lattice"]
         if lattice == "general":
             self._lattice_params.enable()
-            # self._lattice_params.label_widget.config(text="xsi, eta")
-            # self._lattice_params.set("1, 2")
             self._lattice_params.label_widget.config(text="x, y")
             self._lattice_params.set("1, 1")
         elif lattice == "rhombic":
             self._lattice_params.enable()
-            # self._lattice_params.label_widget.config(text="b")
-            # self._lattice_params.set("2")
             self._lattice_params.label_widget.config(text="b")
             self._lattice_params.set(".5")
         elif lattice == "rectangular":
             self._lattice_params.enable()
-            # self._lattice_params.set("2")
-            # self._lattice_params.label_widget.config(text="L")
             self._lattice_params.set(".5")
             self._lattice_params.label_widget.config(text="H")
         elif lattice == "square":
@@ -2426,6 +2452,9 @@ Keyboard shortcuts:
   Control-Down  (for spherical patterns, rotate instead)
   Control-Right
   Control-Left
+
+  Control-z
+  Control-Z     for spherical pattern, rotate around z-axis
 """)
         text.config(state=DISABLED)
 
@@ -2460,6 +2489,7 @@ Keyboard shortcuts:
                                    pattern=self.function.pattern,
                                    matrix=self.function.matrix,
                                    message_queue=self.message_queue,
+                                   stretch_color=self.colorwheel.stretch,
                                    **params)
 
                 # FIXME: methode change_preview in World class
@@ -2567,6 +2597,7 @@ Keyboard shortcuts:
                            pattern=pattern,
                            matrix=matrix,
                            message_queue=self.message_queue,
+                           stretch_color=color["stretch"],
                            **params)
 
         nb = 1
@@ -2622,9 +2653,9 @@ $CREATE_SYM --color-config='{color_config:}' \\
                 self.function._theta_y.set(floats_to_str([theta_y]))
                 self.function._theta_z.set(floats_to_str([theta_z]))
             else:
-                self.world.translate(dx/10, dy/10)
+                if dx != 0 or dy != 0:
+                    self.world.translate(dx/10, dy/10)
         return t_r
-
 # >>>2
 # >>>1
 
