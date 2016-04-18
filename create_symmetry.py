@@ -2482,14 +2482,14 @@ Keyboard shortcuts:
         # console messages
         self._console.config(state=NORMAL)
         while not self.message_queue.empty():
-            self._console.insert(END, self.message_queue.get(0) + "\n")
+            self._console.insert(END, self.message_queue.get(block=False) + "\n")
         self._console.yview(END)
         self._console.config(state=DISABLED)
 
         m = None
         while True:
             try:
-                m = self.preview_message_queue.get(block=0)
+                m = self.preview_message_queue.get(block=False)
             except queue.Empty:
                 if m is not None:
                     self._preview_console.config(state=NORMAL)
@@ -2507,7 +2507,7 @@ Keyboard shortcuts:
         m = None
         while True:
             try:
-                m = self.output_message_queue.get(block=0)
+                m = self.output_message_queue.get(block=False)
             except queue.Empty:
                 if m is not None:
                     self._output_console.config(state=NORMAL)
@@ -2532,15 +2532,20 @@ Keyboard shortcuts:
         #     self._nb_pending.grid_remove()
 
         # preview image
-        while not self.preview_image_queue.empty():
-                image = self.preview_image_queue.get()
-                # FIXME: methode change_preview in World class
-                self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
-                self.world._canvas.delete(self.world._image_id)
-                # self.world._canvas.delete(ALL)
-                self.world._image_id = self.world._canvas.create_image(
-                                (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
-                                image=self.world._canvas.tk_img)
+        image = None
+        while True:
+            try:
+                image = self.preview_image_queue.get(block=False)
+            except queue.Empty:
+                if image is not None:
+                    # FIXME: methode change_preview in World class
+                    self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
+                    self.world._canvas.delete(self.world._image_id)
+                    # self.world._canvas.delete(ALL)
+                    self.world._image_id = self.world._canvas.create_image(
+                                    (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
+                                    image=self.world._canvas.tk_img)
+                break
 
         #         # draw tile
         #         if self.function.lattice_basis is not None:
@@ -2723,6 +2728,9 @@ $CREATE_SYM --color-config='{color_config:}' \\
             try:
                 self.preview_process.terminate()
                 self.preview_process.join()
+                # redefine queues to avoid corruption
+                self.preview_message_queue = multiprocessing.Queue()
+                self.preview_image_queue = multiprocessing.Queue()
             except AttributeError as e:
                 pass
                 # print("OOPS: {}".format(e))
