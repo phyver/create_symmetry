@@ -887,7 +887,8 @@ def make_sphere_image(zs,
     if not stereographic:
         x = zs.real
         y = zs.imag
-        z = np.sqrt(1 - x**2 - y**2)
+        with np.errstate(invalid='ignore'):
+            z = np.sqrt(1 - x**2 - y**2)
 
         theta_x = theta_x * pi / 180
         theta_y = theta_y * pi / 180
@@ -936,11 +937,12 @@ def make_sphere_image(zs,
                                               w2))
                 w1 += 1
             # zs = (a*zs + b) / (c*zs + d)
-            np.divide(zs, (a*zs + b) / (c*zs + d), out=zs)
+            np.divide(a*zs + b, c*zs + d, out=zs)
         # zs = (e*zs + f) / (g*zs + h)
-        np.divide(zs, (e*zs + f) / (g*zs + h), out=zs)
+        np.divide(e*zs + f, g*zs + h, out=zs)
 
     np.divide(res, average[0][1]*average[1][1], out=res)
+    # res = res / (average[0][1]*average[1][1])
     return res
 # >>>2
 
