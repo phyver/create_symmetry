@@ -1844,19 +1844,19 @@ class Function(LabelFrame):     # <<<2
                                    value="15",
                                    convert=float,
                                    width=5)
-        self._theta_x.pack(padx=5, pady=5)
+        self._theta_x.pack(padx=5, pady=0)
         self._theta_y = LabelEntry(sphere_tab,
                                    label="rotation y (°)",
                                    value="15",
                                    convert=float,
                                    width=5)
-        self._theta_y.pack(padx=5, pady=5)
+        self._theta_y.pack(padx=5, pady=0)
         self._theta_z = LabelEntry(sphere_tab,
                                    label="rotation z (°)",
                                    value="0",
                                    convert=float,
                                    width=5)
-        self._theta_z.pack(padx=5, pady=5)
+        self._theta_z.pack(padx=5, pady=0)
 
         Button(sphere_tab, text="make matrix",
                command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=10)
@@ -2325,7 +2325,7 @@ class CreateSymmetry(Tk):      # <<<2
                 font="TkFixedFont",
                 borderwidth=3,
                 relief="ridge")
-        self._console.grid(row=1, column=0, sticky=E+W+N+S, padx=10, pady=10)
+        self._console.grid(row=1, column=0, sticky=E+W+N+S, padx=10, pady=(10, 0))
         self._console.config(state=DISABLED)
         # self._nb_pending = Label(console_frame)
         # self._nb_pending.grid(row=1, column=0, sticky=E+S, padx=10, pady=10)
@@ -2347,7 +2347,7 @@ class CreateSymmetry(Tk):      # <<<2
                 borderwidth=3,
                 relief="ridge")
         self._output_console.grid(row=3, column=0, sticky=E+W,
-                                  padx=10, pady=10)
+                                  padx=10, pady=(0, 10))
         self._output_console.config(state=DISABLED)
         # >>>4
 
@@ -2393,7 +2393,16 @@ class CreateSymmetry(Tk):      # <<<2
                                           self.make_preview))
         self.bind("<Control-0>", sequence(self.world.reset_geometry,
                                           self.make_preview))
+
+        self.bind("<Control-u>", sequence(self.undo,
+                                          self.make_preview))
+        self.bind("<Control-r>", sequence(self.redo,
+                                          self.make_preview))
         # >>>4
+
+        # list of matrices, for UNDO
+        self.undo_list = []
+        self.undo_index = -1
 
         # queue containing parameters for pending output jobs
         self.output_params_queue = multiprocessing.Queue()
@@ -2407,7 +2416,6 @@ class CreateSymmetry(Tk):      # <<<2
         self.preview_message_queue = multiprocessing.Queue()
 
         self.message_queue = multiprocessing.Queue()
-
         self.message_queue.put("""  create_symmetry.py
  Control-h for shortcuts
 -------------------------
@@ -2454,6 +2462,9 @@ Keyboard shortcuts:
 
   Control-z
   Control-Z     for spherical pattern, rotate around z-axis
+
+  Control-u     undo: go back to previous matrix
+  Control-r     redo
 """)
         text.config(state=DISABLED)
 
@@ -2717,6 +2728,10 @@ $CREATE_SYM --color-config='{color_config:}' \\
                 # print("OOPS: {}".format(e))
             self.preview_process = multiprocessing.Process(target=make_preview_job)
             self.preview_process.start()
+            self.undo_list = self.undo_list[-100:]
+            if self.undo_index == -1:
+                self.undo_list.append(self.function.matrix)
+            
 
         except Error as e:
             self.message_queue.put("* {}".format(e))
@@ -2747,6 +2762,20 @@ $CREATE_SYM --color-config='{color_config:}' \\
                     self.world.translate(dx/10, dy/10)
         return t_r
     # >>>3
+
+    def undo(self):     # <<<3
+        if self.undo_index > -len(self.undo_list):
+            self.undo_index -= 1
+            self.function.change_matrix(self.undo_list[self.undo_index])
+    # >>>3
+
+    def redo(self):     # <<<3
+        if self.undo_index < -1:
+            self.undo_index += 1
+            self.function.change_matrix(self.undo_list[self.undo_index])
+    # >>>3
+
+
 # >>>2
 # >>>1
 
