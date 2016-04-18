@@ -2668,13 +2668,39 @@ Keyboard shortcuts:
                            stretch_color=color["stretch"],
                            **params)
 
-        nb = 1
+        function = config["function"]
+        if function["tab"] == "wallpaper":
+            output_type = "wallpaper_group"
+            pattern = function["wallpaper_pattern"]
+            if function["wallpaper_color_pattern"] != "--":
+                pattern += "_" + function["wallpaper_color_pattern"]
+        elif function["tab"] == "sphere":
+            output_type = "sphere_group"
+            pattern = function["sphere_pattern"]
+            pattern = pattern.replace("N", str(function["sphere_N"]))
+        elif function["tab"] == "frieze":
+            pattern = function["frieze_pattern"]
+            if function["rosette"]:
+                output_type = "rosette"
+            else:
+                output_type = "frieze"
+        elif function["tab"] == "raw":
+            output_type = "plain_lattice"
+            pattern = ""
+        else:
+            assert False
+
+        print("'{}', '{}'".format(output_type, pattern))
+
+        nb = 0
+        suf = ""
+        filename = filename_template
         while True:
             if (not os.path.exists(filename+suf+".jpg") and
                     not os.path.exists(filename+suf+".sh")):
                 break
             nb += 1
-            suf = "-{:03}".format(nb)
+            suf = "~{:03}".format(nb)
         image.save(filename + suf + ".jpg")
         if message_queue is not None:
             message_queue.put("saved file {}".format(filename+suf+".jpg"))
