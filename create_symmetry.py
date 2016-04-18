@@ -647,11 +647,12 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
             if (n, m) in R2:
                 continue
             indices = others(n, m, r)
-            coeffs = [R1[nm] for (s, nm) in indices if nm in R1]
+            coeffs = [s*R1[nm] for (s, nm) in indices if nm in R1]
             # coeff = sum(coeffs) / len(indices)
             coeff = sum(coeffs) / len(coeffs)
-            for s, nm in indices:
-                R2[nm] = s * coeff
+            if coeff != 0:
+                for s, nm in indices:
+                    R2[nm] = s * coeff
         R1 = R2
         R2 = {}
 
@@ -2836,11 +2837,12 @@ def main():     # <<<1
     #     M[(0, -n)] = (-1)**(n+1) * -1/abs(n*pi)
 
     # function_config["matrix"] = M
-    # function_config["tab"] = "sphere"
-    # function_config["sphere_pattern"] = "*332"
     # color_config["modulus"] = 1.5
 
     # color_config["modulus"] = 2
+    # function_config["wallpaper_pattern"] = "632"
+    # function_config["wallpaper_color_pattern"] = "*632"
+
     # function_config["pattern"] = "p4"
     # function_config["wallpaper_color_pattern"] = "4*2"
 
