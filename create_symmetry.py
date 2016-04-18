@@ -37,7 +37,6 @@ import threading
 import queue
 # >>>1
 
-verbose = 1
 PREVIEW_SIZE = 500
 OUTPUT_WIDTH = 1280
 OUTPUT_HEIGHT = 960
@@ -46,6 +45,7 @@ COLOR_GEOMETRY = (-1, 1, -1, 1)
 WORLD_GEOMETRY = (-2, 2, -2, 2)
 DEFAULT_COLOR = "black"
 FILENAME_TEMPLATE = "output"
+UNDO_SIZE = 100
 
 FRIEZES = {    # <<<1
         "∞∞": {
@@ -539,8 +539,7 @@ def error(*args, **kwargs):     # <<<2
 
 def message(*args, **kwargs):       # <<<2
     """print message if verbosity is greater than 1"""
-    if verbose > 0:
-        print(*args, **kwargs)
+    print(*args, **kwargs)
 # >>>2
 
 
@@ -1087,13 +1086,15 @@ class LabelEntry(Frame):  # <<<2
 
     def validate(self, *args):     # <<<3
         if self.convert is None:
-            return
+            return True
         else:
             try:
                 self.convert(self.content.get())
                 self.entry_widget.config(foreground="black")
+                return True
             except Exception as e:
                 self.entry_widget.config(foreground="red")
+                return False
     # >>>3
 
     def set(self, s):  # <<<3
@@ -1107,13 +1108,13 @@ class LabelEntry(Frame):  # <<<2
     # >>>3
 
     def get(self):  # <<<3
-        s = self.content.get()
         if self.convert is not None:
             try:
-                return self.convert(s)
+                return self.convert(self.content.get())
             except Exception as e:
                 raise Error("{}: cannot convert value of field '{}': {}"
-                            .format(self.label_widget.cget("text"), s, e))
+                            .format(self.label_widget.cget("text"),
+                                    self.content.get(), e))
         else:
             return s
     # >>>3
@@ -1259,7 +1260,8 @@ class ColorWheel(LabelFrame):   # <<<2
     # >>>3
 
     def update_defaultcolor(self, *args):     # <<<3
-        self._canvas.config(bg="#{:02x}{:02x}{:02x}".format(*self.color))
+        if self._color.validate():
+            self._canvas.config(bg="#{:02x}{:02x}{:02x}".format(*self.color))
     # >>>3
 
     def change_colorwheel(self, filename):  # <<<3
@@ -2737,9 +2739,10 @@ $CREATE_SYM --color-config='{color_config:}' \\
             self.preview_process = multiprocessing.Process(target=make_preview_job)
             self.preview_process.start()
             self.undo_list = self.undo_list[-100:]
-            if self.undo_index == -1:
+            if (self.undo_index == -1 and
+                    len(self.undo_list) > 0 and
+                    self.matrix != self.undo_list[-1]):
                 self.undo_list.append(self.function.matrix)
-            
 
         except Error as e:
             self.message_queue.put("* {}".format(e))
@@ -2821,7 +2824,6 @@ def main():     # <<<1
 
     --preview                           compute the initial preview image
 
-    -v  /  -verbose                     add information messages
     -h  /  --help                       this message
 """)
 
@@ -2834,8 +2836,7 @@ def main():     # <<<1
             "matrix=", "rotation-symmetry=",
             "preview",
             "wallpaper=", "frieze=", "rosette=", "raw=", "params=",
-            "color-config=", "world-config=", "function-config=",
-            "verbose"]
+            "color-config=", "world-config=", "function-config="]
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], short_options, long_options)
@@ -2851,7 +2852,6 @@ def main():     # <<<1
     world_config = {}
     function_config = {}
     make_preview = False
-    global verbose
     for o, a in opts:
         if o in ["-h", "--help"]:
             display_help()
@@ -2928,8 +2928,6 @@ def main():     # <<<1
             pattern = a
         elif o in ["--params"]:
             params = a
-        elif o in ["-v", "--verbose"]:
-            verbose += 1
         elif o == "--preview":
             make_preview = True
         elif o in ["--matrix"]:
