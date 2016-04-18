@@ -51,30 +51,37 @@ FRIEZES = {    # <<<1
         "∞∞": {
             "alt_name": "p111",
             "recipe": ""
+            # TOCHECK
             },
         "22∞": {
             "alt_name": "p211",
             "recipe": "n,m = -n,-m"
+            # TOCHECK
             },
         "*∞∞": {
             "alt_name": "p1m1",
             "recipe": "n,m = m,n"
+            # TOCHECK
             },
         "∞*": {
             "alt_name": "p11m",
             "recipe": "n,m = -m,-n"
+            # TOCHECK
             },
         "*22∞": {
             "alt_name": "p2mm",
             "recipe": "n,m = m,n = -n,-m = -m,-n"
+            # TOCHECK
             },
         "∞×": {
             "alt_name": "p11g",
             "recipe": "n,m = -{n+m}(-m,-n)"
+            # TOCHECK
             },
         "2*∞": {
             "alt_name": "p2mg",
             "recipe": "n,m = -n,-m = -{n+m}(-m,-n) = -{n+m}(m,n)"
+            # TOCHECK
             },
         }
 # >>>1
@@ -85,104 +92,345 @@ WALLPAPERS = {          # <<<1
               "recipe": "",
               "lattice": "general",
               "basis": lambda *p:  [[1, 0], [p[0], p[1]]]
+            # TOCHECK
              },
         "2222": {
               "alt_name": "p2",
               "recipe": "n,m = -n, -m",
               "lattice": "general",
               "basis": lambda *p:  [[1, 0], [p[0], p[1]]]
+            # TOCHECK
              },
         "*×": {
               "alt_name": "cm",
               "recipe": "n,m = m,n",
               "lattice": "rhombic",
               "basis": lambda *p:  [[1/2, p[0]/2], [1/2, -p[0]/2]]
+            # TOCHECK
              },
         "2*22": {
               "alt_name": "cmm",
               "recipe": "n,m = m,n = -n,-m = -m,-n",
               "lattice": "rhombic",
               "basis": lambda *p:  [[1/2, p[0]/2], [1/2, -p[0]/2]]
+            # TOCHECK
              },
         "**": {
               "alt_name": "pm",
               "recipe": "n,m = n,-m",
               "lattice": "rectangular",
               "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
+            # TOCHECK
              },
         "××": {
               "alt_name": "pg",
               "recipe": "n,m = -{n}(n,-m)",
               "lattice": "rectangular",
               "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
+            # TOCHECK
              },
         "*2222": {
               "alt_name": "pmm",
               "recipe": "n,m = -n,-m = -n,m = n,-m",
               "lattice": "rectangular",
               "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
+            # TOCHECK
              },
         "22*": {
               "alt_name": "pmg",
               "recipe": "n,m = -n,-m = -{n}(n,-m) = -{n}(-n,m)",
               "lattice": "rectangular",
               "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
+            # TOCHECK
              },
         "22×": {
               "alt_name": "pgg",
               "recipe": "n,m = -n,-m = -{n+m}(n,-m) = -{n+m}(-n,m)",
               "lattice": "rectangular",
               "basis": lambda *p:  [[1, 0], [0, 1/p[0]]]
+            # TOCHECK
              },
         "442": {
               "alt_name": "p4",
               "recipe": "n,m = m,-n = -n,-m = -m,n",
               "lattice": "square",
               "basis": lambda *p:  [[1, 0], [0, 1]]
+            # TOCHECK
              },
         "*442": {
               "alt_name": "p4m",
               "recipe": "n,m = m,-n = -n,-m = -m,n ; n,m = m,n",
               "lattice": "square",
               "basis": lambda *p:  [[1, 0], [0, 1]]
+            # TOCHECK
              },
         "4*2": {
               "alt_name": "p4g",
               "recipe": "n,m = m,-n = -n,-m = -m,n ; n,m = -{n+m}(m,n)",
               "lattice": "square",
               "basis": lambda *p:  [[1, 0], [0, 1]]
+            # TOCHECK
              },
         "333": {
               "alt_name": "p3",
               "recipe": "n,m = m,-n-m = -n-m,n",
               "lattice": "hexagonal",
               "basis": lambda *p:  [[1, 0], [-1/2, sqrt(3)/2]]
+            # TOCHECK
              },
         "3*3": {
               "alt_name": "p31m",
               "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n",
               "lattice": "hexagonal",
               "basis": lambda *p:  [[1, 0], [-1/2, sqrt(3)/2]]
+            # TOCHECK
              },
         "*333": {
               "alt_name": "p3m1",
               "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -m,-n",
               "lattice": "hexagonal",
               "basis": lambda *p:  [[1, 0], [-1/2, sqrt(3)/2]]
+            # TOCHECK
              },
         "632": {
               "alt_name": "p6",
               "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -n,-m",
               "lattice": "hexagonal",
               "basis": lambda *p:  [[1, 0], [-1/2, sqrt(3)/2]]
+            # TOCHECK
              },
         "*632": {
               "alt_name": "p6m",
               "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n = -n,-m = -m,-n",
               "lattice": "hexagonal",
               "basis": lambda *p:  [[1, 0], [-1/2, sqrt(3)/2]]
+            # TOCHECK
              }
         }
+# >>>1
+
+COLOR_REVERSING_WALLPAPERS = {     # <<<1
+        "*2222": {
+                "*442": {
+                    "recipe": "n,m = -(-m,n) ; n,m = -(m,n)",
+                    "parity": ""},
+            # TOCHECK
+                "*2222": {
+                    "recipe": "n,m = -n,m ; n,m = -n,-m",
+                    "parity": "n = 1 mod 2"},
+            # TOCHECK
+                "2*22": {
+                    "recipe": "n,m = -n,m ; n,m j -n,-m",
+                    "parity": "n+m = 1 mod 2"}
+            # TOCHECK
+            },
+        "××": {
+                "××": {
+                    "recipe": "n,m = -{m}(-n,m)",
+                    "parity": "n = 1 mod 2"},
+            # TOCHECK
+                "22×": {
+                    "recipe": "n,m = -{n+m}(-n,m) ; n,m = -(-n,-m)",
+                    "parity": ""},
+            # TOCHECK
+                "22*": {
+                    "recipe": "n,m = -{m}(-n,m) ; n,m = -(-n,-m)",
+                    "parity": ""},
+            # TOCHECK
+                "*×": {
+                    "recipe": "n,m = -{m}(-n,m)",
+                    "parity": "n+m = 1 mod 2"},
+            # TOCHECK
+                "**": {
+                    "recipe": "n,m = -{m}(-n,m)",
+                    "parity": "m = 1 mod 2"}
+            # TOCHECK
+            },
+        "*333": {
+                "*632": {
+                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -m,-n ; "
+                              "n,m = -(-n,-m)",
+                    "parity": ""}
+            # TOCHECK
+            },
+        "22×": {
+                "2*22": {
+                    "recipe": "n,m = -{n+m}(-n,m) ; n,mu = -n,-m",
+                    "parity": "n+m = 1 mod 2"},
+            # TOCHECK
+                "22*": {
+                    "recipe": "n,m = -{n+m}(-n,m) ; n,m = -n,-m",
+                    "parity": "n = 1 mod 2"},
+            # TOCHECK
+                "4*2": {
+                    "recipe": "n,m = -(-m,n) ; n,m = -{1+n+m}(m,n)",
+                    "parity": ""}
+            # TOCHECK
+            },
+        "22*": {
+                "*2222": {
+                    "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
+                    "parity": "m = 1 mod 2"},
+            # TOCHECK
+                "2*22": {
+                    "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
+                    "parity": "n+m = 1 mod 2"},
+            # TOCHECK
+                "22*": {
+                    "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
+                    "parity": "n = 1 mod 2"}
+            # TOCHECK
+            },
+        "2222": {
+                "*2222": {
+                    "recipe": "n,m = -(-n,m) ; n,m = -n,-m",
+                    "parity": ""},
+            # TOCHECK
+                "22×": {
+                    "recipe": "n,m = -{1+n+m}(m,n) ; n,m = -n,-m",
+                    "parity": ""},
+            # TOCHECK
+                "2*22": {
+                    "recipe": "n,m = -(m,n) ; n,m = -n,-m",
+                    "parity": ""},
+            # TOCHECK
+                "2222": {
+                    "recipe": "n,m = -n,-m",
+                    "parity": "n+m = 1 mod 2"},
+            # TOCHECK
+                "22*": {
+                    "recipe": "n,m = -{m+1}(m,n) ; n,m = -n,-m",
+                    "parity": ""},
+            # TOCHECK
+                "442": {
+                    "recipe": "n,m = -(-m,n)",
+                    "parity": ""}
+            # TOCHECK
+            },
+        "632": {
+                "*632": {
+                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -n,-m ; "
+                              "n,m = -(m,n)",
+                    "parity": ""}
+            # TOCHECK
+            },
+        "**": {
+                "*2222": {
+                    "recipe": "n,m = -n,m ; n,m = -(-n,-m)",
+                    "parity": ""},
+            # TOCHECK
+                "22*": {
+                    "recipe": "n,m = -{m+1}(-n,m) ; n,m = -(-n,-m)",
+                    "parity": ""},
+            # TOCHECK
+                "*×": {
+                    "recipe": "n,m = -n,m",
+                    "parity": "n+m = 1 mod 2"},
+            # TOCHECK
+                "**": {
+                    "recipe": "n,m = -n,m",
+                    "parity": "n = 1 mod 2"},
+            # TOCHECK
+                "**": {
+                    "recipe": "n,m = -n,m",
+                    "parity": "m = 1 mod 2"}
+            # TOCHECK
+            },
+        "3*3": {
+                "*632": {
+                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n ; "
+                              "n,m = -(-n,-m)",
+                    "parity": ""}
+            # TOCHECK
+            },
+        "4*2": {
+                "*442": {
+                    "recipe": "n,m = -m,n ; n,m = -{n+m}(m,n)",
+                    "parity": "n+m = 1 mod 2"}
+            # TOCHECK
+            },
+        "2*22": {
+                "*442": {
+                    "recipe": "n,m = -(-m,n) ; n,m = m,n",
+                    "parity": ""},
+            # TOCHECK
+                "*2222": {
+                    "recipe": "n,m = m,n ; n,m = -n,-m",
+                    "parity": "n+m = 1 mod 2"},
+            # TOCHECK
+                "4*2": {
+                    "recipe": "n,m = -(-m,n) ; n,m = -{n+m}(m,n)",
+                    "parity": ""}
+            # TOCHECK
+            },
+        "333": {
+                "*333": {
+                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-m,-n)",
+                    "parity": ""},
+            # TOCHECK
+                "632": {
+                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-n,-m)",
+                    "parity": ""},
+            # TOCHECK
+                "3*3": {
+                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(m,n)",
+                    "parity": ""}
+            # TOCHECK
+            },
+        "o": {
+                "××": {
+                    "recipe": "n,m = -{m+1}(-n,m)",
+                    "parity": ""},
+            # TOCHECK
+                "2222": {
+                    "recipe": "n,m = -(-n,-m)",
+                    "parity": ""},
+            # TOCHECK
+                "o": {
+                    "recipe": "",
+                    "parity": "n+m = 1 mod 2"},
+            # TOCHECK
+                "*×": {
+                    "recipe": "n,m = -(m,n)",
+                    "parity": ""},
+            # TOCHECK
+                "**": {
+                    "recipe": "n,m = -(-n,m)",
+                    "parity": ""}
+            # TOCHECK
+            },
+        "*×": {
+                "2*22": {
+                    "recipe": "n,m = -(m,n) ; n,m = -(-n,-m)",
+                    "parity": ""},
+            # TOCHECK
+                "**": {
+                    "recipe": "n,m = m,n",
+                    "parity": "n+m = 1 mod 2"}
+            # TOCHECK
+            },
+        "442": {
+                "*442": {
+                    "recipe": "n,m = -m,n ; n,m = -(m,n)",
+                    "parity": ""},
+            # TOCHECK
+                "4*2": {
+                    "recipe": "n,m = -m,n ; n,m = -{n+m+1}(m,n)",
+                    "parity": ""},
+            # TOCHECK
+                "442": {
+                    "recipe": "n,m = -m,n",
+                    "parity": "n+m = 1 mod 2"}
+            # TOCHECK
+            },
+        "*442": {
+                "*442": {
+                    "recipe": "n,m = -m,n ; n,m = m,n",
+                    "parity": "n+m = 1 mod 2"}
+            # TOCHECK
+            },
+        "*632": {}
+}
 # >>>1
 
 SPHERE_GROUPS = {   # <<<1
@@ -191,84 +439,98 @@ SPHERE_GROUPS = {   # <<<1
             "recipe": "n,m = -n,-m",
             "parity": "n-m = 0 mod 2",
             "type": "tetrahedral"
+            # TOCHECK
             },
         "432": {
             "alt_name": "O",
             "recipe": "n,m = -n,-m",
             "parity": "n-m = 0 mod 4",
             "type": "octahedral"
+            # TOCHECK
             },
         "532": {
             "alt_name": "I",
             "recipe": "n,m = -n,-m",
             "parity": "n-m = 0 mod 2",
             "type": "icosahedral"
+            # TOCHECK
             },
         "*332": {
             "alt_name": "Td",
             "recipe": "n,m = -n,-m ; n,m = i{n-m}(m,n)",
             "parity": "n-m = 0 mod 2",
             "type": "tetrahedral"
+            # TOCHECK
             },
         "3*2": {
             "alt_name": "Th",
             "recipe": "n,m = -n,-m ; n,m = -m,-n",
             "parity": "n-m = 0 mod 2",
             "type": ""
+            # TOCHECK
             },
         "*432": {
             "alt_name": "Oh",
             "recipe": "n,m = -n,-m ; n,m = -m,-n",
             "parity": "n-m = 0 mod 4",
             "type": ""
+            # TOCHECK
             },
         "*532": {
             "alt_name": "Ih",
             "recipe": "n,m = -n,-m ; n,m = -m,-n",
             "parity": "n-m = 0 mod 2",
             "type": ""
+            # TOCHECK
             },
         "NN": {
             "alt_name": "Cn",
             "recipe": "",
             "parity": "n-m = 0 mod N",
             "type": ""
+            # TOCHECK
             },
         "22N": {
             "alt_name": "Dn",
             "recipe": "n,m = -n,-m",
             "parity": "n-m = 0 mod N",
             "type": ""
+            # TOCHECK
             },
         "*NN": {
             "alt_name": "Cnv",
             "recipe": "n,m = m,n",
             "parity": "n-m = 0 mod N",
             "type": ""
+            # TOCHECK
             },
         "N*": {
             "alt_name": "Cnh",
             "recipe": "n,m = -m,-n",
             "parity": "n-m = 0 mod N",
             "type": ""
+            # TOCHECK
             },
         "*22N": {
             "alt_name": "Dnh",
             "recipe": "n,m = m,n = -n,-m = -m,-n",
             "parity": "n-m = 0 mod N",
             "type": ""
+            # TOCHECK
             },
         "N×": {
             "alt_name": "S2n",
             "recipe": "n,m = -{n+m}(-m,-n)",
             "parity": "n-m = 0 mod N",
             "type": ""
+            # TOCHECK
             },
         "2*N": {
             "alt_name": "Dnd",
             "recipe": "n,m = -n,-m = -{n+m}(-m,-n) = -{n+m}(m,n)",
             "parity": "n-m = 0 mod N",
             "type": ""
+            # TOCHECK
             },
         }
 # >>>1
@@ -320,184 +582,6 @@ for i in range(len(WALLPAPER_NAMES)):
                                              alt_name,
                                              "" if _l == l else ("-- "+l))
     _l = l
-# >>>1
-
-COLOR_REVERSING_WALLPAPERS = {     # <<<1
-        "*2222": {
-                "*442": {
-                    "recipe": "n,m = -(-m,n) ; n,m = -(m,n)",
-                    "parity": ""},
-                "*2222": {
-                    "recipe": "n,m = -n,m ; n,m = -n,-m",
-                    "parity": "n = 1 mod 2"},
-                "2*22": {
-                    "recipe": "n,m = -n,m ; n,m j -n,-m",
-                    "parity": "n+m = 1 mod 2"}
-            },
-        "××": {
-                "××": {
-                    "recipe": "n,m = -{m}(-n,m)",
-                    "parity": "n = 1 mod 2"},
-                "22×": {
-                    "recipe": "n,m = -{n+m}(-n,m) ; n,m = -(-n,-m)",
-                    "parity": ""},
-                "22*": {
-                    "recipe": "n,m = -{m}(-n,m) ; n,m = -(-n,-m)",
-                    "parity": ""},
-                "*×": {
-                    "recipe": "n,m = -{m}(-n,m)",
-                    "parity": "n+m = 1 mod 2"},
-                "**": {
-                    "recipe": "n,m = -{m}(-n,m)",
-                    "parity": "m = 1 mod 2"}
-            },
-        "*333": {
-                "*632": {
-                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -m,-n ; "
-                              "n,m = -(-n,-m)",
-                    "parity": ""}
-            },
-        "22×": {
-                "2*22": {
-                    "recipe": "n,m = -{n+m}(-n,m) ; n,mu = -n,-m",
-                    "parity": "n+m = 1 mod 2"},
-                "22*": {
-                    "recipe": "n,m = -{n+m}(-n,m) ; n,m = -n,-m",
-                    "parity": "n = 1 mod 2"},
-                "4*2": {
-                    "recipe": "n,m = -(-m,n) ; n,m = -{1+n+m}(m,n)",
-                    "parity": ""}
-            },
-        "22*": {
-                "*2222": {
-                    "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
-                    "parity": "m = 1 mod 2"},
-                "2*22": {
-                    "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
-                    "parity": "n+m = 1 mod 2"},
-                "22*": {
-                    "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
-                    "parity": "n = 1 mod 2"}
-            },
-        "2222": {
-                "*2222": {
-                    "recipe": "n,m = -(-n,m) ; n,m = -n,-m",
-                    "parity": ""},
-                "22×": {
-                    "recipe": "n,m = -{1+n+m}(m,n) ; n,m = -n,-m",
-                    "parity": ""},
-                "2*22": {
-                    "recipe": "n,m = -(m,n) ; n,m = -n,-m",
-                    "parity": ""},
-                "2222": {
-                    "recipe": "n,m = -n,-m",
-                    "parity": "n+m = 1 mod 2"},
-                "22*": {
-                    "recipe": "n,m = -{m+1}(m,n) ; n,m = -n,-m",
-                    "parity": ""},
-                "442": {
-                    "recipe": "n,m = -(-m,n)",
-                    "parity": ""}
-            },
-        "632": {
-                "*632": {
-                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -n,-m ; "
-                              "n,m = -(m,n)",
-                    "parity": ""}
-            },
-        "**": {
-                "*2222": {
-                    "recipe": "n,m = -n,m ; n,m = -(-n,-m)",
-                    "parity": ""},
-                "22*": {
-                    "recipe": "n,m = -{m+1}(-n,m) ; n,m = -(-n,-m)",
-                    "parity": ""},
-                "*×": {
-                    "recipe": "n,m = -n,m",
-                    "parity": "n+m = 1 mod 2"},
-                "**": {
-                    "recipe": "n,m = -n,m",
-                    "parity": "n = 1 mod 2"},
-                "**": {
-                    "recipe": "n,m = -n,m",
-                    "parity": "m = 1 mod 2"}
-            },
-        "3*3": {
-                "*632": {
-                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n ; "
-                              "n,m = -(-n,-m)",
-                    "parity": ""}
-            },
-        "4*2": {
-                "*442": {
-                    "recipe": "n,m = -m,n ; n,m = -{n+m}(m,n)",
-                    "parity": "n+m = 1 mod 2"}
-            },
-        "2*22": {
-                "*442": {
-                    "recipe": "n,m = -(-m,n) ; n,m = m,n",
-                    "parity": ""},
-                "*2222": {
-                    "recipe": "n,m = m,n ; n,m = -n,-m",
-                    "parity": "n+m = 1 mod 2"},
-                "4*2": {
-                    "recipe": "n,m = -(-m,n) ; n,m = -{n+m}(m,n)",
-                    "parity": ""}
-            },
-        "333": {
-                "*333": {
-                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-m,-n)",
-                    "parity": ""},
-                "632": {
-                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-n,-m)",
-                    "parity": ""},
-                "3*3": {
-                    "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(m,n)",
-                    "parity": ""}
-            },
-        "o": {
-                "××": {
-                    "recipe": "n,m = -{m+1}(-n,m)",
-                    "parity": ""},
-                "2222": {
-                    "recipe": "n,m = -(-n,-m)",
-                    "parity": ""},
-                "o": {
-                    "recipe": "",
-                    "parity": "n+m = 1 mod 2"},
-                "*×": {
-                    "recipe": "n,m = -(m,n)",
-                    "parity": ""},
-                "**": {
-                    "recipe": "n,m = -(-n,m)",
-                    "parity": ""}
-            },
-        "*×": {
-                "2*22": {
-                    "recipe": "n,m = -(m,n) ; n,m = -(-n,-m)",
-                    "parity": ""},
-                "**": {
-                    "recipe": "n,m = m,n",
-                    "parity": "n+m = 1 mod 2"}
-            },
-        "442": {
-                "*442": {
-                    "recipe": "n,m = -m,n ; n,m = -(m,n)",
-                    "parity": ""},
-                "4*2": {
-                    "recipe": "n,m = -m,n ; n,m = -{n+m+1}(m,n)",
-                    "parity": ""},
-                "442": {
-                    "recipe": "n,m = -m,n",
-                    "parity": "n+m = 1 mod 2"}
-            },
-        "*442": {
-                "*442": {
-                    "recipe": "n,m = -m,n ; n,m = m,n",
-                    "parity": "n+m = 1 mod 2"}
-            },
-        "*632": {}
-}
 # >>>1
 
 SPHERE_NAMES = [    # <<<1
@@ -1116,7 +1200,7 @@ class LabelEntry(Frame):  # <<<2
                             .format(self.label_widget.cget("text"),
                                     self.content.get(), e))
         else:
-            return s
+            return self.content.get()
     # >>>3
 
     def delete(self):  # <<<3
@@ -2994,8 +3078,8 @@ def main():     # <<<1
     # function_config["wallpaper_pattern"] = "632"
     # function_config["wallpaper_color_pattern"] = "*632"
 
-    # function_config["pattern"] = "p4"
-    # function_config["wallpaper_color_pattern"] = "4*2"
+    # function_config["tab"] = "sphere"
+    # function_config["sphere_pattern"] = "532"
 
     gui = CreateSymmetry()
     gui.colorwheel.set_config(color_config)
