@@ -484,49 +484,49 @@ SPHERE_GROUPS = {   # <<<1
             # TOCHECK
             },
         "NN": {
-            "alt_name": "Cn",
+            "alt_name": "CN",
             "recipe": "",
             "parity": "n-m = 0 mod N",
             "type": ""
             # TOCHECK
             },
         "22N": {
-            "alt_name": "Dn",
+            "alt_name": "DN",
             "recipe": "n,m = -n,-m",
             "parity": "n-m = 0 mod N",
             "type": ""
             # TOCHECK
             },
         "*NN": {
-            "alt_name": "Cnv",
+            "alt_name": "CNv",
             "recipe": "n,m = m,n",
             "parity": "n-m = 0 mod N",
             "type": ""
             # TOCHECK
             },
         "N*": {
-            "alt_name": "Cnh",
+            "alt_name": "CNh",
             "recipe": "n,m = -m,-n",
             "parity": "n-m = 0 mod N",
             "type": ""
             # TOCHECK
             },
         "*22N": {
-            "alt_name": "Dnh",
+            "alt_name": "DNh",
             "recipe": "n,m = m,n = -n,-m = -m,-n",
             "parity": "n-m = 0 mod N",
             "type": ""
             # TOCHECK
             },
         "N×": {
-            "alt_name": "S2n",
+            "alt_name": "S2N",
             "recipe": "n,m = -{n+m}(-m,-n)",
             "parity": "n-m = 0 mod N",
             "type": ""
             # TOCHECK
             },
         "2*N": {
-            "alt_name": "Dnd",
+            "alt_name": "DNd",
             "recipe": "n,m = -n,-m = -{n+m}(-m,-n) = -{n+m}(m,n)",
             "parity": "n-m = 0 mod N",
             "type": ""
@@ -905,7 +905,7 @@ def make_rosette_image(zs,                # <<<2
 
     if unwind:
         # zs = np.exp(1j * zs)
-        zs.multiply(1j, zs)
+        np.multiply(1j, zs, out=zs)
         np.exp(zs, out=zs)
     zsc = np.conj(zs)
 
@@ -1036,10 +1036,10 @@ def make_lattice_image(zs, matrix, basis=None, N=1, message_queue=None):
 
     B = invert22(basis)
 
-    res = np.zeros(zs.shape, complex)
+    res = np.zeros(zs.shape, dtype=complex)
     w1, w2 = 1, len(matrix)
     for (n, m) in matrix:
-        ZS = np.zeros(zs.shape, complex)
+        ZS = np.zeros(zs.shape, dtype=complex)
 
         for k in range(0, N):
             rho = complex(cos(2*pi*k/N),
@@ -1048,7 +1048,7 @@ def make_lattice_image(zs, matrix, basis=None, N=1, message_queue=None):
             _xs = _tmp.real
             _ys = _tmp.imag
             _tmp = (n*(B[0][0]*_xs+B[1][0]*_ys) +
-                    m*(B[0][1]*_xs+B[1][1]*_ys))
+                    m*(B[0][1]*_xs+B[1][1]*_ys)).astype(complex)
             # ZS += np.exp(2j*pi*_tmp)
             np.multiply(_tmp, 2j*pi, out=_tmp)
             np.exp(_tmp, out=_tmp)
@@ -2753,28 +2753,43 @@ Keyboard shortcuts:
                            **params)
 
         function = config["function"]
+        info = {"type": "", "name": "", "alt_name": ""}
         if function["tab"] == "wallpaper":
-            output_type = "wallpaper_group"
-            pattern = function["wallpaper_pattern"]
-            if function["wallpaper_color_pattern"] != "--":
-                pattern += "_" + function["wallpaper_color_pattern"]
+            info["type"] = "planar"
+            info["name"] = function["wallpaper_pattern"]
+            info["alt_name"] = WALLPAPERS[info["name"]]["alt_name"]
+            cp = function["wallpaper_color_pattern"]
+            if cp != "--":
+                info["name"] = cp + "_" + info["name"]
+                info["alt_name"] = (WALLPAPERS[cp]["alt_name"] +
+                                    "_" +
+                                    info["alt_name"])
         elif function["tab"] == "sphere":
-            output_type = "sphere_group"
-            pattern = function["sphere_pattern"]
-            pattern = pattern.replace("N", str(function["sphere_N"]))
+            info["type"] = "spherical"
+            p = function["sphere_pattern"]
+            N = function["sphere_N"]
+            info["name"] = p.replace("N", str(N))
+            info["alt_name"] = SPHERE_GROUPS[p]["alt_name"]
+            info["alt_name"] = info["alt_name"].replace("N", str(N))
         elif function["tab"] == "frieze":
-            pattern = function["frieze_pattern"]
             if function["rosette"]:
-                output_type = "rosette"
+                info["type"] = "rosette"
+                N = function["rosette_rotation"]
+                info["type"] += "_{}fold_symmetry".format(N)
             else:
-                output_type = "frieze"
+                info["type"] = "frieze"
+                p = function["frieze_pattern"]
+                info["name"] = p
+                info["alt_name"] = FRIEZES[p]["alt_name"]
         elif function["tab"] == "raw":
-            output_type = "plain_lattice"
-            pattern = ""
+            info["type"] = "lattice"
+            N = function["raw_rotation"]
+            if N != 1:
+                info["type"] += "_{}fold_symmetry".format(N)
         else:
             assert False
 
-        print("'{}', '{}'".format(output_type, pattern))
+        print(info)
 
         nb = 0
         suf = ""
