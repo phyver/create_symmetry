@@ -13,7 +13,7 @@ import numpy as np
 
 # Tkinter for GUI
 from tkinter import *
-from tkinter.ttk import *
+from tkinter.ttk import Combobox, Notebook, Style
 from tkinter import filedialog
 
 # misc functions
@@ -34,9 +34,7 @@ from random import randint, uniform, shuffle
 # multiprocessing
 import multiprocessing
 import threading
-from queue import Queue
-
-
+import queue
 # >>>1
 
 verbose = 1
@@ -2316,17 +2314,41 @@ class CreateSymmetry(Tk):      # <<<2
 
         self.colorwheel.grid(row=0, column=0, sticky=N+S, padx=10, pady=10)
         self.world.grid(row=0, column=1, sticky=N+S, padx=10, pady=10)
-        self.function.grid(row=1, column=1, sticky=E, padx=10, pady=10)
+        self.function.grid(row=1, column=1, sticky=E+W, padx=10, pady=10)
 
-        self._console = Text(self, width=1, height=1,
-                             background="black", foreground="white",
-                             font="TkFixedFont",
-                             borderwidth=3,
-                             relief="ridge")
+        console_frame = Frame(self)
+        console_frame.grid(row=1, column=0, padx=0, pady=0)
+
+        self._console = Text(
+                console_frame, width=28, height=15,
+                background="black", foreground="white",
+                font="TkFixedFont",
+                borderwidth=3,
+                relief="ridge")
         self._console.grid(row=1, column=0, sticky=E+W+N+S, padx=10, pady=10)
         self._console.config(state=DISABLED)
-        self._nb_pending = Label(self)
-        self._nb_pending.grid(row=1, column=0, sticky=E+S, padx=10, pady=10)
+        # self._nb_pending = Label(console_frame)
+        # self._nb_pending.grid(row=1, column=0, sticky=E+S, padx=10, pady=10)
+
+        self._preview_console = Text(
+                console_frame, width=10, height=1,
+                background="black", foreground="white",
+                font="TkFixedFont",
+                borderwidth=3,
+                relief="ridge")
+        self._preview_console.grid(row=2, column=0, sticky=E+W,
+                                   padx=10, pady=0)
+        self._preview_console.config(state=DISABLED)
+
+        self._output_console = Text(
+                console_frame, width=10, height=1,
+                background="black", foreground="white",
+                font="TkFixedFont",
+                borderwidth=3,
+                relief="ridge")
+        self._output_console.grid(row=3, column=0, sticky=E+W,
+                                  padx=10, pady=10)
+        self._output_console.config(state=DISABLED)
         # >>>4
 
         # attach appropriate actions to buttons     <<<4
@@ -2373,50 +2395,24 @@ class CreateSymmetry(Tk):      # <<<2
                                           self.make_preview))
         # >>>4
 
-        self.output_queue = Queue()
+        # queue containing parameters for pending output jobs
+        self.output_params_queue = multiprocessing.Queue()
+        # are there pending output jobs?
+        self.pending_output_jobs = False
+        self.output_message_queue = multiprocessing.Queue()
+
+        # queue containing the preview image, computed by make_preview_job
+        # the function ``update_GUI`` empties the queue
+        self.preview_image_queue = multiprocessing.Queue()
+        self.preview_message_queue = multiprocessing.Queue()
+
         self.message_queue = multiprocessing.Queue()
-        self.output_running = False
 
         self.message_queue.put("""  create_symmetry.py
  Control-h for shortcuts
 -------------------------
 """)
-        self.show_messages()
-    # >>>3
-
-    def show_messages(self):        # <<<3
-        self._console.config(state=NORMAL)
-        while not self.message_queue.empty():
-            self._console.insert(END, self.message_queue.get(0) + "\n")
-        self._console.yview(END)
-        self._console.config(state=DISABLED)
-        self.after(100, self.show_messages)
-        if self.output_running:
-            self._nb_pending.grid()
-            self._nb_pending.config(text="{} pending tasks"
-                                         .format(1+self.output_queue.qsize()))
-        else:
-            self._nb_pending.grid_remove()
-    # >>>3
-
-    def process_output(self):       # <<<3
-        """thread to create background processes for the output"""
-        if not self.output_running:
-            threading.Thread(target=self.process_pending_jobs).start()
-    # >>>3
-
-    def process_pending_jobs(self):     # <<<3
-        """generate background processes for the pending image generation"""
-        self.output_running = True
-        while not self.output_queue.empty():
-            config = self.output_queue.get(0)
-            config["message_queue"] = self.message_queue
-            p = multiprocessing.Process(target=self.background_output,
-                                        kwargs=config)
-            p.start()
-            p.join()
-        message("output queue empty")
-        self.output_running = False
+        self.update_GUI()
     # >>>3
 
     def display_help(self):     # <<<3
@@ -2470,31 +2466,63 @@ Keyboard shortcuts:
         self.wait_window(dialog)
     # >>>3
 
-    def make_preview(self, *args):      # <<<3
+    def update_GUI(self):        # <<<3
 
-        ratio = self.world.width / self.world.height
-        if ratio > 1:
-            width = PREVIEW_SIZE
-            height = round(PREVIEW_SIZE / ratio)
-        else:
-            width = round(PREVIEW_SIZE * ratio)
-            height = PREVIEW_SIZE
+        # console messages
+        self._console.config(state=NORMAL)
+        while not self.message_queue.empty():
+            self._console.insert(END, self.message_queue.get(0) + "\n")
+        self._console.yview(END)
+        self._console.config(state=DISABLED)
 
-        try:
-            def make_preview_thread():
-                color = self.colorwheel.get_config()
-                world = self.world.get_config()
-                world["size"] = (width, height)
-                params = self.function.get_pattern_params()
+        m = None
+        while True:
+            try:
+                m = self.preview_message_queue.get(block=0)
+            except queue.Empty:
+                if m is not None:
+                    self._preview_console.config(state=NORMAL)
+                    self._preview_console.delete(0.0, END)
+                    self._preview_console.insert(
+                            0.0,
+                            "Preview: [{}]".format(m))
+                    self._preview_console.config(state=DISABLED)
+                elif self.preview_image_queue.empty():
+                    self._preview_console.config(state=NORMAL)
+                    self._preview_console.delete(0.0, END)
+                    self._preview_console.config(state=DISABLED)
+                break
 
-                image = make_image(color=color,
-                                   world=world,
-                                   pattern=self.function.pattern,
-                                   matrix=self.function.matrix,
-                                   message_queue=self.message_queue,
-                                   stretch_color=self.colorwheel.stretch,
-                                   **params)
+        m = None
+        while True:
+            try:
+                m = self.output_message_queue.get(block=0)
+            except queue.Empty:
+                if m is not None:
+                    self._output_console.config(state=NORMAL)
+                    self._output_console.delete(0.0, END)
+                    self._output_console.insert(
+                            0.0,
+                            "output ({}): [{}]"
+                            .format(1+self.output_params_queue.qsize(), m))
+                    self._output_console.config(state=DISABLED)
+                elif not self.pending_output_jobs:
+                    self._output_console.config(state=NORMAL)
+                    self._output_console.delete(0.0, END)
+                    self._output_console.config(state=DISABLED)
+                break
 
+        # # number of pending jobs
+        # if self.pending_output_jobs:
+        #     self._nb_pending.grid()
+        #     self._nb_pending.config(text="{} pending tasks"
+        #                                  .format(1+self.output_params_queue.qsize()))
+        # else:
+        #     self._nb_pending.grid_remove()
+
+        # preview image
+        while not self.preview_image_queue.empty():
+                image = self.preview_image_queue.get()
                 # FIXME: methode change_preview in World class
                 self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
                 self.world._canvas.delete(self.world._image_id)
@@ -2503,73 +2531,70 @@ Keyboard shortcuts:
                                 (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
                                 image=self.world._canvas.tk_img)
 
-                # draw tile
-                if self.function.lattice_basis is not None:
+        #         # draw tile
+        #         if self.function.lattice_basis is not None:
 
-                    B = self.function.lattice_basis
+        #             B = self.function.lattice_basis
 
-                    corner = self.world._canvas.coords(self.world._image_id)
-                    xc = corner[0] - width / 2
-                    yc = corner[1] - height / 2
+        #             corner = self.world._canvas.coords(self.world._image_id)
+        #             xc = corner[0] - width / 2
+        #             yc = corner[1] - height / 2
 
-                    x_min, x_max, y_min, y_max = self.world.geometry
-                    delta_x = (x_max-x_min) / (width-1)
-                    delta_y = (y_max-y_min) / (height-1)
-                    a = self.world.angle * pi / 180
-                    t = self.world.modulus * complex(cos(a), sin(a))
+        #             x_min, x_max, y_min, y_max = self.world.geometry
+        #             delta_x = (x_max-x_min) / (width-1)
+        #             delta_y = (y_max-y_min) / (height-1)
+        #             a = self.world.angle * pi / 180
+        #             t = self.world.modulus * complex(cos(a), sin(a))
 
-                    x0, y0 = 0, 0
-                    x0, y0 = x0*B[0][0] + y0*B[1][0], x0*B[0][1] + y0*B[1][1]
-                    z0 = complex(x0, y0) * t
-                    x0, y0 = z0.real, z0.imag
-                    x0, y0 = xc + (x0-x_min)/delta_x, yc + (y_max-y0)/delta_y
+        #             x0, y0 = 0, 0
+        #             x0, y0 = x0*B[0][0] + y0*B[1][0], x0*B[0][1] + y0*B[1][1]
+        #             z0 = complex(x0, y0) * t
+        #             x0, y0 = z0.real, z0.imag
+        #             x0, y0 = xc + (x0-x_min)/delta_x, yc + (y_max-y0)/delta_y
 
-                    x1, y1 = 1, 0
-                    x1, y1 = x1*B[0][0] + y1*B[1][0], x1*B[0][1] + y1*B[1][1]
-                    z1 = complex(x1, y1) * t
-                    x1, y1 = z1.real, z1.imag
-                    x1, y1 = xc + (x1-x_min)/delta_x, yc + (y_max-y1)/delta_y
+        #             x1, y1 = 1, 0
+        #             x1, y1 = x1*B[0][0] + y1*B[1][0], x1*B[0][1] + y1*B[1][1]
+        #             z1 = complex(x1, y1) * t
+        #             x1, y1 = z1.real, z1.imag
+        #             x1, y1 = xc + (x1-x_min)/delta_x, yc + (y_max-y1)/delta_y
 
-                    x2, y2 = 0, 1
-                    x2, y2 = x2*B[0][0] + y2*B[1][0], x2*B[0][1] + y2*B[1][1]
-                    z2 = complex(x2, y2) * t
-                    x2, y2 = z2.real, z2.imag
-                    x2, y2 = xc + (x2-x_min)/delta_x, yc + (y_max-y2)/delta_y
+        #             x2, y2 = 0, 1
+        #             x2, y2 = x2*B[0][0] + y2*B[1][0], x2*B[0][1] + y2*B[1][1]
+        #             z2 = complex(x2, y2) * t
+        #             x2, y2 = z2.real, z2.imag
+        #             x2, y2 = xc + (x2-x_min)/delta_x, yc + (y_max-y2)/delta_y
 
-                    x3, y3 = 1, 1
-                    x3, y3 = x3*B[0][0] + y3*B[1][0], x3*B[0][1] + y3*B[1][1]
-                    z3 = complex(x3, y3) * t
-                    x3, y3 = z3.real, z3.imag
-                    x3, y3 = xc + (x3-x_min)/delta_x, yc + (y_max-y3)/delta_y
+        #             x3, y3 = 1, 1
+        #             x3, y3 = x3*B[0][0] + y3*B[1][0], x3*B[0][1] + y3*B[1][1]
+        #             z3 = complex(x3, y3) * t
+        #             x3, y3 = z3.real, z3.imag
+        #             x3, y3 = xc + (x3-x_min)/delta_x, yc + (y_max-y3)/delta_y
 
-                    try:
-                        for tmp in self.__tmp:
-                            self.world._canvas.delete(tmp)
-                    except Exception as e:
-                        self.__tmp = []
-                    self.__tmp.append(
-                            self.world._canvas.create_polygon(
-                                x0, y0, x1, y1, x3, y3, x2, y2,
-                                fill="",
-                                width=1, outline="white"))
+        #             try:
+        #                 for tmp in self.__tmp:
+        #                     self.world._canvas.delete(tmp)
+        #             except Exception as e:
+        #                 self.__tmp = []
+        #             self.__tmp.append(
+        #                     self.world._canvas.create_polygon(
+        #                         x0, y0, x1, y1, x3, y3, x2, y2,
+        #                         fill="",
+        #                         width=1, outline="white"))
 
-                    # self.__tmp.append(
-                    #         self.world._canvas.create_oval(
-                    #             x1-10, y1-10, x1+10, y1+10,
-                    #             fill="", outline="blue", width=3))
-                    # self.__tmp.append(
-                    #         self.world._canvas.create_oval(
-                    #             x2-10, y2-10, x2+10, y2+10,
-                    #             fill="", outline="green", width=3))
-                    self.__tmp.append(
-                            self.world._canvas.create_oval(
-                                x0-10, y0-10, x0+10, y0+10,
-                                fill="", outline="white", width=1))
+        #             # self.__tmp.append(
+        #             #         self.world._canvas.create_oval(
+        #             #             x1-10, y1-10, x1+10, y1+10,
+        #             #             fill="", outline="blue", width=3))
+        #             # self.__tmp.append(
+        #             #         self.world._canvas.create_oval(
+        #             #             x2-10, y2-10, x2+10, y2+10,
+        #             #             fill="", outline="green", width=3))
+        #             self.__tmp.append(
+        #                     self.world._canvas.create_oval(
+        #                         x0-10, y0-10, x0+10, y0+10,
+        #                         fill="", outline="white", width=1))
 
-            threading.Thread(target=make_preview_thread).start()
-
-        except Error as e:
-            self.message_queue.put("* {}".format(e))
+        self.after(100, self.update_GUI)
     # >>>3
 
     def make_output(self, *args):      # <<<3
@@ -2581,12 +2606,34 @@ Keyboard shortcuts:
                 "pattern": self.function.pattern,
                 "matrix": self.function.matrix,
                 }
-
-        self.output_queue.put(config)
+        self.output_params_queue.put(config)
         self.process_output()
     # >>>3
 
-    def background_output(self, message_queue=None, **config):
+    def process_output(self):       # <<<3
+        """thread to create background processes for the output"""
+        # print("process_output", self.pending_output_jobs, self.output_params_queue.qsize())
+        if not self.pending_output_jobs:
+            threading.Thread(target=self.process_pending_jobs).start()
+    # >>>3
+
+    def process_pending_jobs(self):     # <<<3
+        """generate background processes for the pending image generation"""
+        self.pending_output_jobs = True
+        while True:
+            try:
+                config = self.output_params_queue.get(timeout=0.1)
+            except queue.Empty:
+                break
+            config["message_queue"] = self.message_queue
+            p = multiprocessing.Process(target=self.background_output,
+                                        kwargs=config)
+            p.start()
+            p.join()
+        self.pending_output_jobs = False
+    # >>>3
+
+    def background_output(self, message_queue=None, **config): # <<<3
 
         filename_template = config["world"]["filename"]
 
@@ -2599,7 +2646,7 @@ Keyboard shortcuts:
                            world=world,
                            pattern=pattern,
                            matrix=matrix,
-                           message_queue=self.message_queue,
+                           message_queue=self.output_message_queue,
                            stretch_color=color["stretch"],
                            **params)
 
@@ -2635,7 +2682,47 @@ $CREATE_SYM --color-config='{color_config:}' \\
         cs.close()
     # >>>3
 
-    def translate_rotate(self, dx, dy, dz=0):
+    def make_preview(self, *args):      # <<<3
+
+        ratio = self.world.width / self.world.height
+        if ratio > 1:
+            width = PREVIEW_SIZE
+            height = round(PREVIEW_SIZE / ratio)
+        else:
+            width = round(PREVIEW_SIZE * ratio)
+            height = PREVIEW_SIZE
+
+        try:
+            def make_preview_job():
+                color = self.colorwheel.get_config()
+                world = self.world.get_config()
+                world["size"] = (width, height)
+                params = self.function.get_pattern_params()
+
+
+                image = make_image(color=color,
+                                   world=world,
+                                   pattern=self.function.pattern,
+                                   matrix=self.function.matrix,
+                                   message_queue=self.preview_message_queue,
+                                   stretch_color=self.colorwheel.stretch,
+                                   **params)
+                self.preview_image_queue.put(image)
+
+            try:
+                self.preview_process.terminate()
+                self.preview_process.join()
+            except AttributeError as e:
+                pass
+                # print("OOPS: {}".format(e))
+            self.preview_process = multiprocessing.Process(target=make_preview_job)
+            self.preview_process.start()
+
+        except Error as e:
+            self.message_queue.put("* {}".format(e))
+    # >>>3
+
+    def translate_rotate(self, dx, dy, dz=0):   # <<<3
         def t_r(*args):
             if self.function.current_tab == "sphere":
                 theta_x = self.function._theta_x.get()*pi/180
@@ -2659,6 +2746,7 @@ $CREATE_SYM --color-config='{color_config:}' \\
                 if dx != 0 or dy != 0:
                     self.world.translate(dx/10, dy/10)
         return t_r
+    # >>>3
 # >>>2
 # >>>1
 
