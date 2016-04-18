@@ -2738,11 +2738,11 @@ $CREATE_SYM --color-config='{color_config:}' \\
                 # print("OOPS: {}".format(e))
             self.preview_process = multiprocessing.Process(target=make_preview_job)
             self.preview_process.start()
-            self.undo_list = self.undo_list[-100:]
-            if (self.undo_index == -1 and
-                    len(self.undo_list) > 0 and
-                    self.matrix != self.undo_list[-1]):
-                self.undo_list.append(self.function.matrix)
+            self.undo_list = self.undo_list[-UNDO_SIZE:]
+            if self.undo_index == -1:
+                if (len(self.undo_list) == 0 or
+                        self.function.matrix != self.undo_list[-1]):
+                    self.undo_list.append(self.function.matrix)
 
         except Error as e:
             self.message_queue.put("* {}".format(e))
@@ -2778,12 +2778,14 @@ $CREATE_SYM --color-config='{color_config:}' \\
         if self.undo_index > -len(self.undo_list):
             self.undo_index -= 1
             self.function.change_matrix(self.undo_list[self.undo_index])
+        # print(self.undo_index, len(self.undo_list))
     # >>>3
 
     def redo(self):     # <<<3
         if self.undo_index < -1:
             self.undo_index += 1
             self.function.change_matrix(self.undo_list[self.undo_index])
+        # print(self.undo_index, len(self.undo_list))
     # >>>3
 
 
