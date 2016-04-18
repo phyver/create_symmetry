@@ -14,6 +14,7 @@ import numpy as np
 # Tkinter for GUI
 from tkinter import *
 from tkinter.ttk import Combobox, Notebook, Style
+import tkinter.font
 from tkinter import filedialog
 
 # misc functions
@@ -44,7 +45,7 @@ COLOR_SIZE = 200
 COLOR_GEOMETRY = (-1, 1, -1, 1)
 WORLD_GEOMETRY = (-2, 2, -2, 2)
 DEFAULT_COLOR = "black"
-FILENAME_TEMPLATE = "output"
+FILENAME_TEMPLATE = "output-{type:}-{name:}"
 UNDO_SIZE = 100
 
 FRIEZES = {    # <<<1
@@ -1269,10 +1270,10 @@ class ColorWheel(LabelFrame):   # <<<2
         Checkbutton(self, text="stretch unit disk",
                     variable=self._stretch_color,
                     onvalue=True, offvalue=False,
-                    command=lambda: self.change_colorwheel(self.filename)).grid(row=1,column=0, padx=5, pady=5)
+                    command=lambda: self.change_colorwheel(self.filename)).grid(row=1,column=0, padx=5, pady=0)
 
-        self._filename = Label(self, text="...")
-        self._filename.grid(row=2, column=0, padx=5, pady=5)
+        # self._filename = Label(self, text="...")
+        # self._filename.grid(row=2, column=0, padx=5, pady=5)
 
         self._canvas = Canvas(self, width=200, height=200, bg="white")
         self._canvas.grid(row=3, column=0, padx=5, pady=5)
@@ -1284,8 +1285,9 @@ class ColorWheel(LabelFrame):   # <<<2
         self._canvas.bind("<Button-3>", self.set_origin)
         self._canvas.bind("<Double-Button-1>", self.choose_colorwheel)
 
-        Button(self, text="choose file",
-               command=self.choose_colorwheel).grid(row=4, column=0,
+        self._filename = Button(self, text="choose file",
+               command=self.choose_colorwheel)
+        self._filename.grid(row=4, column=0,
                                                     padx=5, pady=5)
 
         coord_frame = LabelFrame(self, text="coordinates")
@@ -1317,8 +1319,9 @@ class ColorWheel(LabelFrame):   # <<<2
                                  width=4, justify=RIGHT)
         self._y_max.grid(row=1, column=1, padx=5, pady=5)
 
-        Button(coord_frame, text="reset",
-               command=self.reset_geometry).grid(row=2, column=0, columnspan=2,
+        self._reset_button = Button(coord_frame, text="reset",
+               command=self.reset_geometry)
+        self._reset_button.grid(row=2, column=0, columnspan=2,
                                                  padx=5, pady=5)
 
         transformation_frame = LabelFrame(self, text="transformation")
@@ -1357,6 +1360,9 @@ class ColorWheel(LabelFrame):   # <<<2
                 self._x_max.disable()
                 self._y_min.disable()
                 self._y_max.disable()
+                self._modulus.disable()
+                self._angle.disable()
+                self._reset_button.configure(state=DISABLED)
                 zs = make_coordinates_array(
                         size=(PREVIEW_SIZE, PREVIEW_SIZE),
                         geometry=(-7, 7, -7, 7))
@@ -1372,6 +1378,9 @@ class ColorWheel(LabelFrame):   # <<<2
                 self._x_max.enable()
                 self._y_min.enable()
                 self._y_max.enable()
+                self._modulus.enable()
+                self._angle.enable()
+                self._reset_button.configure(state=NORMAL)
                 img = PIL.Image.open(filename)
                 img.thumbnail((COLOR_SIZE, COLOR_SIZE), PIL.Image.ANTIALIAS)
                 width, height = img.size
@@ -1409,6 +1418,8 @@ class ColorWheel(LabelFrame):   # <<<2
     # >>>3
 
     def set_origin(self, event):        # <<<3
+        if self.stretch:
+            return
         x, y = event.x, event.y
         x_min, x_max, y_min, y_max = self.geometry
         delta_x = x_max - x_min
@@ -1425,6 +1436,8 @@ class ColorWheel(LabelFrame):   # <<<2
     # >>>3
 
     def reset_geometry(self, *args):        # <<<3
+        if self.stretch:
+            return
         if self.filename is not None:
             self.change_colorwheel(self.filename)
         else:
@@ -1600,7 +1613,7 @@ class World(LabelFrame):     # <<<2
 
         self._filename_template = LabelEntry(settings_frame, label=None,
                                              value=FILENAME_TEMPLATE,
-                                             width=15)
+                                             width=20)
         self._filename_template.pack(padx=5, pady=5)
         # >>>4
 
@@ -1806,7 +1819,7 @@ class Function(LabelFrame):     # <<<2
         Label(wallpaper_tab,
               text="symmetry group").pack(padx=5, pady=(20, 0))
         self._wallpaper_combo = Combobox(
-                wallpaper_tab, width=17, exportselection=0,
+                wallpaper_tab, width=20, exportselection=0,
                 textvariable=self._wallpaper_type,
                 state="readonly",
                 values=WALLPAPER_NAMES
@@ -1956,7 +1969,7 @@ class Function(LabelFrame):     # <<<2
         tmp2.pack()
         self._display_matrix = Listbox(tmp2, selectmode=MULTIPLE,
                                        font="TkFixedFont",
-                                       width=28, height=11)
+                                       width=30, height=11)
         self._display_matrix.pack(side=LEFT)
 
         scrollbar = Scrollbar(tmp2)
@@ -2028,7 +2041,7 @@ class Function(LabelFrame):     # <<<2
         self._noise.pack(side=RIGHT, padx=5, pady=5)
         self._noise.bind("<Return>", self.add_noise)
 
-        random_noise = Button(tmp3, text="random noise",
+        random_noise = Button(tmp3, text="add random noise",
                               command=self.add_noise)
         random_noise.pack(side=LEFT, padx=5, pady=5)
         # >>>4
@@ -2386,6 +2399,8 @@ class CreateSymmetry(Tk):      # <<<2
 
         s = Style()
         s.configure("*TCombobox*Listbox*Font", "TkFixedFont")
+        fixed_font = tkinter.font.nametofont("TkFixedFont")
+        fixed_font.configure(size=8)
         # s.configure("TFrame", background="red")
         # s.configure("TLabel", background="green")
         # s.configure("TEntry", background="yellow")
@@ -2789,11 +2804,10 @@ Keyboard shortcuts:
         else:
             assert False
 
-        print(info)
 
         nb = 0
         suf = ""
-        filename = filename_template
+        filename = filename_template.format(**info)
         while True:
             if (not os.path.exists(filename+suf+".jpg") and
                     not os.path.exists(filename+suf+".sh")):
