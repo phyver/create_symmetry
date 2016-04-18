@@ -729,7 +729,7 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
             if (n, m) in R2:
                 continue
             indices = others(n, m, r)
-            coeffs = [s*R1[nm] for (s, nm) in indices if nm in R1]
+            coeffs = [R1[nm]/s for (s, nm) in indices if nm in R1]
             # coeff = sum(coeffs) / len(indices)
             coeff = sum(coeffs) / len(coeffs)
             if coeff != 0:
@@ -759,6 +759,15 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
             s = parity.replace("n", str(n)) .replace("m", str(m))
             if literal_eval(s) % modulo != equal:
                 del R1[(n, m)]
+
+    for r in recipe.split(";"):
+        for n, m in R1:
+            coeff = None
+            for s, (n, m) in others(n, m, r):
+                if coeff is None:
+                    coeff = s * R1[(n, m)]
+                else:
+                    assert s * R1[(n, m)] == coeff
 
     return R1
 # >>>2
@@ -1004,7 +1013,6 @@ def make_sphere_image(zs,
     [a, b], [c, d] = average[0][0]
     [e, f], [g, h] = average[1][0]
     # TODO: it doesn't work if I swapp the 2 loops! Why???
-
     for i in range(average[1][1]):
         for j in range(average[0][1]):
             zsc = np.conj(zs)
