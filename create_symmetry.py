@@ -4,11 +4,12 @@
 # imports
 # <<<1
 
-# image (Pillow)
+# image manipulation (Pillow)
 import PIL
 import PIL.ImageTk
 from PIL.ImageColor import getrgb
 
+# vectorized arrays
 import numpy as np
 
 # Tkinter for GUI
@@ -649,6 +650,41 @@ def invert22(M):        # <<<2
 # >>>2
 
 
+def mult_M(M1, M2):     # <<<2
+    assert len(M1[0]) == len(M2)
+    R = [[0]*len(M2[0]) for i in range(len(M1))]
+    for i in range(len(M1)):
+        for j in range(len(M2[0])):
+            for k in range(len(M2)):
+                R[i][j] += M1[i][k] * M2[k][j]
+    return R
+# >>>2
+
+
+def rotation_matrix(x, y, z):       # <<<2
+    # see https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
+    a = cos(x)*cos(y)
+    b = cos(x)*sin(y)*sin(z) - cos(z)*sin(x)
+    c = sin(x)*sin(z) + cos(x)*cos(z)*sin(y)
+    d = cos(y)*sin(x)
+    e = cos(x)*cos(z) + sin(x)*sin(y)*sin(z)
+    f = cos(z)*sin(x)*sin(y) - cos(x)*sin(z)
+    g = -sin(y)
+    h = cos(y)*sin(z)
+    i = cos(y)*cos(z)
+    return [[a, b, c], [d, e, f], [g, h, i]]
+# >>>2
+
+
+def tait_angle(R):                  # <<<2
+    # see http://stackoverflow.com/questions/18433801/converting-a-3x3-matrix-to-euler-tait-bryan-angles-pitch-yaw-roll
+    theta_z = atan2(R[2][1], R[2][2])
+    theta_y = -asin(R[2][0])
+    theta_x = atan2(R[1][0], R[0][0])
+    return theta_x, theta_y, theta_z
+# >>>2
+
+
 def str_to_floats(s):       # <<<2
     if s.strip() == "":
         return []
@@ -827,41 +863,6 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
 
     return R
 # >>>2
-
-
-def rotation_matrix(x, y, z):       # <<<2
-    # see https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
-    a = cos(x)*cos(y)
-    b = cos(x)*sin(y)*sin(z) - cos(z)*sin(x)
-    c = sin(x)*sin(z) + cos(x)*cos(z)*sin(y)
-    d = cos(y)*sin(x)
-    e = cos(x)*cos(z) + sin(x)*sin(y)*sin(z)
-    f = cos(z)*sin(x)*sin(y) - cos(x)*sin(z)
-    g = -sin(y)
-    h = cos(y)*sin(z)
-    i = cos(y)*cos(z)
-    return [[a, b, c], [d, e, f], [g, h, i]]
-# >>>2
-
-
-def tait_angle(R):                  # <<<2
-    # see http://stackoverflow.com/questions/18433801/converting-a-3x3-matrix-to-euler-tait-bryan-angles-pitch-yaw-roll
-    theta_z = atan2(R[2][1], R[2][2])
-    theta_y = -asin(R[2][0])
-    theta_x = atan2(R[1][0], R[0][0])
-    return theta_x, theta_y, theta_z
-# >>>2
-
-
-def mult_M(M1, M2):     # <<<2
-    assert len(M1[0]) == len(M2)
-    R = [[0]*len(M2[0]) for i in range(len(M1))]
-    for i in range(len(M1)):
-        for j in range(len(M2[0])):
-            for k in range(len(M2)):
-                R[i][j] += M1[i][k] * M2[k][j]
-    return R
-# >>>2
 # >>>1
 
 
@@ -1013,7 +1014,7 @@ def make_wallpaper_image(zs,     # <<<2
 # >>>2
 
 
-def plane_coordinates_to_sphere(zs, rotations=(0, 0, 0)):
+def plane_coordinates_to_sphere(zs, rotations=(0, 0, 0)):       # <<<2
     x = zs.real
     y = zs.imag
     with np.errstate(invalid='ignore'):
@@ -1031,6 +1032,7 @@ def plane_coordinates_to_sphere(zs, rotations=(0, 0, 0)):
 
     zs = _x/(1-_z) + 1j*_y/(1-_z)
     return zs
+# >>>2
 
 
 def make_sphere_image(zs,      # <<<2
@@ -1576,6 +1578,11 @@ class ColorWheel(LabelFrame):   # <<<2
 class World(LabelFrame):     # <<<2
 
     @property
+    def filename_template(self):    # <<<3
+        return self._filename_template.get()
+    # >>>3
+
+    @property
     def geometry(self):     # <<<3
         x_min = self._x_min.get()
         x_max = self._x_max.get()
@@ -1610,17 +1617,11 @@ class World(LabelFrame):     # <<<2
     # >>>3
 
     @property
-    def geometry_tab(self):     # <<<2
+    def geometry_tab(self):     # <<<3
         if ("sphere" in self._geometry_tabs.tab(self._geometry_tabs.select(), "text")):
             return "sphere"
         else:
             return "plane"
-
-    # >>>2
-
-    @property
-    def filename_template(self):    # <<<3
-        return self._filename_template.get()
     # >>>3
 
     def __init__(self, root):       # <<<3
@@ -1788,6 +1789,18 @@ class World(LabelFrame):     # <<<2
             self.adjust_preview_X()
     # >>>3
 
+    def reset_geometry(self, *args):        # <<<3
+        self._x_min.set(WORLD_GEOMETRY[0])
+        self._x_max.set(WORLD_GEOMETRY[1])
+        self._y_min.set(WORLD_GEOMETRY[2])
+        self._y_max.set(WORLD_GEOMETRY[3])
+        if self.width > self.height:
+            self.adjust_preview_X()
+        else:
+            self.adjust_preview_X()
+        self._rotations.set("0, 0, 0")
+    # >>>3
+
     def zoom(self, alpha):      # <<<3
         def zoom_tmp(*args):
             for c in ["_x_min", "_x_max", "_y_min", "_y_max"]:
@@ -1842,18 +1855,6 @@ class World(LabelFrame):     # <<<2
         if filename:
             self._sphere_background.set(filename)
             self._sphere_background.xview(END)
-    # >>>3
-
-    def reset_geometry(self, *args):        # <<<3
-        self._x_min.set(WORLD_GEOMETRY[0])
-        self._x_max.set(WORLD_GEOMETRY[1])
-        self._y_min.set(WORLD_GEOMETRY[2])
-        self._y_max.set(WORLD_GEOMETRY[3])
-        if self.width > self.height:
-            self.adjust_preview_X()
-        else:
-            self.adjust_preview_X()
-        self._rotations.set("0, 0, 0")
     # >>>3
 
     def adjust_preview_X(self, *args):      # <<<3
@@ -3075,8 +3076,6 @@ $CREATE_SYM --color-config='{color_config:}' \\
             self.function.change_matrix(self.undo_list[self.undo_index])
         # print(self.undo_index, len(self.undo_list))
     # >>>3
-
-
 # >>>2
 # >>>1
 
