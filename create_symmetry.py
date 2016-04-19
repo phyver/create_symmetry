@@ -1012,6 +1012,26 @@ def make_wallpaper_image(zs,     # <<<2
 # >>>2
 
 
+def plane_coordinates_to_sphere(zs, rotations=(0, 0, 0)):
+    x = zs.real
+    y = zs.imag
+    with np.errstate(invalid='ignore'):
+        z = np.sqrt(1 - x**2 - y**2)
+
+    theta_x, theta_y, theta_z = rotations
+    theta_x = theta_x * pi / 180
+    theta_y = theta_y * pi / 180
+    theta_z = theta_z * pi / 180
+    R = rotation_matrix(theta_x, theta_y, theta_z)
+
+    _x = R[0][0]*x + R[0][1]*y + R[0][2]*z
+    _y = R[1][0]*x + R[1][1]*y + R[1][2]*z
+    _z = R[2][0]*x + R[2][1]*y + R[2][2]*z
+
+    zs = _x/(1-_z) + 1j*_y/(1-_z)
+    return zs
+
+
 def make_sphere_image(zs,      # <<<2
                       matrix,
                       pattern,
@@ -1021,22 +1041,7 @@ def make_sphere_image(zs,      # <<<2
                       message_queue=None):
 
     if not stereographic:
-        x = zs.real
-        y = zs.imag
-        with np.errstate(invalid='ignore'):
-            z = np.sqrt(1 - x**2 - y**2)
-
-        theta_x, theta_y, theta_z = rotations
-        theta_x = theta_x * pi / 180
-        theta_y = theta_y * pi / 180
-        theta_z = theta_z * pi / 180
-        R = rotation_matrix(theta_x, theta_y, theta_z)
-
-        _x = R[0][0]*x + R[0][1]*y + R[0][2]*z
-        _y = R[1][0]*x + R[1][1]*y + R[1][2]*z
-        _z = R[2][0]*x + R[2][1]*y + R[2][2]*z
-
-        zs = _x/(1-_z) + 1j*_y/(1-_z)
+        zs = plane_coordinates_to_sphere(zs, rotations)
 
     recipe = SPHERE_GROUPS[pattern]["recipe"]
     parity = SPHERE_GROUPS[pattern]["parity"].replace("N", str(N))
@@ -1057,7 +1062,7 @@ def make_sphere_image(zs,      # <<<2
     res = np.zeros(zs.shape, complex)
     [a, b], [c, d] = average[0][0]
     [e, f], [g, h] = average[1][0]
-    w1, w2 = 0, average[0][1]*average[1][1]*len(len(matrix))
+    w1, w2 = 0, average[0][1]*average[1][1]*len(matrix)
     for i in range(average[1][1]):
         for j in range(average[0][1]):
             zsc = np.conj(zs)
@@ -2320,11 +2325,14 @@ class Function(LabelFrame):     # <<<2
     # >>>3
 
     def make_matrix(self):       # <<<3
-
-        if self.current_tab == "raw":
-            return
-
         M = self.matrix
+        self.change_matrix(self.add_symmetries(M))
+    # >>>3
+
+    def add_symmetries(self, M):        # <<<3
+        if self.current_tab == "raw":
+            return M
+
         pattern = self.pattern
 
         if self.current_tab == "frieze" and self._rosette.get():
@@ -2350,7 +2358,7 @@ class Function(LabelFrame):     # <<<2
                                SPHERE_GROUPS[pattern]["recipe"],
                                SPHERE_GROUPS[pattern]["parity"])
 
-        self.change_matrix(M)
+        return M
     # >>>3
 
     def get_pattern_params(self):       # <<<3
@@ -2571,8 +2579,7 @@ class CreateSymmetry(Tk):      # <<<2
                                           self.make_preview))
 
         self.bind("<Control-g>", sequence(self.function.new_random_matrix))
-        self.bind("<Control-G>", sequence(self.function.new_random_matrix,
-                                          self.make_preview))
+        self.bind("<Control-G>", sequence(self.new_random_preview))
 
         self.bind("<Control-Key-minus>", sequence(self.world.zoom(2**.1),
                                                   self.make_preview))
@@ -3014,6 +3021,15 @@ $CREATE_SYM --color-config='{color_config:}' \\
                 if dx != 0 or dy != 0:
                     self.world.translate(dx/10, dy/10)
         return t_r
+    # >>>3
+
+    def new_random_preview(self):       # <<<3
+        N = 100
+        for i in range(N):
+            self.function.new_random_matrix()
+            if self.function.add_symmetries(self.function.matrix):
+                break
+        self.make_preview()
     # >>>3
 
     def undo(self):     # <<<3
