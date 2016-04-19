@@ -684,93 +684,144 @@ def parse_matrix(s):        # <<<2
 # >>>2
 
 
+def eqn_indices(eq, n, m):        # <<<2
+    """return a list of (s, (j, k))"""
+    eq = eq.strip()
+
+    if eq == "":
+        return [(1, (n, m))]
+
+    try:
+        res = []
+        l = map(lambda s: s.strip(), eq.split("="))
+
+        for snm in l:
+            if re.match("^[-nm, ]*$", snm):
+                nm = snm.replace("n", str(n)).replace("m", str(m))
+                res.append((1, literal_eval(nm)))
+            else:
+                # print("snm", snm)
+                _r = re.match("^([-i])([-{n+m1} ]*)(\(.*\))$", snm)
+                s = _r.group(1)
+                # print("s = '{}'".format(s))
+                e = _r.group(2)
+                # print("e = '{}'".format(e))
+                e = e.replace("{", "").replace("}", "")
+                e = e.replace("n", str(n)).replace("m", str(m))
+                nm = _r.group(3)
+                # print("nm = '{}'".format(nm))
+                nm = nm.replace("n", str(n)).replace("m", str(m))
+                if s == "-":
+                    s = -1
+                elif s == "i":
+                    s = 1j
+                if e == "":
+                    e = "1"
+                e = s**(literal_eval(e))
+                res.append((e, literal_eval(nm)))
+    except Exception as e:
+        raise Error("cannot compute indices for recipe '{}': {}"
+                    .format(eq, e))
+
+    # print("for {}, {}, {} got {}".format(eq, n, m, res))
+    return res
+# >>>2
+
+
+def recipe_all_indices(recipe, n, m):   # <<<2
+    """BFS like algorithm to compute all the related indices to n and m"""
+    R = {}
+    todo = set([(1, (n, m))])
+    bad = set([])
+    while todo:
+        s, (n, m) = todo.pop()
+        if (n, m) in bad:
+            continue
+        if (n, m) in R:
+            if R[n, m] != s:
+                bad.add((n, m))
+            else:
+                continue
+        R[(n, m)] = s
+        for eq in recipe.split(";"):
+            for t, (j, k) in eqn_indices(eq, n, m):
+                todo.add((s*t, (j, k)))
+    L = []
+    for n, m in R:
+        if (n, m) not in bad:
+            L.append((R[(n, m)], (n, m)))
+    return L
+# >>>2
+
+
+def check_matrix_recipe(M, recipe):     # <<<2
+    for eq in map(lambda s: s.strip(), recipe.split(";")):
+        for n, m in M:
+            coeff = None
+            for s, (j, k) in eqn_indices(eq, n, m):
+                if coeff is None:
+                    coeff = s * M[(j, k)]
+                else:
+                    if M.get((j, k)) != coeff / s:
+                        print("PROBLEM: matrix doesn't obey recipe '{}'"
+                              .format(recipe))
+                        print("         got {} for ({},{}), expected {}"
+                              .format(M.get((j, k)), j, k, coeff/s))
+                        return False
+    return True
+# >>>2
+
+
+def apply_parity(parity, M):    # <<<2
+    parity = parity.strip()
+    if parity == "":
+        return M
+
+    r = re.match("^([-+nm ()0-9]*)\s*==?\s*([0-9]+)\s*mod\s*([0-9]+)",
+                 parity)
+    if r:
+        modulo = int(r.group(3))
+        equal = int(r.group(2))
+        parity = r.group(1)
+    elif re.match("^[-+nm 0-9]*$", parity):
+        modulo = 2
+        equal = 1
+    else:
+        assert False
+
+    R = {}
+    for (n, m) in M.keys():
+        s = parity.replace("n", str(n)) .replace("m", str(m))
+        if literal_eval(s) % modulo == equal:
+            R[n, m] = M[n, m]
+    return R
+# >>>2
+
+
 def add_symmetries(M, recipe, parity=""):      # <<<2
     """return a matrix computed from ``M`` by adding symmetries given by ``recipe``
 ``recipe`` can be of the form "n,m = -n,-m = -(m,n) ; n,m = -{n+m}(n,m)"...
 """
-    def others(n, m, r):
-        try:
-            if r == "":
-                return [(1, (n, m))]
-            res = []
-            l = map(lambda s: s.strip(), r.split("="))
-            for snm in l:
-                if re.match("^[-nm, ]*$", snm):
-                    nm = snm.replace("n", str(n)).replace("m", str(m))
-                    res.append((1, literal_eval(nm)))
-                else:
-                    # print("snm", snm)
-                    _r = re.match("^([-i])([-{n+m1} ]*)(\(.*\))$", snm)
-                    s = _r.group(1)
-                    # print("s = '{}'".format(s))
-                    e = _r.group(2)
-                    # print("e = '{}'".format(e))
-                    e = e.replace("{", "").replace("}", "")
-                    e = e.replace("n", str(n)).replace("m", str(m))
-                    nm = _r.group(3)
-                    # print("nm = '{}'".format(nm))
-                    nm = nm.replace("n", str(n)).replace("m", str(m))
-                    if s == "-":
-                        s = -1
-                    elif s == "i":
-                        s = 1j
-                    if e == "":
-                        e = "1"
-                    e = s**(literal_eval(e))
-                    res.append((e, literal_eval(nm)))
-        except Exception as e:
-            raise Error("cannot compute indices for recipe '{}': {}"
-                        .format(r, e))
-        return res
+    M = apply_parity(parity, M)
 
-    R1 = M
-    R2 = {}
-    for r in recipe.split(";"):
-        for n, m in R1:
-            if (n, m) in R2:
-                continue
-            indices = others(n, m, r)
-            coeffs = [R1[nm]/s for (s, nm) in indices if nm in R1]
+    R = {}
+    for n, m in M:
+        if (n, m) in R:
+            continue
+        indices = recipe_all_indices(recipe, n, m)
+        coeffs = [M[nm]/s for (s, nm) in indices if nm in M]
+        if len(coeffs) != 0:
             # coeff = sum(coeffs) / len(indices)
             coeff = sum(coeffs) / len(coeffs)
             if coeff != 0:
                 for s, nm in indices:
-                    R2[nm] = s * coeff
-        R1 = R2
-        R2 = {}
+                    R[nm] = s * coeff
 
-    parity = parity.strip()
-    if parity:
-        # print(parity)
-        r = re.match("^([-+nm ()0-9]*)\s*==?\s*([0-9]+)\s*mod\s*([0-9]+)",
-                     parity)
-        if r:
-            modulo = int(r.group(3))
-            equal = int(r.group(2))
-            parity = r.group(1)
-        elif re.match("^[-+nm 0-9]*$", parity):
-            modulo = 2
-            equal = 1
-        else:
-            assert False
+    assert R == apply_parity(parity, R)
 
-        # print("{} = {} (mod {})".format(parity, equal, modulo))
-        keys = list(R1.keys())
-        for (n, m) in keys:
-            s = parity.replace("n", str(n)) .replace("m", str(m))
-            if literal_eval(s) % modulo != equal:
-                del R1[(n, m)]
+    assert check_matrix_recipe(R, recipe)
 
-    for r in recipe.split(";"):
-        for n, m in R1:
-            coeff = None
-            for s, (n, m) in others(n, m, r):
-                if coeff is None:
-                    coeff = s * R1[(n, m)]
-                else:
-                    assert s * R1[(n, m)] == coeff
-
-    return R1
+    return R
 # >>>2
 
 
@@ -798,7 +849,7 @@ def tait_angle(R):                  # <<<2
 # >>>2
 
 
-def mult_M(M1, M2):
+def mult_M(M1, M2):     # <<<2
     assert len(M1[0]) == len(M2)
     R = [[0]*len(M2[0]) for i in range(len(M1))]
     for i in range(len(M1)):
@@ -806,6 +857,7 @@ def mult_M(M1, M2):
             for k in range(len(M2)):
                 R[i][j] += M1[i][k] * M2[k][j]
     return R
+# >>>2
 # >>>1
 
 
@@ -1163,7 +1215,7 @@ def make_image(color=None,     # <<<2
                           color["angle"],
                           color["color"])
 
-        if pattern in SPHERE_GROUPS:
+        if pattern in SPHERE_GROUPS and not params["stereographic"]:
             if params["background"]:
                 return make_sphere_background(zs, img, background=params["background"], shade=params["shade"])
             else:
@@ -2941,7 +2993,7 @@ $CREATE_SYM --color-config='{color_config:}' \\
         cs.close()
     # >>>3
 
-    def make_preview(self, *args):      # <<<3
+    def make_preview(self, nb_tries=10, *args):      # <<<3
 
         ratio = self.world.width / self.world.height
         if ratio > 1:
@@ -2951,32 +3003,32 @@ $CREATE_SYM --color-config='{color_config:}' \\
             width = round(PREVIEW_SIZE * ratio)
             height = PREVIEW_SIZE
 
+        def make_preview_job():
+            color = self.colorwheel.get_config()
+            world = self.world.get_config()
+            world["size"] = (width, height)
+            params = self.function.get_pattern_params()
+
+
+            image = make_image(color=color,
+                               world=world,
+                               pattern=self.function.pattern,
+                               matrix=self.function.matrix,
+                               message_queue=self.preview_message_queue,
+                               stretch_color=self.colorwheel.stretch,
+                               **params)
+            self.preview_image_queue.put(image)
+
         try:
-            def make_preview_job():
-                color = self.colorwheel.get_config()
-                world = self.world.get_config()
-                world["size"] = (width, height)
-                params = self.function.get_pattern_params()
+            self.preview_process.terminate()
+            self.preview_process.join()
+            # redefine queues to avoid corruption
+            self.preview_message_queue = multiprocessing.Queue()
+            self.preview_image_queue = multiprocessing.Queue()
+        except AttributeError as e:
+            pass
 
-
-                image = make_image(color=color,
-                                   world=world,
-                                   pattern=self.function.pattern,
-                                   matrix=self.function.matrix,
-                                   message_queue=self.preview_message_queue,
-                                   stretch_color=self.colorwheel.stretch,
-                                   **params)
-                self.preview_image_queue.put(image)
-
-            try:
-                self.preview_process.terminate()
-                self.preview_process.join()
-                # redefine queues to avoid corruption
-                self.preview_message_queue = multiprocessing.Queue()
-                self.preview_image_queue = multiprocessing.Queue()
-            except AttributeError as e:
-                pass
-                # print("OOPS: {}".format(e))
+        try:
             self.preview_process = multiprocessing.Process(target=make_preview_job)
             self.preview_process.start()
             self.undo_list = self.undo_list[-UNDO_SIZE:]
@@ -2984,7 +3036,6 @@ $CREATE_SYM --color-config='{color_config:}' \\
                 if (len(self.undo_list) == 0 or
                         self.function.matrix != self.undo_list[-1]):
                     self.undo_list.append(self.function.matrix)
-
         except Error as e:
             self.message_queue.put("* {}".format(e))
     # >>>3
@@ -3216,10 +3267,11 @@ def main():     # <<<1
     # color_config["modulus"] = 1.5
 
     # color_config["modulus"] = 2
-    # function_config["wallpaper_pattern"] = "632"
-    # function_config["wallpaper_color_pattern"] = "*632"
+    function_config["wallpaper_pattern"] = "4*2"
+    function_config["wallpaper_color_pattern"] = "*442"
+    function_config["matrix"] = { (0,1): 1 }
 
-    function_config["tab"] = "sphere"
+    # function_config["tab"] = "sphere"
     # function_config["sphere_pattern"] = "532"
 
     gui = CreateSymmetry()
