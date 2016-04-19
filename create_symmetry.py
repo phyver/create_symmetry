@@ -30,7 +30,7 @@ from ast import literal_eval
 # math
 from cmath import exp
 from math import sqrt, pi, sin, cos, asin, acos, atan2
-from random import randint, uniform, shuffle
+from random import randrange, uniform, shuffle, seed
 
 # multiprocessing
 import multiprocessing
@@ -49,8 +49,9 @@ FILENAME_TEMPLATE = "output-{type:}-{name:}~{nb:}"
 UNDO_SIZE = 100
 DEFAULT_SPHERE_BACKGROUND = "#000066"
 
-NB_STARS = 500
 STAR_COLOR = "#FFC"
+
+RANDOM_SEED = uniform(0, 1)
 
 FRIEZES = {    # <<<1
         "∞∞": {
@@ -1036,12 +1037,7 @@ def make_sphere_image(zs,      # <<<2
                       matrix,
                       pattern,
                       N=5,
-                      stereographic=True,
-                      rotations=(0, 0, 0),
                       message_queue=None):
-
-    if not stereographic:
-        zs = plane_coordinates_to_sphere(zs, rotations)
 
     recipe = SPHERE_GROUPS[pattern]["recipe"]
     parity = SPHERE_GROUPS[pattern]["parity"].replace("N", str(N))
@@ -1079,7 +1075,7 @@ def make_sphere_image(zs,      # <<<2
 # >>>2
 
 
-def make_sphere_background(zs, img, background="back.jpg", shade=128):
+def make_sphere_background(zs, img, background="back.jpg", shade=128, stars=0):
     width, height = zs.shape
     mask = (zs.real**2 + zs.imag**2 > 1).astype(int).transpose(1, 0)
     mask = (255-shade) * mask
@@ -1093,9 +1089,10 @@ def make_sphere_background(zs, img, background="back.jpg", shade=128):
             background_img = PIL.Image.new(mode="RGB",
                                            size=(width, height),
                                            color=color)
-            from random import randrange
-            for i in range(NB_STARS):
+            seed(RANDOM_SEED)
+            for i in range(stars):
                 background_img.putpixel((randrange(0, width), randrange(0, height)), getrgb(STAR_COLOR))
+            seed()
         except ValueError:
             background_img = PIL.Image.new(mode="RGB",
                                            size=(width, height),
@@ -1156,6 +1153,12 @@ def make_image(color=None,     # <<<2
                                 world["geometry"],
                                 world["modulus"],
                                 world["angle"])
+    _zs = zs
+
+    if not world["sphere_projection"]:
+        _zs = np.copy(zs)
+        zs = plane_coordinates_to_sphere(zs, world["sphere_rotations"])
+
 
     if pattern in FRIEZES:
         res = make_rosette_image(zs,
@@ -1176,8 +1179,6 @@ def make_image(color=None,     # <<<2
                                 matrix,
                                 pattern,
                                 N=params["N"],
-                                stereographic=params["stereographic"],
-                                rotations=params["rotations"],
                                 message_queue=message_queue)
     else:
         res = make_lattice_image(zs,
@@ -1196,11 +1197,12 @@ def make_image(color=None,     # <<<2
                       color["angle"],
                       color["color"])
 
-    if pattern in SPHERE_GROUPS and not params["stereographic"]:
-        if params["background"]:
-            return make_sphere_background(zs, img, background=params["background"], shade=params["shade"])
-        else:
-            return img
+    if world["sphere_background"] and not world["sphere_projection"]:
+        return make_sphere_background(_zs,
+                                      img,
+                                      background=world["sphere_background"],
+                                      shade=world["sphere_shade"],
+                                      stars=world["sphere_stars"])
     else:
         return img
 # >>>2
@@ -1608,6 +1610,15 @@ class World(LabelFrame):     # <<<2
     # >>>3
 
     @property
+    def geometry_tab(self):     # <<<2
+        if ("sphere" in self._geometry_tabs.tab(self._geometry_tabs.select(), "text")):
+            return "sphere"
+        else:
+            return "plane"
+
+    # >>>2
+
+    @property
     def filename_template(self):    # <<<3
         return self._filename_template.get()
     # >>>3
@@ -1632,9 +1643,15 @@ class World(LabelFrame):     # <<<2
         # >>>4
 
         # geometry of result    <<<4
-        coord_frame = LabelFrame(self, text="coordinates")
-        # coord_frame.pack()
-        coord_frame.grid(row=0, column=1, sticky=E+W, padx=5, pady=5)
+        self._geometry_tabs = Notebook(self)
+        self._geometry_tabs.grid(row=0, column=1, sticky=E+W, padx=5, pady=5)
+
+        _tmp2 = Frame(self._geometry_tabs)
+        self._geometry_tabs.add(_tmp2, text="plane")
+
+        coord_frame = LabelFrame(_tmp2, text="coordinates")
+        coord_frame.pack(padx=5, pady=5)
+        # coord_frame.grid(row=0, column=1, sticky=E+W, padx=5, pady=5)
         coord_frame.columnconfigure(0, weight=1)
         coord_frame.columnconfigure(1, weight=1)
 
@@ -1669,8 +1686,9 @@ class World(LabelFrame):     # <<<2
                command=self.zoom(2**-.1)).grid(row=3, column=1,
                                                padx=5, pady=5)
 
-        transformation_frame = LabelFrame(self, text="transformation")
-        transformation_frame.grid(row=1, column=1, sticky=E+W, padx=5, pady=5)
+        transformation_frame = LabelFrame(_tmp2, text="transformation")
+        # transformation_frame.grid(row=1, column=1, sticky=E+W, padx=5, pady=5)
+        transformation_frame.pack(padx=5, pady=5, fill=BOTH)
         self._modulus = LabelEntry(transformation_frame, label="modulus",
                                    value=1,
                                    convert=float,
@@ -1687,6 +1705,48 @@ class World(LabelFrame):     # <<<2
                command=self.reset_geometry).grid(row=4, column=0, columnspan=2,
                                                  padx=5, pady=5)
         # >>>4
+
+        # sphere parameters
+        _tmp3 = Frame(self._geometry_tabs)
+        self._geometry_tabs.add(_tmp3, text="sphere")
+        self._stereographic = BooleanVar()
+        self._stereographic.set(True)
+
+        stereographic_button = Checkbutton(_tmp3,
+                                           text="stereographic projection",
+                                           variable=self._stereographic,
+                                           onvalue=True, offvalue=False,
+                                           )
+        stereographic_button.pack(padx=5, pady=10)
+
+        self._rotations = LabelEntry(_tmp3,
+                                     label="rotations x, y, z (°)",
+                                     orientation="V",
+                                     value="15, 15, 0",
+                                     convert=str_to_floats,
+                                     width=15)
+        self._rotations.pack(padx=5, pady=10)
+
+        self._sphere_background = LabelEntry(_tmp3,
+                                             label="background",
+                                             value=DEFAULT_SPHERE_BACKGROUND,
+                                             width=10)
+        self._sphere_background.pack(padx=5, pady=10)
+        self._sphere_background.bind("<Double-Button-1>", self.choose_sphere_background)
+
+        self._sphere_shade = LabelEntry(_tmp3,
+                                        label="shading",
+                                        value=128,
+                                        width=5,
+                                        convert=int)
+        self._sphere_shade.pack(padx=5, pady=10)
+
+        self._sphere_stars = LabelEntry(_tmp3,
+                                        label="random stars",
+                                        value=500,
+                                        width=5,
+                                        convert=int)
+        self._sphere_stars.pack(padx=5, pady=10)
 
         # result settings       <<<4
         settings_frame = LabelFrame(self, text="output")
@@ -1716,10 +1776,10 @@ class World(LabelFrame):     # <<<2
         tmp.grid(row=3, column=1, sticky=E+W, padx=5, pady=5)
 
         self._preview_button = Button(tmp, text="preview", command=None)
-        self._preview_button.pack(padx=5, pady=5)
+        self._preview_button.pack(side=LEFT, padx=10, pady=10)
 
         self._save_button = Button(tmp, text="save", command=None)
-        self._save_button.pack(padx=5, pady=5)
+        self._save_button.pack(side=RIGHT, padx=10, pady=10)
 
         width, height = self.size
         if width > height:
@@ -1745,6 +1805,45 @@ class World(LabelFrame):     # <<<2
         self._y_max.set(y_max + dy * delta_y)
     # >>>3
 
+    def rotate(self, dx, dy, dz=0):   # <<<3
+            theta_x, theta_y, theta_z = self._rotations.get()
+
+            theta_x = theta_x*pi/180
+            theta_y = theta_y*pi/180
+            theta_z = theta_z*pi/180
+            R1 = rotation_matrix(theta_x, theta_y, theta_z)
+
+            R2 = rotation_matrix(10*dz*pi/180, 10*dx*pi/180, -10*dy*pi/180)
+
+            R = mult_M(R1, R2)
+            theta_x, theta_y, theta_z = tait_angle(R)
+
+            theta_x = round(theta_x * 180 / pi)
+            theta_y = round(theta_y * 180 / pi)
+            theta_z = round(theta_z * 180 / pi)
+
+            if theta_x < 0:
+                theta_x += 360
+            if theta_y < 0:
+                theta_y += 360
+            if theta_z < 0:
+                theta_z += 360
+
+            self._rotations.set(
+                    floats_to_str([theta_x, theta_y, theta_z]))
+    # >>>3
+
+    def choose_sphere_background(self, *args):    # <<<3
+        filename = filedialog.askopenfilename(
+                parent=self,
+                title="Create Symmetry: choose background image",
+                initialdir="./",
+                filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")])
+        if filename:
+            self._sphere_background.set(filename)
+            self._sphere_background.xview(END)
+    # >>>3
+
     def reset_geometry(self, *args):        # <<<3
         self._x_min.set(WORLD_GEOMETRY[0])
         self._x_max.set(WORLD_GEOMETRY[1])
@@ -1754,6 +1853,7 @@ class World(LabelFrame):     # <<<2
             self.adjust_preview_X()
         else:
             self.adjust_preview_X()
+        self._rotations.set("0, 0, 0")
     # >>>3
 
     def adjust_preview_X(self, *args):      # <<<3
@@ -1781,6 +1881,11 @@ class World(LabelFrame):     # <<<2
                 "geometry": self.geometry,
                 "modulus": self.modulus,
                 "angle": self.angle,
+                "sphere_projection": self._stereographic.get(),
+                "sphere_rotations": self._rotations.get(),
+                "sphere_background": self._sphere_background.get(),
+                "sphere_shade": self._sphere_shade.get(),
+                "sphere_stars": self._sphere_stars.get(),
                 "size": self.size,
                 "filename": self.filename_template,
                 }
@@ -1797,6 +1902,16 @@ class World(LabelFrame):     # <<<2
             self._modulus.set(cfg["modulus"])
         if "angle" in cfg:
             self._angle.set(cfg["angle"])
+        if "sphere_projection" in cfg:
+            self._stereographic.set(cfg["sphere_projection"])
+        if "sphere_rotations" in cfg:
+            self._rotations.set(floats_to_str(cfg["sphere_rotations"]))
+        if "sphere_background" in cfg:
+            self._sphere_background.set(floats_to_str(cfg["sphere_background"]))
+        if "sphere_shade" in cfg:
+            self._sphere_shade.set(floats_to_str(cfg["sphere_shade"]))
+        if "sphere_stars" in cfg:
+            self._sphere_stars.set(floats_to_str(cfg["sphere_stars"]))
         if "size" in cfg:
             self._width.set(cfg["size"][0])
             self._height.set(cfg["size"][1])
@@ -2019,37 +2134,6 @@ class Function(LabelFrame):     # <<<2
                                     width=2)
         self._sphere_N.pack(padx=5, pady=5)
 
-        self._stereographic = BooleanVar()
-        self._stereographic.set(False)
-
-        stereographic_button = Checkbutton(sphere_tab,
-                                           text="stereographic projection",
-                                           variable=self._stereographic,
-                                           onvalue=True, offvalue=False,
-                                           command=self.update_sphere_tab)
-        stereographic_button.pack(padx=5, pady=5)
-
-        self._rotations = LabelEntry(sphere_tab,
-                                     label="rotations x, y, z (°)",
-                                     orientation="V",
-                                     value="15, 15, 0",
-                                     convert=str_to_floats,
-                                     width=15)
-        self._rotations.pack(padx=5, pady=(0, 5))
-
-        self._sphere_background = LabelEntry(sphere_tab,
-                                             label="background",
-                                             value=DEFAULT_SPHERE_BACKGROUND,
-                                             width=10)
-        self._sphere_background.pack(padx=5, pady=5)
-        self._sphere_background.bind("<Double-Button-1>", self.choose_sphere_background)
-
-        self._sphere_shade = LabelEntry(sphere_tab,
-                                        label="shading",
-                                        value=128,
-                                        width=5,
-                                        convert=int)
-        self._sphere_shade.pack(padx=5, pady=5)
         # >>>4
 
         # display matrix    <<<4
@@ -2145,17 +2229,6 @@ class Function(LabelFrame):     # <<<2
         self.update_sphere_tab()
         self.set_rosette()
         # >>>4
-    # >>>3
-
-    def choose_sphere_background(self, *args):    # <<<3
-        filename = filedialog.askopenfilename(
-                parent=self,
-                title="Create Symmetry: choose background image",
-                initialdir="./",
-                filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")])
-        if filename:
-            self._sphere_background.set(filename)
-            self._sphere_background.xview(END)
     # >>>3
 
     def change_matrix(self, M=None):    # <<<3
@@ -2314,14 +2387,6 @@ class Function(LabelFrame):     # <<<2
             self._sphere_N.enable()
         else:
             self._sphere_N.disable()
-        if self._stereographic.get():
-            self._rotations.disable()
-            self._sphere_shade.disable()
-            self._sphere_background.disable()
-        else:
-            self._rotations.enable()
-            self._sphere_shade.enable()
-            self._sphere_background.enable()
     # >>>3
 
     def make_matrix(self):       # <<<3
@@ -2370,10 +2435,10 @@ class Function(LabelFrame):     # <<<2
                     "color_pattern": self.color_pattern}
         elif self.current_tab == "sphere":
             return {"N": self._sphere_N.get(),
-                    "stereographic": self._stereographic.get(),
-                    "rotations": self._rotations.get(),
-                    "background": self._sphere_background.get(),
-                    "shade": self._sphere_shade.get(),
+                    # "stereographic": self._stereographic.get(),
+                    # "rotations": self._rotations.get(),
+                    # "background": self._sphere_background.get(),
+                    # "shade": self._sphere_shade.get(),
                     }
         elif self.current_tab == "raw":
             return {"N": self._raw_rotation.get(),
@@ -2410,10 +2475,6 @@ class Function(LabelFrame):     # <<<2
                 # sphere tab
                 "sphere_pattern": self._sphere_type.get().split()[0],
                 "sphere_N": self._sphere_N.get(),
-                "sphere_projection": self._stereographic.get(),
-                "sphere_rotations": self._rotations.get(),
-                "sphere_background": self._sphere_background.get(),
-                "sphere_shade": self._sphere_shade.get(),
                 }
     # >>>3
 
@@ -2484,14 +2545,6 @@ class Function(LabelFrame):     # <<<2
                     self._sphere_combo.current(i)
         if "sphere_N" in cfg:
             self._sphere_N.set(cfg["sphere_N"])
-        if "sphere_projection" in cfg:
-            self._stereographic.set(cfg["sphere_projection"])
-        if "sphere_rotations" in cfg:
-            self._rotations.set(floats_to_str(cfg["sphere_rotations"]))
-        if "sphere_background" in cfg:
-            self._sphere_background.set(floats_to_str(cfg["sphere_background"]))
-        if "sphere_shade" in cfg:
-            self._sphere_shade.set(floats_to_str(cfg["sphere_shade"]))
     # >>>3
 # >>>2
 
@@ -2991,32 +3044,9 @@ $CREATE_SYM --color-config='{color_config:}' \\
 
     def translate_rotate(self, dx, dy, dz=0):   # <<<3
         def t_r(*args):
-            if self.function.current_tab == "sphere":
-                theta_x, theta_y, theta_z = self.function._rotations.get()
-                theta_x = theta_x*pi/180
-                theta_y = theta_y*pi/180
-                theta_z = theta_z*pi/180
-                R1 = rotation_matrix(theta_x, theta_y, theta_z)
-
-                R2 = rotation_matrix(10*dz*pi/180, 10*dx*pi/180, -10*dy*pi/180)
-
-                R = mult_M(R1, R2)
-                theta_x, theta_y, theta_z = tait_angle(R)
-
-                theta_x = round(theta_x * 180 / pi)
-                theta_y = round(theta_y * 180 / pi)
-                theta_z = round(theta_z * 180 / pi)
-
-                if theta_x < 0:
-                    theta_x += 360
-                if theta_y < 0:
-                    theta_y += 360
-                if theta_z < 0:
-                    theta_z += 360
-
-                self.function._rotations.set(
-                        floats_to_str([theta_x, theta_y, theta_z]))
-
+            if self.world.geometry_tab == "sphere":
+                if dx != 0 or dy != 0 or dz != 0:
+                    self.world.rotate(dx, dy, dz)
             else:
                 if dx != 0 or dy != 0:
                     self.world.translate(dx/10, dy/10)
@@ -3223,9 +3253,9 @@ def main():     # <<<1
     # color_config["modulus"] = 1.5
 
     # color_config["modulus"] = 2
-    function_config["wallpaper_pattern"] = "4*2"
-    function_config["wallpaper_color_pattern"] = "*442"
-    function_config["matrix"] = { (0,1): 1 }
+    # function_config["wallpaper_pattern"] = "4*2"
+    # function_config["wallpaper_color_pattern"] = "*442"
+    # function_config["matrix"] = { (0,1): 1 }
 
     # function_config["tab"] = "sphere"
     # function_config["sphere_pattern"] = "532"
