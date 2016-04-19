@@ -1024,9 +1024,6 @@ def make_sphere_image(zs,      # <<<2
                       pattern,
                       N=5,
                       stereographic=True,
-                      # theta_x=0,
-                      # theta_y=0,
-                      # theta_z=0,
                       rotations=(0, 0, 0),
                       message_queue=None):
 
@@ -1192,9 +1189,6 @@ def make_image(color=None,     # <<<2
                                     pattern,
                                     N=params["N"],
                                     stereographic=params["stereographic"],
-                                    # theta_x=params["theta_x"],
-                                    # theta_y=params["theta_y"],
-                                    # theta_z=params["theta_z"],
                                     rotations=params["rotations"],
                                     message_queue=message_queue)
         else:
@@ -2041,24 +2035,6 @@ class Function(LabelFrame):     # <<<2
                                            command=self.update_sphere_tab)
         stereographic_button.pack(padx=5, pady=5)
 
-        # self._theta_x = LabelEntry(sphere_tab,
-        #                            label="rotation x (°)",
-        #                            value="15",
-        #                            convert=float,
-        #                            width=5)
-        # self._theta_x.pack(padx=5, pady=0)
-        # self._theta_y = LabelEntry(sphere_tab,
-        #                            label="rotation y (°)",
-        #                            value="15",
-        #                            convert=float,
-        #                            width=5)
-        # self._theta_y.pack(padx=5, pady=0)
-        # self._theta_z = LabelEntry(sphere_tab,
-        #                            label="rotation z (°)",
-        #                            value="0",
-        #                            convert=float,
-        #                            width=5)
-        # self._theta_z.pack(padx=5, pady=0)
         self._rotations = LabelEntry(sphere_tab,
                                      label="rotations x, y, z (°)",
                                      orientation="V",
@@ -2344,16 +2320,10 @@ class Function(LabelFrame):     # <<<2
         else:
             self._sphere_N.disable()
         if self._stereographic.get():
-            # self._theta_x.disable()
-            # self._theta_y.disable()
-            # self._theta_z.disable()
             self._rotations.disable()
             self._sphere_shade.disable()
             self._sphere_background.disable()
         else:
-            # self._theta_x.enable()
-            # self._theta_y.enable()
-            # self._theta_z.enable()
             self._rotations.enable()
             self._sphere_shade.enable()
             self._sphere_background.enable()
@@ -2403,9 +2373,6 @@ class Function(LabelFrame):     # <<<2
         elif self.current_tab == "sphere":
             return {"N": self._sphere_N.get(),
                     "stereographic": self._stereographic.get(),
-                    # "theta_x": self._theta_x.get(),
-                    # "theta_y": self._theta_y.get(),
-                    # "theta_z": self._theta_z.get(),
                     "rotations": self._rotations.get(),
                     "background": self._sphere_background.get(),
                     "shade": self._sphere_shade.get(),
@@ -2446,9 +2413,6 @@ class Function(LabelFrame):     # <<<2
                 "sphere_pattern": self._sphere_type.get().split()[0],
                 "sphere_N": self._sphere_N.get(),
                 "sphere_projection": self._stereographic.get(),
-                # "sphere_theta_x": self._theta_x.get(),
-                # "sphere_theta_y": self._theta_x.get(),
-                # "sphere_theta_z": self._theta_x.get(),
                 "sphere_rotations": self._rotations.get(),
                 "sphere_background": self._sphere_background.get(),
                 "sphere_shade": self._sphere_shade.get(),
@@ -2524,12 +2488,6 @@ class Function(LabelFrame):     # <<<2
             self._sphere_N.set(cfg["sphere_N"])
         if "sphere_projection" in cfg:
             self._stereographic.set(cfg["sphere_projection"])
-        # if "sphere_theta_x" in cfg:
-        #     self._theta_x.set(cfg["sphere_theta_x"])
-        # if "sphere_theta_y" in cfg:
-        #     self._theta_y.set(cfg["sphere_theta_y"])
-        # if "sphere_theta_z" in cfg:
-        #     self._theta_z.set(cfg["sphere_theta_z"])
         if "sphere_rotations" in cfg:
             self._rotations.set(floats_to_str(cfg["sphere_rotations"]))
         if "sphere_background" in cfg:
@@ -3065,10 +3023,8 @@ $CREATE_SYM --color-config='{color_config:}' \\
                 if theta_z < 0:
                     theta_z += 360
 
-                # self.function._theta_x.set(floats_to_str([theta_x]))
-                # self.function._theta_y.set(floats_to_str([theta_y]))
-                # self.function._theta_z.set(floats_to_str([theta_z]))
-                self.function._rotations.set(floats_to_str([theta_x, theta_y, theta_z]))
+                self.function._rotations.set(
+                        floats_to_str([theta_x, theta_y, theta_z]))
 
             else:
                 if dx != 0 or dy != 0:
