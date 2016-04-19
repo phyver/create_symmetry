@@ -262,7 +262,7 @@ COLOR_REVERSING_WALLPAPERS = {     # <<<1
             },
         "22×": {
                 "2*22": {
-                    "recipe": "n,m = -{n+m}(-n,m) ; n,mu = -n,-m",
+                    "recipe": "n,m = -{n+m}(-n,m) ; n,m = -n,-m",
                     "parity": "n+m = 1 mod 2"},
             # TOCHECK
                 "22*": {
@@ -693,10 +693,13 @@ def str_to_floats(s):       # <<<2
 # >>>2
 
 
+def float_to_str(x):       # <<<2
+    return re.sub("\.0*\s*$", "", str(x))
+# >>>2
+
+
 def floats_to_str(l):       # <<<2
-    l = map(str, l)
-    l = map(lambda s: re.sub("\.0*\s*$", "", s), l)
-    return ", ".join(l)
+    return ", ".join(map(float_to_str, l))
 # >>>2
 
 
@@ -1148,8 +1151,6 @@ def make_image(color=None,     # <<<2
                message_queue=None,
                stretch_color=False,
                **params):
-    # TODO: add color, world and function parameter to keep config, instead
-    # of taking it from self...
 
     zs = make_coordinates_array(world["size"],
                                 world["geometry"],
@@ -1203,7 +1204,7 @@ def make_image(color=None,     # <<<2
         return make_sphere_background(_zs,
                                       img,
                                       background=world["sphere_background"],
-                                      shade=world["sphere_shade"],
+                                      shade=world["sphere_shading"],
                                       stars=world["sphere_stars"])
     else:
         return img
@@ -1314,33 +1315,88 @@ class LabelEntry(Frame):  # <<<2
 
 class ColorWheel(LabelFrame):   # <<<2
 
+    # getter / setters <<<3
     @property
-    def geometry(self):     # <<<3
+    def geometry(self):     # <<<4
         x_min = self._x_min.get()
         x_max = self._x_max.get()
         y_min = self._y_min.get()
         y_max = self._y_max.get()
         return x_min, x_max, y_min, y_max
-    # >>>3
+    # >>>4
+
+    @geometry.setter
+    def geometry(self, geometry):     # <<<4
+        x_min, x_max, y_min, y_max = geometry
+        self._x_min.set(float_to_str(x_min))
+        self._x_max.set(float_to_str(x_max))
+        self._y_min.set(float_to_str(y_min))
+        self._y_max.set(float_to_str(y_max))
+    # >>>4
 
     @property
-    def modulus(self):  # <<<3
+    def modulus(self):  # <<<4
         return self._modulus.get()
-    # >>>3
+    # >>>4
+
+    @modulus.setter
+    def modulus(self, modulus):  # <<<4
+        self._modulus.set(float_to_str(modulus))
+    # >>>4
 
     @property
-    def angle(self):    # <<<3
+    def angle(self):    # <<<4
         return self._angle.get()
-    # >>>3
+    # >>>4
+
+    @angle.setter
+    def angle(self, angle):    # <<<4
+        self._angle.set(float_to_str(angle))
+    # >>>4
 
     @property
-    def color(self):    # <<<3
+    def color(self):    # <<<4
         return self._color.get()
-    # >>>3
+    # >>>4
+
+    @color.setter
+    def color(self, color):    # <<<4
+        self._color.set("#{:02x}{:02x}{:02x}"
+                        .format(color[0], color[1], color[2]))
+    # >>>4
 
     @property
-    def stretch(self):    # <<<3
+    def color_string(self):    # <<<4
+        return self._color.entry_widget.get()
+    # >>>4
+
+    @color_string.setter
+    def color_string(self, color):    # <<<4
+        self._color.set(color)
+    # >>>4
+
+    @property
+    def stretch(self):    # <<<4
         return self._stretch_color.get()
+    # >>>4
+
+    @stretch.setter
+    def stretch(self, b):    # <<<4
+        self._stretch_color.set(b)
+    # >>>4
+
+    @property
+    def filename(self):     # <<<4
+        try:
+            return self._filename
+        except:
+            return None
+    # >>>4
+
+    @filename.setter
+    def filename(self, filename):   # <<<4
+        self._filename = filename
+    # >>>4
     # >>>3
 
     def __init__(self, root):        # <<<3
@@ -1364,10 +1420,8 @@ class ColorWheel(LabelFrame):   # <<<2
         Checkbutton(self, text="stretch unit disk",
                     variable=self._stretch_color,
                     onvalue=True, offvalue=False,
-                    command=lambda: self.change_colorwheel(self.filename)).grid(row=1,column=0, padx=5, pady=0)
-
-        # self._filename = Label(self, text="...")
-        # self._filename.grid(row=2, column=0, padx=5, pady=5)
+                    command=lambda: self.change_colorwheel(self.filename)
+                    ).grid(row=1, column=0, padx=5, pady=0)
 
         self._canvas = Canvas(self, width=200, height=200, bg="white")
         self._canvas.grid(row=3, column=0, padx=5, pady=5)
@@ -1379,10 +1433,9 @@ class ColorWheel(LabelFrame):   # <<<2
         self._canvas.bind("<Button-3>", self.set_origin)
         self._canvas.bind("<Double-Button-1>", self.choose_colorwheel)
 
-        self._filename = Button(self, text="choose file",
-               command=self.choose_colorwheel)
-        self._filename.grid(row=4, column=0,
-                                                    padx=5, pady=5)
+        self._filename_button = Button(self, text="choose file",
+                                       command=self.choose_colorwheel)
+        self._filename_button.grid(row=4, column=0, padx=5, pady=5)
 
         coord_frame = LabelFrame(self, text="coordinates")
         coord_frame.grid(row=5, column=0, sticky=E+W, padx=5, pady=5)
@@ -1414,9 +1467,9 @@ class ColorWheel(LabelFrame):   # <<<2
         self._y_max.grid(row=1, column=1, padx=5, pady=5)
 
         self._reset_button = Button(coord_frame, text="reset",
-               command=self.reset_geometry)
+                                    command=self.reset_geometry)
         self._reset_button.grid(row=2, column=0, columnspan=2,
-                                                 padx=5, pady=5)
+                                padx=5, pady=5)
 
         transformation_frame = LabelFrame(self, text="transformation")
         transformation_frame.grid(row=6, column=0, sticky=E+W, padx=5, pady=5)
@@ -1480,15 +1533,15 @@ class ColorWheel(LabelFrame):   # <<<2
                 width, height = img.size
                 ratio = width / height
                 if ratio < 1:
-                    self._x_min.set(COLOR_GEOMETRY[0])
-                    self._x_max.set(COLOR_GEOMETRY[1])
-                    self._y_min.set(COLOR_GEOMETRY[2] / ratio)
-                    self._y_max.set(COLOR_GEOMETRY[3] / ratio)
+                    self.x_min = COLOR_GEOMETRY[0]
+                    self.x_max = COLOR_GEOMETRY[1]
+                    self.y_min = COLOR_GEOMETRY[2] / ratio
+                    self.y_max = COLOR_GEOMETRY[3] / ratio
                 else:
-                    self._x_min.set(COLOR_GEOMETRY[0] * ratio)
-                    self._x_max.set(COLOR_GEOMETRY[1] * ratio)
-                    self._y_min.set(COLOR_GEOMETRY[2])
-                    self._y_max.set(COLOR_GEOMETRY[3])
+                    self.x_min = COLOR_GEOMETRY[0] * ratio
+                    self.x_max = COLOR_GEOMETRY[1] * ratio
+                    self.y_min = COLOR_GEOMETRY[2]
+                    self.y_max = COLOR_GEOMETRY[3]
 
             self._image = img
             tk_img = PIL.ImageTk.PhotoImage(img)
@@ -1496,7 +1549,7 @@ class ColorWheel(LabelFrame):   # <<<2
             self._canvas.delete(self._colorwheel_id)
             self._canvas.create_image((100, 100), image=tk_img)
             self.filename = filename
-            self._filename.config(text=os.path.basename(filename))
+            self._filename_button.config(text=os.path.basename(filename))
         except Exception as e:
             error("problem while loading {} for color image: {}"
                   .format(filename, e))
@@ -1524,10 +1577,10 @@ class ColorWheel(LabelFrame):   # <<<2
         x_max = x_min + delta_x
         y_max = y/COLOR_SIZE * delta_y
         y_min = y_max - delta_y
-        self._x_min.set(x_min)
-        self._x_max.set(x_max)
-        self._y_min.set(y_min)
-        self._y_max.set(y_max)
+        self.x_min = x_min
+        self.x_max = x_max
+        self.y_min = y_min
+        self.y_max = y_max
     # >>>3
 
     def reset_geometry(self, *args):        # <<<3
@@ -1536,16 +1589,16 @@ class ColorWheel(LabelFrame):   # <<<2
         if self.filename is not None:
             self.change_colorwheel(self.filename)
         else:
-            self._x_min.set(COLOR_GEOMETRY[0])
-            self._x_max.set(COLOR_GEOMETRY[1])
-            self._y_min.set(COLOR_GEOMETRY[2])
-            self._y_max.set(COLOR_GEOMETRY[3])
+            self.x_min = COLOR_GEOMETRY[0]
+            self.x_max = COLOR_GEOMETRY[1]
+            self.y_min = COLOR_GEOMETRY[2]
+            self.y_max = COLOR_GEOMETRY[3]
     # >>>3
 
     def get_config(self):           # <<<3
         return {
                 "filename": self.filename,
-                "color": self._color.entry_widget.get(),    # don't use _color.get to avoid conversion to rgb
+                "color": self.color_string,
                 "geometry": self.geometry,
                 "modulus": self.modulus,
                 "angle": self.angle,
@@ -1555,19 +1608,15 @@ class ColorWheel(LabelFrame):   # <<<2
 
     def set_config(self, cfg):      # <<<3
         if "geometry" in cfg:
-            g = cfg["geometry"]
-            self._x_min.set(g[0])
-            self._x_max.set(g[1])
-            self._y_min.set(g[2])
-            self._y_max.set(g[3])
+            self.geometry = cfg["geometry"]
         if "modulus" in cfg:
-            self._modulus.set(cfg["modulus"])
+            self.modulus = cfg["modulus"]
         if "angle" in cfg:
-            self._angle.set(cfg["angle"])
+            self.angle = cfg["angle"]
         if "stretch" in cfg:
-            self._stretch_color.set(cfg["stretch"])
+            self.stretch = cfg["stretch"]
         if "color" in cfg:
-            self._color.set(cfg["color"])
+            self.color_string = cfg["color"]
             self.update_defaultcolor()
         if "filename" in cfg:
             self.change_colorwheel(cfg["filename"])
@@ -1577,51 +1626,154 @@ class ColorWheel(LabelFrame):   # <<<2
 
 class World(LabelFrame):     # <<<2
 
+    # getters and setters   <<<3
     @property
-    def filename_template(self):    # <<<3
+    def filename_template(self):    # <<<4
         return self._filename_template.get()
-    # >>>3
+    # >>>4
+
+    @filename_template.setter
+    def filename_template(self, template):    # <<<4
+        self._filename_template.set(template)
+    # >>>4
 
     @property
-    def geometry(self):     # <<<3
+    def geometry(self):     # <<<4
         x_min = self._x_min.get()
         x_max = self._x_max.get()
         y_min = self._y_min.get()
         y_max = self._y_max.get()
         return x_min, x_max, y_min, y_max
-    # >>>3
+    # >>>4
+
+    @geometry.setter
+    def geometry(self, geometry):     # <<<4
+        x_min, x_max, y_min, y_max = geometry
+        self._x_min.set(float_to_str(x_min))
+        self._x_max.set(float_to_str(x_max))
+        self._y_min.set(float_to_str(y_min))
+        self._y_max.set(float_to_str(y_max))
+    # >>>4
 
     @property
-    def modulus(self):  # <<<3
+    def modulus(self):  # <<<4
         return self._modulus.get()
-    # >>>3
+    # >>>4
+
+    @modulus.setter
+    def modulus(self, modulus):  # <<<4
+        self._modulus.set(float_to_str(modulus))
+    # >>>4
 
     @property
-    def angle(self):    # <<<3
+    def angle(self):    # <<<4
         return self._angle.get()
-    # >>>3
+    # >>>4
+
+    @angle.setter
+    def angle(self, angle):    # <<<4
+        self._angle.set(float_to_str(angle))
+    # >>>4
 
     @property
-    def size(self):    # <<<3
+    def size(self):    # <<<4
         return self._width.get(), self._height.get()
-    # >>>3
+    # >>>4
+
+    @size.setter
+    def size(self, size):    # <<<4
+        width, height = size
+        self._width.set(float_to_str(width))
+        self._height.set(float_to_str(height))
+    # >>>4
 
     @property
-    def width(self):    # <<<3
+    def width(self):    # <<<4
         return self._width.get()
-    # >>>3
+    # >>>4
+
+    @width.setter
+    def width(self, width):    # <<<4
+        self._width.set(float_to_str(width))
+    # >>>4
 
     @property
-    def height(self):    # <<<3
+    def height(self):    # <<<4
         return self._height.get()
-    # >>>3
+    # >>>4
+
+    @height.setter
+    def height(self, height):    # <<<4
+        self._height.set(float_to_str(height))
+    # >>>4
 
     @property
-    def geometry_tab(self):     # <<<3
-        if ("sphere" in self._geometry_tabs.tab(self._geometry_tabs.select(), "text")):
+    def stereographic(self):    # <<<4
+        return self._stereographic.get()
+    # >>>4
+
+    @stereographic.setter
+    def stereographic(self, b):    # <<<4
+        self._stereographic.set(b)
+    # >>>4
+
+    @property
+    def sphere_rotations(self):    # <<<4
+        return self._rotations.get()
+    # >>>4
+
+    @sphere_rotations.setter
+    def sphere_rotations(self, rotations):    # <<<4
+        self._rotations.set(floats_to_str(rotations))
+    # >>>4
+
+    @property
+    def sphere_background(self):    # <<<4
+        return self._sphere_background.get()
+    # >>>4
+
+    @sphere_background.setter
+    def sphere_background(self, s):    # <<<4
+        self._sphere_background.set(s)
+    # >>>4
+
+    @property
+    def sphere_shading(self):    # <<<4
+        return self._sphere_shading.get()
+    # >>>4
+
+    @sphere_shading.setter
+    def sphere_shading(self, n):    # <<<4
+        self._sphere_shading.set(n)
+    # >>>4
+
+    @property
+    def sphere_stars(self):    # <<<4
+        return self._sphere_stars.get()
+    # >>>4
+
+    @sphere_stars.setter
+    def sphere_stars(self, n):    # <<<4
+        self._sphere_stars.set(n)
+    # >>>4
+
+    @property
+    def geometry_tab(self):     # <<<4
+        if ("sphere" in self._geometry_tabs.tab(self._geometry_tabs.select(),
+                                                "text")):
             return "sphere"
         else:
             return "plane"
+    # >>>4
+
+    @geometry_tab.setter
+    def geometry_tab(self, tab):     # <<<4
+        tab = tab.lower().strip()
+        if tab == "sphere":
+            self._geometry_tabs.current(1)
+        elif tab == "plane":
+            self._geometry_tabs.current(0)
+    # >>>4
     # >>>3
 
     def __init__(self, root):       # <<<3
@@ -1638,7 +1790,6 @@ class World(LabelFrame):     # <<<2
             for j in range(5, PREVIEW_SIZE, 10):
                 self._canvas.create_line(i-1, j, i+2, j, fill="gray")
                 self._canvas.create_line(i, j-1, i, j+2, fill="gray")
-        # self._canvas.pack(side=LEFT)
         self._canvas.grid(row=0, column=0, rowspan=4, padx=5, pady=5)
         self._image_id = None
         # >>>4
@@ -1688,7 +1839,6 @@ class World(LabelFrame):     # <<<2
                                                padx=5, pady=5)
 
         transformation_frame = LabelFrame(_tmp2, text="transformation")
-        # transformation_frame.grid(row=1, column=1, sticky=E+W, padx=5, pady=5)
         transformation_frame.pack(padx=5, pady=5, fill=BOTH)
         self._modulus = LabelEntry(transformation_frame, label="modulus",
                                    value=1,
@@ -1707,7 +1857,7 @@ class World(LabelFrame):     # <<<2
                                                  padx=5, pady=5)
         # >>>4
 
-        # sphere parameters
+        # sphere parameters     <<<4
         _tmp3 = Frame(self._geometry_tabs)
         self._geometry_tabs.add(_tmp3, text="sphere")
         self._stereographic = BooleanVar()
@@ -1735,12 +1885,12 @@ class World(LabelFrame):     # <<<2
         self._sphere_background.pack(padx=5, pady=10)
         self._sphere_background.bind("<Double-Button-1>", self.choose_sphere_background)
 
-        self._sphere_shade = LabelEntry(_tmp3,
+        self._sphere_shading = LabelEntry(_tmp3,
                                         label="shading",
                                         value=128,
                                         width=5,
                                         convert=int)
-        self._sphere_shade.pack(padx=5, pady=10)
+        self._sphere_shading.pack(padx=5, pady=10)
 
         self._sphere_stars = LabelEntry(_tmp3,
                                         label="random stars",
@@ -1748,6 +1898,7 @@ class World(LabelFrame):     # <<<2
                                         width=5,
                                         convert=int)
         self._sphere_stars.pack(padx=5, pady=10)
+        # >>>4
 
         # result settings       <<<4
         settings_frame = LabelFrame(self, text="output")
@@ -1773,6 +1924,7 @@ class World(LabelFrame):     # <<<2
         self._filename_template.pack(padx=5, pady=5)
         # >>>4
 
+        # image buttons (preview / save)    <<<4
         tmp = LabelFrame(self, text="image")
         tmp.grid(row=3, column=1, sticky=E+W, padx=5, pady=5)
 
@@ -1781,6 +1933,7 @@ class World(LabelFrame):     # <<<2
 
         self._save_button = Button(tmp, text="save", command=None)
         self._save_button.pack(side=RIGHT, padx=10, pady=10)
+        # >>>4
 
         width, height = self.size
         if width > height:
@@ -1790,10 +1943,10 @@ class World(LabelFrame):     # <<<2
     # >>>3
 
     def reset_geometry(self, *args):        # <<<3
-        self._x_min.set(WORLD_GEOMETRY[0])
-        self._x_max.set(WORLD_GEOMETRY[1])
-        self._y_min.set(WORLD_GEOMETRY[2])
-        self._y_max.set(WORLD_GEOMETRY[3])
+        self.x_min = WORLD_GEOMETRY[0]
+        self.x_max = WORLD_GEOMETRY[1]
+        self.y_min = WORLD_GEOMETRY[2]
+        self.y_max = WORLD_GEOMETRY[3]
         if self.width > self.height:
             self.adjust_preview_X()
         else:
@@ -1803,23 +1956,21 @@ class World(LabelFrame):     # <<<2
 
     def zoom(self, alpha):      # <<<3
         def zoom_tmp(*args):
-            for c in ["_x_min", "_x_max", "_y_min", "_y_max"]:
-                self.__dict__[c].set(self.__dict__[c].get() * alpha)
+            self.geometry = map(lambda x: x*alpha, self.geometry)
         return zoom_tmp
     # >>>3
 
     def translate(self, dx, dy):    # <<<3
-        x_min, x_max, y_min, y_max = self.geometry
-        delta_x = x_max - x_min
-        delta_y = y_max - y_min
-        self._x_min.set(x_min + dx * delta_x)
-        self._x_max.set(x_max + dx * delta_x)
-        self._y_min.set(y_min + dy * delta_y)
-        self._y_max.set(y_max + dy * delta_y)
+        delta_x = self.x_max - self.x_min
+        delta_y = self.y_max - self.y_min
+        self.x_min += dx * delta_x
+        self.x_max += dx * delta_x
+        self.y_min += dy * delta_y
+        self.y_max += dy * delta_y
     # >>>3
 
     def rotate(self, dx, dy, dz=0):   # <<<3
-            theta_x, theta_y, theta_z = self._rotations.get()
+            theta_x, theta_y, theta_z = self.sphere_rotations
 
             theta_x = theta_x*pi/180
             theta_y = theta_y*pi/180
@@ -1842,8 +1993,7 @@ class World(LabelFrame):     # <<<2
             if theta_z < 0:
                 theta_z += 360
 
-            self._rotations.set(
-                    floats_to_str([theta_x, theta_y, theta_z]))
+            self.sphere_rotations = theta_x, theta_y, theta_z
     # >>>3
 
     def choose_sphere_background(self, *args):    # <<<3
@@ -1853,11 +2003,13 @@ class World(LabelFrame):     # <<<2
                 initialdir="./",
                 filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")])
         if filename:
+            # TODO: keep filename in property, only display filename
             self._sphere_background.set(filename)
             self._sphere_background.xview(END)
     # >>>3
 
     def adjust_preview_X(self, *args):      # <<<3
+        # TODO: just a single function "adjust_geometry"
         ratio = self.width / self.height
         x_min, x_max, y_min, y_max = self.geometry
         delta_y = y_max - y_min
@@ -1882,11 +2034,11 @@ class World(LabelFrame):     # <<<2
                 "geometry": self.geometry,
                 "modulus": self.modulus,
                 "angle": self.angle,
-                "sphere_projection": self._stereographic.get(),
-                "sphere_rotations": self._rotations.get(),
-                "sphere_background": self._sphere_background.get(),
-                "sphere_shade": self._sphere_shade.get(),
-                "sphere_stars": self._sphere_stars.get(),
+                "sphere_projection": self.stereographic,
+                "sphere_rotations": self.sphere_rotations,
+                "sphere_background": self.sphere_background,
+                "sphere_shading": self.sphere_shading,
+                "sphere_stars": self.sphere_stars,
                 "size": self.size,
                 "filename": self.filename_template,
                 }
@@ -1894,38 +2046,34 @@ class World(LabelFrame):     # <<<2
 
     def set_config(self, cfg):      # <<<3
         if "geometry" in cfg:
-            g = cfg["geometry"]
-            self._x_min.set(g[0])
-            self._x_max.set(g[1])
-            self._y_min.set(g[2])
-            self._y_max.set(g[3])
+            self.geometry = cfg["geometry"]
         if "modulus" in cfg:
-            self._modulus.set(cfg["modulus"])
+            self.modulus = cfg["modulus"]
         if "angle" in cfg:
-            self._angle.set(cfg["angle"])
+            self.angle = cfg["angle"]
         if "sphere_projection" in cfg:
-            self._stereographic.set(cfg["sphere_projection"])
+            self.stereographic = cfg["sphere_projection"]
         if "sphere_rotations" in cfg:
-            self._rotations.set(floats_to_str(cfg["sphere_rotations"]))
+            self.sphere_rotations = cfg["sphere_rotations"]
         if "sphere_background" in cfg:
-            self._sphere_background.set(floats_to_str(cfg["sphere_background"]))
-        if "sphere_shade" in cfg:
-            self._sphere_shade.set(floats_to_str(cfg["sphere_shade"]))
+            self.sphere_background = cfg["sphere_background"]
+        if "sphere_shading" in cfg:
+            self.sphere_shading = cfg["sphere_shading"]
         if "sphere_stars" in cfg:
-            self._sphere_stars.set(floats_to_str(cfg["sphere_stars"]))
+            self.sphere_stars = cfg["sphere_stars"]
         if "size" in cfg:
-            self._width.set(cfg["size"][0])
-            self._height.set(cfg["size"][1])
+            self.size = cfg["size"]
         if "filename" in cfg:
-            self._filename_template.set(cfg["filename"])
+            self.filename_template = cfg["filename"]
     # >>>3
 # >>>2
 
 
 class Function(LabelFrame):     # <<<2
 
+    # setters and getters <<<3
     @property
-    def current_tab(self):      # <<<3
+    def current_tab(self):      # <<<4
         if ("wallpaper" in self._tabs.tab(self._tabs.select(), "text")):
             return "wallpaper"
         elif ("frieze" in self._tabs.tab(self._tabs.select(), "text")):
@@ -1936,10 +2084,10 @@ class Function(LabelFrame):     # <<<2
             return "sphere"
         else:
             assert False
-    # >>>3
+    # >>>4
 
     @property
-    def rotational_symmetry(self):      # <<<3
+    def rotational_symmetry(self):      # <<<4
         if self.current_tab == "raw":
             return self._raw_rotation.get()
         elif self.current_tab == "wallpaper":
@@ -1953,10 +2101,10 @@ class Function(LabelFrame):     # <<<2
             return self._sphere_N.get()
         else:
             assert False
-    # >>>3
+    # >>>4
 
     @property
-    def pattern(self):          # <<<3
+    def pattern(self):          # <<<4
         if self.current_tab == "frieze":
             return self._frieze_type.get().split()[0]
         elif self.current_tab == "wallpaper":
@@ -1967,10 +2115,10 @@ class Function(LabelFrame):     # <<<2
             return ""
         else:
             return ""
-    # >>>3
+    # >>>4
 
     @property
-    def color_pattern(self):          # <<<3
+    def color_pattern(self):          # <<<4
         if self.current_tab == "wallpaper":
             sub = self._color_reversing_color_pattern.get()
             if sub == "--":
@@ -1979,10 +2127,10 @@ class Function(LabelFrame):     # <<<2
                 return sub.split()[0]
         else:
             return ""
-    # >>>3
+    # >>>4
 
     @property
-    def lattice_basis(self):       # <<<3
+    def lattice_basis(self):       # <<<4
         if self.current_tab == "wallpaper":
             return WALLPAPERS[self.pattern]["basis"](*self._lattice_params.get())
         elif self.current_tab == "raw":
@@ -1997,6 +2145,7 @@ class Function(LabelFrame):     # <<<2
             return None
         else:
             assert False
+    # >>>4
     # >>>3
 
     def __init__(self, root):      # <<<3
@@ -2439,7 +2588,7 @@ class Function(LabelFrame):     # <<<2
                     # "stereographic": self._stereographic.get(),
                     # "rotations": self._rotations.get(),
                     # "background": self._sphere_background.get(),
-                    # "shade": self._sphere_shade.get(),
+                    # "shade": self._sphere_shading.get(),
                     }
         elif self.current_tab == "raw":
             return {"N": self._raw_rotation.get(),
