@@ -49,6 +49,9 @@ FILENAME_TEMPLATE = "output-{type:}-{name:}~{nb:}"
 UNDO_SIZE = 100
 DEFAULT_SPHERE_BACKGROUND = "#000066"
 
+NB_STARS = 500
+STAR_COLOR = "#FFC"
+
 FRIEZES = {    # <<<1
         "∞∞": {
             "alt_name": "p111",
@@ -878,17 +881,14 @@ def make_coordinates_array(         # <<<2
     delta_y = (y_max-y_min) / (height-1)
 
     xs = np.arange(width, dtype='float64')
-    # xs = x_min + xs*delta_x
     np.multiply(delta_x, xs, out=xs)
     np.add(x_min, xs, out=xs)
 
     ys = np.arange(height, dtype='float64')
-    # ys = y_max - ys*delta_y
     np.multiply(delta_y, ys, out=ys)
     np.subtract(y_max, ys, out=ys)
 
     zs = xs[:, None] + 1j*ys
-    # zs = zs / rho
     np.divide(zs, rho, out=zs)
 
     return zs
@@ -922,7 +922,6 @@ def apply_color(        # <<<2
                              color=color)
     color_im.paste(tmp, (1, 1))
 
-    # res = res / rho
     np.divide(res, rho, out=res)
 
     # convert the ``res`` array into pixel coordinates
@@ -931,9 +930,7 @@ def apply_color(        # <<<2
 
     # increase all coordinates by 1: 0 will be used for pixels in the border
     # with ``color``
-    # xs = xs + 1
     np.add(xs, 1, out=xs)
-    # ys = ys + 1
     np.add(ys, 1, out=ys)
 
     # replace too big / too small values with 0, to get the ``color``
@@ -967,7 +964,6 @@ def make_rosette_image(zs,                # <<<2
                             parity="n-m = 0 mod {}".format(N))
 
     if unwind:
-        # zs = np.exp(1j * zs)
         np.multiply(1j, zs, out=zs)
         np.exp(zs, out=zs)
     zsc = np.conj(zs)
@@ -975,10 +971,9 @@ def make_rosette_image(zs,                # <<<2
     res = np.zeros(zs.shape, complex)
     w1, w2 = 1, len(matrix)
     for (n, m) in matrix:
-        # res += matrix[(n, m)] * zs**n * zsc**m
         np.add(res,  matrix[(n, m)] * zs**n * zsc**m, out=res)
         if message_queue is not None:
-            message_queue.put("wave {}/{}".format(w1, w2))
+            message_queue.put(w1/w2)
         w1 += 1
     return res
 # >>>2
@@ -1006,14 +1001,12 @@ def make_wallpaper_image(zs,     # <<<2
     for (n, m) in matrix:
         xs = zs.real
         ys = zs.imag
-        # res += matrix[(n, m)] * np.exp(2j*pi*(n*(C[0][0]*xs+C[1][0]*ys) +
-        #                                       m*(C[0][1]*xs+C[1][1]*ys)))
         np.add(res,
                matrix[(n, m)] * np.exp(2j*pi*(n*(C[0][0]*xs+C[1][0]*ys) +
                                               m*(C[0][1]*xs+C[1][1]*ys))),
                out=res)
         if message_queue is not None:
-            message_queue.put("wave {}/{}".format(w1, w2))
+            message_queue.put(w1/w2)
         w1 += 1
     return res
 # >>>2
@@ -1064,28 +1057,19 @@ def make_sphere_image(zs,      # <<<2
     res = np.zeros(zs.shape, complex)
     [a, b], [c, d] = average[0][0]
     [e, f], [g, h] = average[1][0]
-    # TODO: it doesn't work if I swapp the 2 loops! Why???
+    w1, w2 = 0, average[0][1]*average[1][1]*len(len(matrix))
     for i in range(average[1][1]):
         for j in range(average[0][1]):
             zsc = np.conj(zs)
-            w1, w2 = 1, len(matrix)
             for (n, m) in matrix:
-                # res += matrix[(n, m)] * zs**n * zsc**m
                 np.add(res, matrix[(n, m)] * zs**n * zsc**m, out=res)
                 if message_queue is not None:
-                    message_queue.put("coset {}/{}, wave {}/{}"
-                                      .format(i*average[0][1]+j+1,
-                                              average[0][1] * average[1][1],
-                                              w1,
-                                              w2))
+                    message_queue.put(w1/w2)
                 w1 += 1
-            # zs = (a*zs + b) / (c*zs + d)
             np.divide(a*zs + b, c*zs + d, out=zs)
-        # zs = (e*zs + f) / (g*zs + h)
         np.divide(e*zs + f, g*zs + h, out=zs)
 
     np.divide(res, average[0][1]*average[1][1], out=res)
-    # res = res / (average[0][1]*average[1][1])
     return res
 # >>>2
 
@@ -1104,6 +1088,9 @@ def make_sphere_background(zs, img, background="back.jpg", shade=128):
             background_img = PIL.Image.new(mode="RGB",
                                            size=(width, height),
                                            color=color)
+            from random import randrange
+            for i in range(NB_STARS):
+                background_img.putpixel((randrange(0, width), randrange(0, height)), getrgb(STAR_COLOR))
         except ValueError:
             background_img = PIL.Image.new(mode="RGB",
                                            size=(width, height),
@@ -1136,18 +1123,15 @@ def make_lattice_image(zs,          # <<<2
             _ys = _tmp.imag
             _tmp = (n*(B[0][0]*_xs+B[1][0]*_ys) +
                     m*(B[0][1]*_xs+B[1][1]*_ys)).astype(complex)
-            # ZS += np.exp(2j*pi*_tmp)
             np.multiply(_tmp, 2j*pi, out=_tmp)
             np.exp(_tmp, out=_tmp)
             np.add(ZS, _tmp, out=ZS)
-        # ZS = ZS / N
         np.divide(ZS, N, out=ZS)
-        # res += matrix[(n, m)] * ZS
         np.multiply(ZS, matrix[(n, m)], out=ZS)
         np.add(res, ZS, out=res)
 
         if message_queue is not None:
-            message_queue.put("wave {}/{}".format(w1, w2))
+            message_queue.put(w1/w2)
         w1 += 1
     return res
 # >>>2
@@ -1163,61 +1147,57 @@ def make_image(color=None,     # <<<2
     # TODO: add color, world and function parameter to keep config, instead
     # of taking it from self...
 
-    # try:
-        zs = make_coordinates_array(world["size"],
-                                    world["geometry"],
-                                    world["modulus"],
-                                    world["angle"])
+    zs = make_coordinates_array(world["size"],
+                                world["geometry"],
+                                world["modulus"],
+                                world["angle"])
 
-        if pattern in FRIEZES:
-            res = make_rosette_image(zs,
-                                     matrix,
-                                     pattern,
-                                     N=params["N"],
-                                     unwind=not params["rosette"],
-                                     message_queue=message_queue)
-        elif pattern in WALLPAPERS:
-            res = make_wallpaper_image(zs,
-                                       matrix,
-                                       pattern,
-                                       lattice_params=params["lattice_params"],
-                                       color_pattern=params["color_pattern"],
-                                       message_queue=message_queue)
-        elif pattern in SPHERE_GROUPS:
-            res = make_sphere_image(zs,
-                                    matrix,
-                                    pattern,
-                                    N=params["N"],
-                                    stereographic=params["stereographic"],
-                                    rotations=params["rotations"],
-                                    message_queue=message_queue)
-        else:
-            res = make_lattice_image(zs,
-                                     matrix,
-                                     basis=params["basis"],
-                                     N=params["N"],
-                                     message_queue=message_queue)
+    if pattern in FRIEZES:
+        res = make_rosette_image(zs,
+                                 matrix,
+                                 pattern,
+                                 N=params["N"],
+                                 unwind=not params["rosette"],
+                                 message_queue=message_queue)
+    elif pattern in WALLPAPERS:
+        res = make_wallpaper_image(zs,
+                                   matrix,
+                                   pattern,
+                                   lattice_params=params["lattice_params"],
+                                   color_pattern=params["color_pattern"],
+                                   message_queue=message_queue)
+    elif pattern in SPHERE_GROUPS:
+        res = make_sphere_image(zs,
+                                matrix,
+                                pattern,
+                                N=params["N"],
+                                stereographic=params["stereographic"],
+                                rotations=params["rotations"],
+                                message_queue=message_queue)
+    else:
+        res = make_lattice_image(zs,
+                                 matrix,
+                                 basis=params["basis"],
+                                 N=params["N"],
+                                 message_queue=message_queue)
 
-        if stretch_color:
-            # res = res / np.sqrt(1 + res.real**2 * res.imag**2)
-            np.divide(res, np.sqrt(1 + res.real**2 * res.imag**2), out=res)
+    if stretch_color:
+        np.divide(res, np.sqrt(1 + res.real**2 * res.imag**2), out=res)
 
-        img = apply_color(res,
-                          color["filename"],
-                          color["geometry"],
-                          color["modulus"],
-                          color["angle"],
-                          color["color"])
+    img = apply_color(res,
+                      color["filename"],
+                      color["geometry"],
+                      color["modulus"],
+                      color["angle"],
+                      color["color"])
 
-        if pattern in SPHERE_GROUPS and not params["stereographic"]:
-            if params["background"]:
-                return make_sphere_background(zs, img, background=params["background"], shade=params["shade"])
-            else:
-                return img
+    if pattern in SPHERE_GROUPS and not params["stereographic"]:
+        if params["background"]:
+            return make_sphere_background(zs, img, background=params["background"], shade=params["shade"])
         else:
             return img
-    # except Exception as e:
-    #     raise Error("error during make_image: {}".format(e))
+    else:
+        return img
 # >>>2
 # >>>1
 
@@ -1355,6 +1335,8 @@ class ColorWheel(LabelFrame):   # <<<2
     # >>>3
 
     def __init__(self, root):        # <<<3
+
+        self.root = root
 
         LabelFrame.__init__(self, root)
         self.configure(text="Color Wheel")
@@ -1513,6 +1495,7 @@ class ColorWheel(LabelFrame):   # <<<2
 
     def choose_colorwheel(self, *args):    # <<<3
         filename = filedialog.askopenfilename(
+                parent=self,
                 title="Create Symmetry: choose color wheel image",
                 initialdir="./",
                 filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")])
@@ -1626,6 +1609,8 @@ class World(LabelFrame):     # <<<2
 
     def __init__(self, root):       # <<<3
 
+        self.root = root
+
         LabelFrame.__init__(self, root)
         self.configure(text="World")
 
@@ -1714,9 +1699,11 @@ class World(LabelFrame):     # <<<2
                                   width=6, justify=RIGHT)
         self._height.pack(padx=5, pady=5)
 
-        self._filename_template = LabelEntry(settings_frame, label=None,
+        self._filename_template = LabelEntry(settings_frame, label="filename template",
+                                             orientation="V",
                                              value=FILENAME_TEMPLATE,
-                                             width=20)
+                                             font="TkNormal 8",
+                                             width=24)
         self._filename_template.pack(padx=5, pady=5)
         # >>>4
 
@@ -1893,6 +1880,8 @@ class Function(LabelFrame):     # <<<2
 
     def __init__(self, root):      # <<<3
 
+        self.root = root
+
         LabelFrame.__init__(self, root)
         self.configure(text="Function")
 
@@ -2066,7 +2055,7 @@ class Function(LabelFrame):     # <<<2
         tmp2.pack()
         self._display_matrix = Listbox(tmp2, selectmode=MULTIPLE,
                                        font="TkFixedFont",
-                                       width=30, height=10)
+                                       width=30, height=11)
         self._display_matrix.pack(side=LEFT)
 
         scrollbar = Scrollbar(tmp2)
@@ -2087,11 +2076,11 @@ class Function(LabelFrame):     # <<<2
         self._change_entry.bind("<Return>", self.add_entry)
 
         Button(tmp, text="make matrix",
-               command=self.make_matrix).pack(side=BOTTOM, padx=5, pady=10)
+               command=self.make_matrix).pack(side=LEFT, padx=5, pady=10)
 
         Button(tmp,
                text="reset",
-               command=lambda *_: self.change_matrix({})).pack(padx=5, pady=5)
+               command=lambda *_: self.change_matrix({})).pack(side=RIGHT, padx=5, pady=5)
         # >>>4
 
         # random matrix     <<<4
@@ -2155,6 +2144,7 @@ class Function(LabelFrame):     # <<<2
 
     def choose_sphere_background(self, *args):    # <<<3
         filename = filedialog.askopenfilename(
+                parent=self,
                 title="Create Symmetry: choose background image",
                 initialdir="./",
                 filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")])
@@ -2539,8 +2529,6 @@ class CreateSymmetry(Tk):      # <<<2
                 relief="ridge")
         self._console.grid(row=1, column=0, sticky=E+W+N+S, padx=10, pady=(10, 0))
         self._console.config(state=DISABLED)
-        # self._nb_pending = Label(console_frame)
-        # self._nb_pending.grid(row=1, column=0, sticky=E+S, padx=10, pady=10)
 
         self._preview_console = Text(
                 console_frame, width=10, height=1,
@@ -2708,7 +2696,8 @@ Keyboard shortcuts:
                     self._preview_console.delete(0.0, END)
                     self._preview_console.insert(
                             0.0,
-                            "Preview: [{}]".format(m))
+                            # "Preview: [{}]".format(m))
+                            "Preview: {}%".format(int(m*100)))
                     self._preview_console.config(state=DISABLED)
                 elif self.preview_image_queue.empty():
                     self._preview_console.config(state=NORMAL)
@@ -2726,22 +2715,17 @@ Keyboard shortcuts:
                     self._output_console.delete(0.0, END)
                     self._output_console.insert(
                             0.0,
-                            "output ({}): [{}]"
-                            .format(1+self.output_params_queue.qsize(), m))
+                            # "output ({}): [{}]"
+                            # .format(1+self.output_params_queue.qsize(), m))
+                            "output ({}): {}%"
+                            .format(1+self.output_params_queue.qsize(),
+                                    int(m*100)))
                     self._output_console.config(state=DISABLED)
                 elif not self.pending_output_jobs:
                     self._output_console.config(state=NORMAL)
                     self._output_console.delete(0.0, END)
                     self._output_console.config(state=DISABLED)
                 break
-
-        # # number of pending jobs
-        # if self.pending_output_jobs:
-        #     self._nb_pending.grid()
-        #     self._nb_pending.config(text="{} pending tasks"
-        #                                  .format(1+self.output_params_queue.qsize()))
-        # else:
-        #     self._nb_pending.grid_remove()
 
         # preview image
         image = None
