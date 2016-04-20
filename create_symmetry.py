@@ -1803,6 +1803,8 @@ class ColorWheel(LabelFrame):   # <<<2
     def reset_geometry(self, *args):        # <<<3
         if self.stretch:
             return
+        self.modulus = 1
+        self.angle = 0
         if self.filename is not None:
             self.change_colorwheel(self.filename)
         else:
@@ -2056,12 +2058,9 @@ class World(LabelFrame):     # <<<2
                                  width=4, justify=RIGHT)
         self._y_max.grid(row=1, column=1, padx=5, pady=5)
 
-        Button(coord_frame, text="zoom -",
-               command=self.zoom(2**.1)).grid(row=3, column=0,
-                                              padx=5, pady=5)
-        Button(coord_frame, text="zoom +",
-               command=self.zoom(2**-.1)).grid(row=3, column=1,
-                                               padx=5, pady=5)
+        Button(coord_frame, text="reset",
+               command=self.reset_geometry).grid(row=4, column=0, columnspan=2,
+                                                 padx=5, pady=5)
 
         transformation_frame = LabelFrame(self._geometry_plane_tab,
                                           text="transformation")
@@ -2078,9 +2077,12 @@ class World(LabelFrame):     # <<<2
                                  width=4)
         self._angle.pack(padx=5, pady=5)
 
-        Button(coord_frame, text="reset",
-               command=self.reset_geometry).grid(row=4, column=0, columnspan=2,
-                                                 padx=5, pady=5)
+        Button(transformation_frame, text="zoom -",
+               command=self.zoom(2**.1)).pack(side=LEFT,
+                                              padx=5, pady=5)
+        Button(transformation_frame, text="zoom +",
+               command=self.zoom(2**-.1)).pack(side=RIGHT,
+                                               padx=5, pady=5)
         # >>>4
 
         # sphere parameters     <<<4
@@ -2169,12 +2171,14 @@ class World(LabelFrame):     # <<<2
     def reset_geometry(self, *args):        # <<<3
         self.geometry = WORLD_GEOMETRY
         self.adjust_geometry()
+        self.angle = 0
+        self.modulus = 1
         self.rotations = 0, 0, 0
     # >>>3
 
     def zoom(self, alpha):      # <<<3
         def zoom_tmp(*args):
-            self.geometry = map(lambda x: x*alpha, self.geometry)
+            self.modulus /= alpha
         return zoom_tmp
     # >>>3
 
