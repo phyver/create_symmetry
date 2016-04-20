@@ -703,6 +703,27 @@ def floats_to_str(l):       # <<<2
 # >>>2
 
 
+def complex_to_str(z, precision=4):    # <<<2
+    if z == 0:
+        return "0"
+    elif z == z.real:
+        x = "{:.4f}".format(z.real).rstrip("0")
+        x = x.rstrip(".")
+        return x
+    elif z == z - z.real:
+        y = "{:.4f}".format(z.imag).rstrip("0")
+        y = y.rstrip(".") + "i"
+        return y
+    else:
+        sign = "+" if z.imag > 0 else "-"
+        x = "{x:.{prec:}f}".format(x=z.real, prec=precision).rstrip("0")
+        y = "{y:.{prec:}f}".format(y=abs(z.imag), prec=precision).rstrip("0")
+        x = x.rstrip(".").rjust(7)
+        y = y.rstrip(".")
+        return "{} {} {}i".format(x, sign, y)
+# >>>2
+
+
 def matrix_to_list(M):      # <<<2
     return [((n, m), (z.real, z.imag)) for (n, m), z in M.items()]
 # >>>2
@@ -1762,17 +1783,20 @@ class World(LabelFrame):     # <<<2
         if ("sphere" in self._geometry_tabs.tab(self._geometry_tabs.select(),
                                                 "text")):
             return "sphere"
-        else:
+        elif ("plane" in self._geometry_tabs.tab(self._geometry_tabs.select(),
+                                                "text")):
             return "plane"
+        else:
+            assert False
     # >>>4
 
     @geometry_tab.setter
     def geometry_tab(self, tab):     # <<<4
         tab = tab.lower().strip()
         if tab == "sphere":
-            self._geometry_tabs.current(1)
+            self._geometry_tabs.select(self._geometry_sphere_tab)
         elif tab == "plane":
-            self._geometry_tabs.current(0)
+            self._geometry_tabs.select(self._geometry_plane_tab)
     # >>>4
     # >>>3
 
@@ -1798,10 +1822,10 @@ class World(LabelFrame):     # <<<2
         self._geometry_tabs = Notebook(self)
         self._geometry_tabs.grid(row=0, column=1, sticky=E+W, padx=5, pady=5)
 
-        _tmp2 = Frame(self._geometry_tabs)
-        self._geometry_tabs.add(_tmp2, text="plane")
+        self._geometry_plane_tab = Frame(self._geometry_tabs)
+        self._geometry_tabs.add(self._geometry_plane_tab, text="plane")
 
-        coord_frame = LabelFrame(_tmp2, text="coordinates")
+        coord_frame = LabelFrame(self._geometry_plane_tab, text="coordinates")
         coord_frame.pack(padx=5, pady=5)
         # coord_frame.grid(row=0, column=1, sticky=E+W, padx=5, pady=5)
         coord_frame.columnconfigure(0, weight=1)
@@ -1838,7 +1862,8 @@ class World(LabelFrame):     # <<<2
                command=self.zoom(2**-.1)).grid(row=3, column=1,
                                                padx=5, pady=5)
 
-        transformation_frame = LabelFrame(_tmp2, text="transformation")
+        transformation_frame = LabelFrame(self._geometry_plane_tab,
+                                          text="transformation")
         transformation_frame.pack(padx=5, pady=5, fill=BOTH)
         self._modulus = LabelEntry(transformation_frame, label="modulus",
                                    value=1,
@@ -1858,19 +1883,19 @@ class World(LabelFrame):     # <<<2
         # >>>4
 
         # sphere parameters     <<<4
-        _tmp3 = Frame(self._geometry_tabs)
-        self._geometry_tabs.add(_tmp3, text="sphere")
+        self._geometry_sphere_tab = Frame(self._geometry_tabs)
+        self._geometry_tabs.add(self._geometry_sphere_tab, text="sphere")
         self._stereographic = BooleanVar()
         self._stereographic.set(True)
 
-        stereographic_button = Checkbutton(_tmp3,
+        stereographic_button = Checkbutton(self._geometry_sphere_tab,
                                            text="stereographic projection",
                                            variable=self._stereographic,
                                            onvalue=True, offvalue=False,
                                            )
         stereographic_button.pack(padx=5, pady=10)
 
-        self._rotations = LabelEntry(_tmp3,
+        self._rotations = LabelEntry(self._geometry_sphere_tab,
                                      label="rotations x, y, z (°)",
                                      orientation="V",
                                      value="15, 15, 0",
@@ -1878,21 +1903,22 @@ class World(LabelFrame):     # <<<2
                                      width=15)
         self._rotations.pack(padx=5, pady=10)
 
-        self._sphere_background = LabelEntry(_tmp3,
+        self._sphere_background = LabelEntry(self._geometry_sphere_tab,
                                              label="background",
                                              value=DEFAULT_SPHERE_BACKGROUND,
                                              width=10)
         self._sphere_background.pack(padx=5, pady=10)
-        self._sphere_background.bind("<Double-Button-1>", self.choose_sphere_background)
+        self._sphere_background.bind("<Double-Button-1>",
+                                     self.choose_sphere_background)
 
-        self._sphere_shading = LabelEntry(_tmp3,
-                                        label="shading",
-                                        value=128,
-                                        width=5,
-                                        convert=int)
+        self._sphere_shading = LabelEntry(self._geometry_sphere_tab,
+                                          label="shading",
+                                          value=128,
+                                          width=5,
+                                          convert=int)
         self._sphere_shading.pack(padx=5, pady=10)
 
-        self._sphere_stars = LabelEntry(_tmp3,
+        self._sphere_stars = LabelEntry(self._geometry_sphere_tab,
                                         label="random stars",
                                         value=500,
                                         width=5,
@@ -2039,6 +2065,7 @@ class World(LabelFrame):     # <<<2
                 "sphere_background": self.sphere_background,
                 "sphere_shading": self.sphere_shading,
                 "sphere_stars": self.sphere_stars,
+                "geometry_tab": self.geometry_tab,
                 "size": self.size,
                 "filename": self.filename_template,
                 }
@@ -2065,6 +2092,8 @@ class World(LabelFrame):     # <<<2
             self.size = cfg["size"]
         if "filename" in cfg:
             self.filename_template = cfg["filename"]
+        if "geometry_tab" in cfg:
+            self.geometry_tab = cfg["geometry_tab"]
     # >>>3
 # >>>2
 
@@ -2086,19 +2115,133 @@ class Function(LabelFrame):     # <<<2
             assert False
     # >>>4
 
+    @current_tab.setter
+    def current_tab(self, tab):      # <<<4
+        tab = tab.lower().strip()
+        if tab == "wallpaper":
+            self._tabs.select(self._wallpaper_tab)
+        elif tab == "sphere":
+            self._tabs.select(self._sphere_tab)
+        elif tab == "frieze":
+            self._tabs.select(self._frieze_tab)
+        elif tab == "raw":
+            self._tabs.select(self._raw_tab)
+    # >>>4
+
+    @property
+    def random_nb_coeffs(self):     # <<<4
+        return self._random_nb_coeffs.get()
+    # >>>4
+
+    @random_nb_coeffs.setter
+    def random_nb_coeffs(self, d):     # <<<4
+        self._random_nb_coeffs.set(d)
+    # >>>4
+
+    @property
+    def random_min_degre(self):     # <<<4
+        return self._random_min_degre.get()
+    # >>>4
+
+    @random_min_degre.setter
+    def random_min_degre(self, d):     # <<<4
+        self._random_min_degre.set(d)
+    # >>>4
+
+    @property
+    def random_max_degre(self):     # <<<4
+        return self._random_max_degre.get()
+    # >>>4
+
+    @random_max_degre.setter
+    def random_max_degre(self, d):     # <<<4
+        self._random_max_degre.set(d)
+    # >>>4
+
+    @property
+    def random_modulus(self):     # <<<4
+        return self._random_modulus.get()
+    # >>>4
+
+    @random_modulus.setter
+    def random_modulus(self, d):     # <<<4
+        self._random_modulus.set(d)
+    # >>>4
+
+    @property
+    def random_noise(self):     # <<<4
+        return self._random_noise.get()
+    # >>>4
+
+    @random_noise.setter
+    def random_noise(self, d):     # <<<4
+        self._random_noise.set(d)
+    # >>>4
+
+    @property
+    def rosette(self):     # <<<4
+        return self._rosette.get()
+    # >>>4
+
+    @rosette.setter
+    def rosette(self, b):     # <<<4
+        self._rosette.set(b)
+    # >>>4
+
+    @property
+    def rosette_N(self):     # <<<4
+        return self._rosette.get()
+    # >>>4
+
+    @rosette_N.setter
+    def rosette_N(self, N):     # <<<4
+        self._rosette_N.set(N)
+    # >>>4
+
+    @property
+    def sphere_N(self):     # <<<4
+        return self._sphere_N.get()
+    # >>>4
+
+    @sphere_N.setter
+    def sphere_N(self, N):     # <<<4
+        self._sphere_N.set(N)
+    # >>>4
+
+    @property
+    def raw_N(self):     # <<<4
+        return self._raw_N.get()
+    # >>>4
+
+    @raw_N.setter
+    def raw_N(self, N):     # <<<4
+        self._raw_N.set(N)
+    # >>>4
+
+    @property
+    def change_entry(self):     # <<<4
+        return self._change_entry.get().strip()
+    # >>>4
+
+    @change_entry.setter
+    def change_entry(self, s):     # <<<4
+        self._change_entry.set(s)
+    # >>>4
+
+    # TODO: refactor
     @property
     def rotational_symmetry(self):      # <<<4
         if self.current_tab == "raw":
-            return self._raw_rotation.get()
+            return self._raw_N
         elif self.current_tab == "wallpaper":
             return 1
         elif self.current_tab == "frieze":
-            if self._rosette.get():
-                return self._rosette_rotation.get()
+            if self.rosette:
+                return self.rosette_N
             else:
                 return 1
         elif self.current_tab == "sphere":
-            return self._sphere_N.get()
+            return self.sphere_N
         else:
             assert False
     # >>>4
@@ -2149,9 +2292,7 @@ class Function(LabelFrame):     # <<<2
     # >>>3
 
     def __init__(self, root):      # <<<3
-
         self.root = root
-
         LabelFrame.__init__(self, root)
         self.configure(text="Function")
 
@@ -2159,29 +2300,26 @@ class Function(LabelFrame):     # <<<2
         self._tabs = Notebook(self)
         self._tabs.grid(row=0, column=0, rowspan=2, sticky=N+S, padx=5, pady=5)
 
-        wallpaper_tab = Frame(self._tabs)
-        self._tabs.add(wallpaper_tab, text="wallpaper")
+        self._wallpaper_tab = Frame(self._tabs)
+        self._tabs.add(self._wallpaper_tab, text="wallpaper")
 
-        sphere_tab = Frame(self._tabs)
-        self._tabs.add(sphere_tab, text="sphere")
+        self._sphere_tab = Frame(self._tabs)
+        self._tabs.add(self._sphere_tab, text="sphere")
 
-        frieze_tab = Frame(self._tabs)
-        self._tabs.add(frieze_tab, text="frieze")
+        self._frieze_tab = Frame(self._tabs)
+        self._tabs.add(self._frieze_tab, text="frieze")
 
-        raw_tab = Frame(self._tabs)
-        self._tabs.add(raw_tab, text="raw")
-
-        # hyper_tab = Frame(self._tabs)
-        # self._tabs.add(hyper_tab, text="hyperbolic")
+        self._raw_tab = Frame(self._tabs)
+        self._tabs.add(self._raw_tab, text="raw")
         # >>>4
 
         # wallpaper tab      <<<4
         self._wallpaper_type = StringVar()
 
-        Label(wallpaper_tab,
+        Label(self._wallpaper_tab,
               text="symmetry group").pack(padx=5, pady=(20, 0))
         self._wallpaper_combo = Combobox(
-                wallpaper_tab, width=20, exportselection=0,
+                self._wallpaper_tab, width=20, exportselection=0,
                 textvariable=self._wallpaper_type,
                 state="readonly",
                 values=WALLPAPER_NAMES
@@ -2189,7 +2327,7 @@ class Function(LabelFrame):     # <<<2
         self._wallpaper_combo.pack(padx=5, pady=5)
         self._wallpaper_combo.current(0)
 
-        self._lattice_params = LabelEntry(wallpaper_tab,
+        self._lattice_params = LabelEntry(self._wallpaper_tab,
                                           label="lattice parameters",
                                           value="1,1",
                                           convert=str_to_floats,
@@ -2197,13 +2335,13 @@ class Function(LabelFrame):     # <<<2
         self._lattice_params.pack(padx=5, pady=5)
 
         self._wallpaper_combo.bind("<<ComboboxSelected>>",
-                                   self.update_wallpaper_tab)
+                                   self.update)
 
-        Label(wallpaper_tab,
+        Label(self._wallpaper_tab,
               text="color symmetry group").pack(padx=5, pady=(20, 0))
         self._color_reversing_color_pattern = StringVar()
         self._color_reversing_combo = Combobox(
-                wallpaper_tab, width=10, exportselection=0,
+                self._wallpaper_tab, width=10, exportselection=0,
                 textvariable=self._color_reversing_color_pattern,
                 state="readonly",
                 values=["--"]
@@ -2213,10 +2351,11 @@ class Function(LabelFrame):     # <<<2
         # # >>>4
 
         # frieze / rosette tab   <<<4
-        Label(frieze_tab,
+        Label(self._frieze_tab,
               text="frieze pattern").pack(padx=5, pady=(20, 0))
         self._frieze_type = StringVar()
-        self._frieze_combo = Combobox(frieze_tab, width=15, exportselection=0,
+        self._frieze_combo = Combobox(self._frieze_tab, width=15,
+                                      exportselection=0,
                                       textvariable=self._frieze_type,
                                       state="readonly",
                                       values=FRIEZE_NAMES)
@@ -2224,29 +2363,29 @@ class Function(LabelFrame):     # <<<2
         self._frieze_combo.current(0)
 
         self._rosette = BooleanVar()
-        self._rosette.set(False)
+        self.rosette = False
 
-        rosette_button = Checkbutton(frieze_tab, text="rosette",
+        rosette_button = Checkbutton(self._frieze_tab, text="rosette",
                                      variable=self._rosette,
                                      onvalue=True, offvalue=False,
-                                     command=self.set_rosette)
+                                     command=self.update)
         rosette_button.pack(padx=5, pady=5)
 
-        self._rosette_rotation = LabelEntry(frieze_tab,
-                                            label="symmetries",
-                                            value=5,
-                                            convert=int,
-                                            width=2)
-        self._rosette_rotation.pack(padx=5, pady=5)
+        self._rosette_N = LabelEntry(self._frieze_tab,
+                                     label="symmetries",
+                                     value=5,
+                                     convert=int,
+                                     width=2)
+        self._rosette_N.pack(padx=5, pady=5)
         # # >>>4
 
         # raw tab   <<<4
-        self._basis_matrix1 = LabelEntry(raw_tab,
+        self._basis_matrix1 = LabelEntry(self._raw_tab,
                                          label="first vector",
                                          value="1, 0",
                                          convert=str_to_floats,
                                          width=10)
-        self._basis_matrix2 = LabelEntry(raw_tab,
+        self._basis_matrix2 = LabelEntry(self._raw_tab,
                                          label="second vector",
                                          value="0, 1",
                                          convert=str_to_floats,
@@ -2256,48 +2395,50 @@ class Function(LabelFrame):     # <<<2
         self._basis_matrix2.grid(row=1, column=0, sticky=E,
                                  padx=5, pady=(0, 5))
 
-        self._raw_rotation = LabelEntry(raw_tab,
+        self._raw_N = LabelEntry(self._raw_tab,
                                         label="rotational symmetry",
                                         value=1,
                                         convert=int,
                                         width=3)
-        self._raw_rotation.grid(row=2, column=0, padx=5, pady=20)
+        self._raw_N.grid(row=2, column=0, padx=5, pady=20)
         # >>>4
 
         # sphere tab        <<<4
-        Label(sphere_tab,
+        Label(self._sphere_tab,
               text="symmetry group").pack(padx=5, pady=(20, 0))
         self._sphere_type = StringVar()
-        self._sphere_combo = Combobox(sphere_tab, width=15, exportselection=0,
+        self._sphere_combo = Combobox(self._sphere_tab, width=15,
+                                      exportselection=0,
                                       textvariable=self._sphere_type,
                                       state="readonly",
                                       values=SPHERE_NAMES)
         self._sphere_combo.pack(padx=5, pady=5)
         self._sphere_combo.current(0)
         self._sphere_combo.bind("<<ComboboxSelected>>",
-                                self.update_sphere_tab)
+                                self.update)
 
-        self._sphere_N = LabelEntry(sphere_tab,
+        self._sphere_N = LabelEntry(self._sphere_tab,
                                     label="N",
                                     value=7,
                                     convert=int,
                                     width=2)
         self._sphere_N.pack(padx=5, pady=5)
-
         # >>>4
 
         # display matrix    <<<4
-        tmp = LabelFrame(self, text="matrix")
-        tmp.grid(row=0, column=1, sticky=N+S+E+W,  padx=5, pady=5)
+        main_matrix_frame = LabelFrame(self, text="matrix")
+        main_matrix_frame.grid(row=0, column=1,
+                               sticky=N+S+E+W,  padx=5, pady=5)
 
-        tmp2 = Frame(tmp)
-        tmp2.pack()
-        self._display_matrix = Listbox(tmp2, selectmode=MULTIPLE,
+        scroll_matrix_frame = Frame(main_matrix_frame)
+        scroll_matrix_frame.pack()
+        self._display_matrix = Listbox(scroll_matrix_frame,
+                                       selectmode=MULTIPLE,
                                        font="TkFixedFont",
                                        width=30, height=8)
         self._display_matrix.pack(side=LEFT)
 
-        scrollbar = Scrollbar(tmp2)
+        scrollbar = Scrollbar(scroll_matrix_frame)
         scrollbar.pack(side=RIGHT, fill=Y)
         self._display_matrix.config(yscrollcommand=scrollbar.set)
         scrollbar.config(command=self._display_matrix.yview)
@@ -2309,69 +2450,69 @@ class Function(LabelFrame):     # <<<2
         # >>>4
 
         # change entries <<<4
-        self._change_entry = LabelEntry(tmp, label="change entry", value="",
+        self._change_entry = LabelEntry(main_matrix_frame,
+                                        label="change entry", value="",
                                         width=17, font="TkFixedFont")
         self._change_entry.pack(padx=5, pady=5)
         self._change_entry.bind("<Return>", self.add_entry)
 
-        Button(tmp, text="make matrix",
+        Button(main_matrix_frame, text="make matrix",
                command=self.make_matrix).pack(side=LEFT, padx=5, pady=10)
 
-        Button(tmp,
+        Button(main_matrix_frame,
                text="reset",
-               command=lambda *_: self.change_matrix({})).pack(side=RIGHT, padx=5, pady=5)
+               command=lambda *_: self.change_matrix({})
+               ).pack(side=RIGHT, padx=5, pady=5)
         # >>>4
 
         # random matrix     <<<4
-        tmp = LabelFrame(self, text="random matrix")
-        tmp.grid(row=0, column=2, sticky=N+S, padx=5, pady=5)
+        random_frame = LabelFrame(self, text="random matrix")
+        random_frame.grid(row=0, column=2, sticky=N+S, padx=5, pady=5)
 
-        self._random_nb_coeff = LabelEntry(tmp, label="nb entries",
+        self._random_nb_coeffs = LabelEntry(random_frame, label="nb entries",
                                            value=3,
                                            convert=int,
                                            width=4)
-        self._random_nb_coeff.pack(padx=5, pady=5)
+        self._random_nb_coeffs.pack(padx=5, pady=5)
 
-        self._random_min_degre = LabelEntry(tmp, label="min degre",
+        self._random_min_degre = LabelEntry(random_frame, label="min degre",
                                             value=-3,
                                             convert=int,
                                             width=4)
         self._random_min_degre.pack(padx=5, pady=5)
 
-        self._random_max_degre = LabelEntry(tmp, label="max degre",
+        self._random_max_degre = LabelEntry(random_frame, label="max degre",
                                             value=3,
                                             convert=int,
                                             width=4)
         self._random_max_degre.pack(padx=5, pady=5)
 
-        self._random_modulus = LabelEntry(tmp, label="modulus",
+        self._random_modulus = LabelEntry(random_frame, label="modulus",
                                           value=1,
                                           convert=float,
                                           width=4)
         self._random_modulus.pack(padx=5, pady=5)
 
-        generate = Button(tmp, text="generate", command=self.new_random_matrix)
+        generate = Button(random_frame,
+                          text="generate",
+                          command=self.new_random_matrix)
         generate.pack(padx=5, pady=5)
         # >>>4
 
         # add noise <<<4
-        tmp3 = Frame(tmp)
-        tmp3.pack(padx=5, pady=5)
-        self._noise = LabelEntry(tmp3, label="",
+        self._random_noise = LabelEntry(random_frame, label="",
                                  value=10, convert=float,
                                  width=3)
-        self._noise.pack(side=RIGHT, padx=5, pady=5)
-        self._noise.bind("<Return>", self.add_noise)
+        self._random_noise.pack(side=RIGHT, padx=5, pady=5)
+        self._random_noise.bind("<Return>", self.add_noise)
 
-        random_noise = Button(tmp3, text="noise (%)",
+        random_noise = Button(random_frame, text="noise (%)",
                               command=self.add_noise)
         random_noise.pack(side=LEFT, padx=5, pady=5)
         # >>>4
 
         # make sure the layout reflects the selected options    <<<4
-        self.update_wallpaper_tab()
-        self.update_sphere_tab()
-        self.set_rosette()
+        self.update()
         # >>>4
     # >>>3
 
@@ -2384,32 +2525,15 @@ class Function(LabelFrame):     # <<<2
         keys = list(M.keys())
         keys.sort()
 
-        def show(z):
-            if z == 0:
-                return "0"
-            elif z == z.real:
-                x = "{:.4f}".format(z.real).rstrip("0")
-                x = x.rstrip(".")
-                return x
-            elif z == z - z.real:
-                y = "{:.4f}".format(z.imag).rstrip("0")
-                y = y.rstrip(".") + "i"
-                return y
-            else:
-                sign = "+" if z.imag > 0 else "-"
-                x = "{:.4f}".format(z.real).rstrip("0")
-                y = "{:.4f}".format(abs(z.imag)).rstrip("0")
-                x = x.rstrip(".").rjust(7)
-                y = y.rstrip(".")
-                return "{} {} {}i".format(x, sign, y)
-
         for (n, m) in keys:
-            self._display_matrix.insert(END, "{:2}, {:2} : {}"
-                                             .format(n, m, show(M[(n, m)])))
+            self._display_matrix.insert(
+                    END,
+                    "{:2}, {:2} : {}"
+                    .format(n, m, complex_to_str(M[(n, m)])))
     # >>>3
 
     def add_entry(self, *args):     # <<<3
-        e = self._change_entry.get().strip()
+        e = self.change_entry
         if e == "":
             return
         try:
@@ -2427,7 +2551,7 @@ class Function(LabelFrame):     # <<<2
             else:
                 self.matrix[(n, m)] = z
             self.change_matrix()
-            self._change_entry.set("")
+            self_change_entry = ""
         except Exception as err:
             error("cannot parse matrix entry '{}': {}".format(e, err))
         # >>>3
@@ -2445,9 +2569,9 @@ class Function(LabelFrame):     # <<<2
 
     def add_noise(self, *args):     # <<<3
         try:
-            e = self._noise.get()/100
+            e = self.random_noise/100
         except:
-            e = 0.1
+            e = 0.2
         M = self.matrix
         for n, m in M:
             z = M[(n, m)]
@@ -2458,17 +2582,17 @@ class Function(LabelFrame):     # <<<2
     # >>>3
 
     def new_random_matrix(self, *args):     # <<<3
-        a = self._random_min_degre.get()
-        b = self._random_max_degre.get()
+        a = self.random_min_degre
+        b = self.random_max_degre
         coeffs = list(product(range(a, b+1), range(a, b+1)))
         shuffle(coeffs)
-        n = self._random_nb_coeff.get()
+        n = self.random_nb_coeffs
         coeffs = coeffs[:n]
         M = {}
         for (n, m) in coeffs:
-            modulus = uniform(0, self._random_modulus.get()) / self._random_nb_coeff.get()
+            modulus = uniform(0, self.random_modulus) / self.random_nb_coeffs
             angle = uniform(0, 2*pi)
-            M[(n, m)] = complex(modulus*cos(angle), modulus*sin(angle))
+            M[(n, m)] = modulus * complex(cos(angle), sin(angle))
         self.change_matrix(M)
     # >>>3
 
@@ -2477,14 +2601,22 @@ class Function(LabelFrame):     # <<<2
         self.function["frieze_type"] = frieze_combo.stringvar.get()
     # >>>3
 
-    def set_rosette(self, *args):     # <<<3
-        if self._rosette.get():
-            self._rosette_rotation.enable()
+    def update(self, *args):     # <<<3
+        # sphere tab  <<<4
+        if "N" in self.pattern:
+            self._sphere_N.enable()
         else:
-            self._rosette_rotation.disable()
-    # >>>3
+            self._sphere_N.disable()
+        # >>>4
 
-    def update_wallpaper_tab(self, *args):        # <<<3
+        # rosette tab   <<<4
+        if self.rosette:
+            self._rosette_N.enable()
+        else:
+            self._rosette_N.disable()
+        # >>>4
+
+        # wallpaper tab     <<<4
         pattern = self._wallpaper_type.get().split()[0]
         lattice = WALLPAPERS[pattern]["lattice"]
         if lattice == "general":
@@ -2524,13 +2656,7 @@ class Function(LabelFrame):     # <<<2
                                  for g in c_names]
                 )
         self._color_reversing_combo.current(0)
-    # >>>3
-
-    def update_sphere_tab(self, *args):        # <<<3
-        if "N" in self.pattern:
-            self._sphere_N.enable()
-        else:
-            self._sphere_N.disable()
+        # >>>4
     # >>>3
 
     def make_matrix(self):       # <<<3
@@ -2544,7 +2670,7 @@ class Function(LabelFrame):     # <<<2
 
         pattern = self.pattern
 
-        if self.current_tab == "frieze" and self._rosette.get():
+        if self.current_tab == "frieze" and self.rosette:
             p = self.rotational_symmetry
             keys = list(M.keys())
             for (n, m) in keys:
@@ -2572,20 +2698,15 @@ class Function(LabelFrame):     # <<<2
 
     def get_pattern_params(self):       # <<<3
         if self.current_tab == "frieze":
-            return {"N": self._rosette_rotation.get(),
-                    "rosette": self._rosette.get()}
+            return {"N": self.rosette_N,
+                    "rosette": self.rosette}
         elif self.current_tab == "wallpaper":
             return {"lattice_params": self._lattice_params.get(),
                     "color_pattern": self.color_pattern}
         elif self.current_tab == "sphere":
-            return {"N": self._sphere_N.get(),
-                    # "stereographic": self._stereographic.get(),
-                    # "rotations": self._rotations.get(),
-                    # "background": self._sphere_background.get(),
-                    # "shade": self._sphere_shading.get(),
-                    }
+            return {"N": self.sphere_N}
         elif self.current_tab == "raw":
-            return {"N": self._raw_rotation.get(),
+            return {"N": self.raw_N,
                     "basis": [self._basis_matrix1.get(),
                               self._basis_matrix2.get()]}
         else:
@@ -2596,11 +2717,11 @@ class Function(LabelFrame):     # <<<2
         return {
                 "matrix": self.matrix,
                 #
-                "random_nb_coeff": self._random_nb_coeff.get(),
-                "random_degre": (self._random_min_degre.get(),
-                                 self._random_max_degre.get()),
-                "random_modulus": self._random_modulus.get(),
-                "random_noise": self._noise.get(),
+                "random_nb_coeffs": self.random_nb_coeffs,
+                "random_degre": (self.random_min_degre,
+                                 self.random_max_degre),
+                "random_modulus": self.random_modulus,
+                "random_noise": self.random_noise,
                 #
                 "tab": self.current_tab,
                 # wallpaper tab
@@ -2609,41 +2730,32 @@ class Function(LabelFrame):     # <<<2
                 "wallpaper_color_pattern": self._color_reversing_color_pattern.get().split()[0],
                 # frieze tab
                 "frieze_pattern": self._frieze_type.get(),
-                "rosette": self._rosette.get(),
-                "rosette_rotation": self._rosette_rotation.get(),
+                "rosette": self.rosette,
+                "rosette_N": self.rosette_N,
                 # raw tab
                 "raw_basis": [self._basis_matrix1.get(),
                               self._basis_matrix2.get()],
-                "raw_rotation": self._raw_rotation.get(),
+                "raw_N": self.raw_N,
                 # sphere tab
                 "sphere_pattern": self._sphere_type.get().split()[0],
-                "sphere_N": self._sphere_N.get(),
+                "sphere_N": self.sphere_N,
                 }
     # >>>3
 
     def set_config(self, cfg):      # <<<3
         if "matrix" in cfg:
             self.change_matrix(cfg["matrix"])
-        if "random_nb_coeff" in cfg:
-            self._random_nb_coeff.set(cfg["random_nb_coeff"])
+        if "random_nb_coeffs" in cfg:
+            self.random_nb_coeffs = cfg["random_nb_coeffs"]
         if "random_degre" in cfg:
-            self._random_min_degre.set(cfg["random_degre"][0])
-            self._random_max_degre.set(cfg["random_degre"][1])
+            self.random_min_degre = cfg["random_degre"][0]
+            self.random_max_degre = cfg["random_degre"][1]
         if "random_modulus" in cfg:
-            self._random_modulus.set(cfg["random_modulus"])
+            self.random_modulus = cfg["random_modulus"]
         if "random_noise" in cfg:
-            self._noise.set(cfg["random_noise"])
+            self.random_noise = cfg["random_noise"]
         if "tab" in cfg:
-            if cfg["tab"] == "wallpaper":
-                self._tabs.select(0)
-            elif cfg["tab"] == "sphere":
-                self._tabs.select(1)
-            elif cfg["tab"] == "frieze":
-                self._tabs.select(2)
-            elif cfg["tab"] == "raw":
-                self._tabs.select(3)
-            else:
-                self._tabs.select(0)
+            self.current_tab = cfg["tab"]
         if "wallpaper_pattern" in cfg:
             for i in range(len(WALLPAPER_NAMES)):
                 tmp = WALLPAPER_NAMES[i]
@@ -2651,7 +2763,6 @@ class Function(LabelFrame):     # <<<2
                 tmp = tmp.split()
                 if cfg["wallpaper_pattern"] in tmp:
                     self._wallpaper_combo.current(i)
-            self.update_wallpaper_tab()
         if "wallpaper_color_pattern" in cfg:
             l = self._color_reversing_combo.cget("values")
             for i in range(len(l)):
@@ -2669,15 +2780,14 @@ class Function(LabelFrame):     # <<<2
                 if cfg["frieze_pattern"] in tmp:
                     self._frieze_combo.current(i)
         if "rosette" in cfg:
-            self._rosette.set(cfg["rosette"])
-        if "rosette_rotation" in cfg:
-            self._rosette_rotation.set(cfg["rosette_rotation"])
+            self.rosette = cfg["rosette"]
+        if "rosette_N" in cfg:
+            self.rosette_N = cfg["rosette_N"]
         if "raw_basis" in cfg:
             self._basis_matrix1.set(floats_to_str(cfg["raw_basis"][0]))
             self._basis_matrix2.set(floats_to_str(cfg["raw_basis"][1]))
-        if "raw_rotation" in cfg:
-            self._raw_rotation.set(cfg["raw_rotation"])
-        self.set_rosette()
+        if "raw_N" in cfg:
+            self.raw_N = cfg["raw_N"]
         if "sphere_pattern" in cfg:
             for i in range(len(SPHERE_NAMES)):
                 tmp = SPHERE_NAMES[i]
@@ -2686,7 +2796,8 @@ class Function(LabelFrame):     # <<<2
                 if cfg["sphere_pattern"] in tmp:
                     self._sphere_combo.current(i)
         if "sphere_N" in cfg:
-            self._sphere_N.set(cfg["sphere_N"])
+            self.sphere_N = cfg["sphere_N"]
+        self.update()
     # >>>3
 # >>>2
 
@@ -3086,7 +3197,7 @@ Keyboard shortcuts:
         elif function["tab"] == "frieze":
             if function["rosette"]:
                 info["type"] = "rosette"
-                N = function["rosette_rotation"]
+                N = function["rosette_N"]
                 info["type"] += "_{}fold_symmetry".format(N)
             else:
                 info["type"] = "frieze"
@@ -3095,7 +3206,7 @@ Keyboard shortcuts:
                 info["alt_name"] = FRIEZES[p]["alt_name"]
         elif function["tab"] == "raw":
             info["type"] = "lattice"
-            N = function["raw_rotation"]
+            N = function["raw_N"]
             if N != 1:
                 info["type"] += "_{}fold_symmetry".format(N)
         else:
