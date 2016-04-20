@@ -1207,6 +1207,7 @@ def make_sphere_image(zs,      # <<<2
 
 
 def make_sphere_background(zs, img, background="back.jpg", shade=128, stars=0):
+    print(">>>", background)
     width, height = zs.shape
     mask = (zs.real**2 + zs.imag**2 > 1).astype(int).transpose(1, 0)
     mask = (255-shade) * mask
@@ -2107,6 +2108,7 @@ class World(LabelFrame):     # <<<2
                                              label="background",
                                              value=DEFAULT_SPHERE_BACKGROUND,
                                              width=10)
+        self.sphere_background = DEFAULT_SPHERE_BACKGROUND
         self._sphere_background.pack(padx=5, pady=10)
         self._sphere_background.bind("<Double-Button-1>",
                                      self.choose_sphere_background)
