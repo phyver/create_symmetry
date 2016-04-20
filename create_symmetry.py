@@ -930,6 +930,7 @@ def apply_parity(parity, M):    # <<<2
     if parity == "":
         return M
 
+    print("parity:", parity)
     r = re.match("^([-+nm ()0-9]*)\s*==?\s*([0-9]+)\s*mod\s*([0-9]+)",
                  parity)
     if r:
@@ -1207,7 +1208,6 @@ def make_sphere_image(zs,      # <<<2
 
 
 def make_sphere_background(zs, img, background="back.jpg", shade=128, stars=0):
-    print(">>>", background)
     width, height = zs.shape
     mask = (zs.real**2 + zs.imag**2 > 1).astype(int).transpose(1, 0)
     mask = (255-shade) * mask
@@ -2167,7 +2167,6 @@ class World(LabelFrame):     # <<<2
     # >>>3
 
     def reset_geometry(self, *args):        # <<<3
-        print("TEST")
         self.geometry = WORLD_GEOMETRY
         self.adjust_geometry()
         self.rotations = 0, 0, 0
@@ -2373,7 +2372,7 @@ class Function(LabelFrame):     # <<<2
 
     @property
     def rosette_N(self):     # <<<4
-        return self._rosette.get()
+        return self._rosette_N.get()
     # >>>4
 
     @rosette_N.setter
