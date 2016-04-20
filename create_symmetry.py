@@ -473,70 +473,70 @@ SPHERE_GROUPS = {   # <<<1
             "alt_name": "Th",
             "recipe": "n,m = -n,-m ; n,m = -m,-n",
             "parity": "n-m = 0 mod 2",
-            "type": ""
+            "type": "tetrahedral"
             # TOCHECK
             },
         "*432": {
             "alt_name": "Oh",
             "recipe": "n,m = -n,-m ; n,m = -m,-n",
             "parity": "n-m = 0 mod 4",
-            "type": ""
+            "type": "octahedral"
             # TOCHECK
             },
         "*532": {
             "alt_name": "Ih",
             "recipe": "n,m = -n,-m ; n,m = -m,-n",
             "parity": "n-m = 0 mod 2",
-            "type": ""
+            "type": "icosahedral"
             # TOCHECK
             },
         "NN": {
             "alt_name": "CN",
             "recipe": "",
             "parity": "n-m = 0 mod N",
-            "type": ""
+            "type": "cyclic"
             # TOCHECK
             },
         "22N": {
             "alt_name": "DN",
             "recipe": "n,m = -n,-m",
             "parity": "n-m = 0 mod N",
-            "type": ""
+            "type": "dihedral"
             # TOCHECK
             },
         "*NN": {
             "alt_name": "CNv",
             "recipe": "n,m = m,n",
             "parity": "n-m = 0 mod N",
-            "type": ""
+            "type": "cyclic"
             # TOCHECK
             },
         "N*": {
             "alt_name": "CNh",
             "recipe": "n,m = -m,-n",
             "parity": "n-m = 0 mod N",
-            "type": ""
+            "type": "cyclic"
             # TOCHECK
             },
         "*22N": {
             "alt_name": "DNh",
             "recipe": "n,m = m,n = -n,-m = -m,-n",
             "parity": "n-m = 0 mod N",
-            "type": ""
+            "type": "cyclic"
             # TOCHECK
             },
         "N×": {
             "alt_name": "S2N",
             "recipe": "n,m = -{n+m}(-m,-n)",
             "parity": "n-m = 0 mod N",
-            "type": ""
+            "type": "cyclic"
             # TOCHECK
             },
         "2*N": {
             "alt_name": "DNd",
             "recipe": "n,m = -n,-m = -{n+m}(-m,-n) = -{n+m}(m,n)",
             "parity": "n-m = 0 mod N",
-            "type": ""
+            "type": "dihedral"
             # TOCHECK
             },
         }
@@ -545,6 +545,50 @@ SPHERE_GROUPS = {   # <<<1
 assert set(FRIEZES.keys()).isdisjoint(set(WALLPAPERS.keys()))
 assert set(SPHERE_GROUPS.keys()).isdisjoint(set(WALLPAPERS.keys()))
 assert set(SPHERE_GROUPS.keys()).isdisjoint(set(FRIEZES.keys()))
+
+PATTERN = {}
+_F = FRIEZES
+for p in _F:
+    PATTERN[p] = {
+            "alt_name": _F[p]["alt_name"],
+            "recipe": _F[p]["recipe"],
+            "parity": "",
+            "type": "frieze",
+            "description": "",
+            }
+del _F
+_W = WALLPAPERS
+for p in _W:
+    PATTERN[p] = {
+            "alt_name": _W[p]["alt_name"],
+            "recipe": _W[p]["recipe"],
+            "parity": "",
+            "type": "plane group",
+            "description": _W[p]["lattice"] + " lattice",
+            }
+del _W
+_S = SPHERE_GROUPS
+for p in _S:
+    PATTERN[p] = {
+            "alt_name": _S[p]["alt_name"],
+            "recipe": _S[p]["recipe"],
+            "parity": _S[p]["parity"],
+            "type": "sphere group",
+            "description": _S[p]["type"] + " symmetry",
+            }
+del _S
+_C = COLOR_REVERSING_WALLPAPERS
+for p1 in _C:
+    for p2 in _C[p1]:
+        PATTERN[p2, p1] = {
+                "alt_name": "",
+                "recipe": _C[p1][p2]["recipe"],
+                "parity": _C[p1][p2]["parity"],
+                "type": "color reversing plane group",
+                "description": "",
+                }
+del _C
+
 
 FRIEZE_NAMES = [    # <<<1
         "∞∞",
@@ -555,10 +599,10 @@ FRIEZE_NAMES = [    # <<<1
         "∞×",
         "2*∞",
         ]
-for i in range(len(FRIEZE_NAMES)):
-    p = FRIEZE_NAMES[i]
-    alt_name = FRIEZES[p]["alt_name"]
-    FRIEZE_NAMES[i] = "{} ({})".format(p, alt_name)
+# for i in range(len(FRIEZE_NAMES)):
+#     p = FRIEZE_NAMES[i]
+#     alt_name = FRIEZES[p]["alt_name"]
+#     FRIEZE_NAMES[i] = "{} ({})".format(p, alt_name)
 # >>>1
 
 WALLPAPER_NAMES = [     # <<<1
@@ -580,15 +624,15 @@ WALLPAPER_NAMES = [     # <<<1
         "632",
         "*632",
         ]
-_l = None
-for i in range(len(WALLPAPER_NAMES)):
-    p = WALLPAPER_NAMES[i]
-    alt_name = WALLPAPERS[p]["alt_name"]
-    l = WALLPAPERS[p]["lattice"]
-    WALLPAPER_NAMES[i] = "{} ({}) {}".format(p,
-                                             alt_name,
-                                             "" if _l == l else ("-- "+l))
-    _l = l
+# _l = None
+# for i in range(len(WALLPAPER_NAMES)):
+#     p = WALLPAPER_NAMES[i]
+#     alt_name = WALLPAPERS[p]["alt_name"]
+#     l = WALLPAPERS[p]["lattice"]
+#     WALLPAPER_NAMES[i] = "{} ({}) {}".format(p,
+#                                              alt_name,
+#                                              "" if _l == l else ("-- "+l))
+#     _l = l
 # >>>1
 
 SPHERE_NAMES = [    # <<<1
@@ -607,10 +651,10 @@ SPHERE_NAMES = [    # <<<1
         "N×",
         "2*N",
         ]
-for i in range(len(SPHERE_NAMES)):
-    p = SPHERE_NAMES[i]
-    alt_name = SPHERE_GROUPS[p]["alt_name"]
-    SPHERE_NAMES[i] = "{} ({})".format(p, alt_name)
+# for i in range(len(SPHERE_NAMES)):
+#     p = SPHERE_NAMES[i]
+#     alt_name = SPHERE_GROUPS[p]["alt_name"]
+#     SPHERE_NAMES[i] = "{} ({})".format(p, alt_name)
 # >>>1
 
 
@@ -887,6 +931,22 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
 
     return R
 # >>>2
+
+
+def basis(pattern, *params):
+    lattice = PATTERN[pattern]["description"].split()[0]
+    if lattice == "general":
+        return [[1, 0], [params[0], params[1]]]
+    elif lattice == "rhombic":
+        return [[1/2, params[0]/2], [1/2, -params[0]/2]]
+    elif lattice == "rectangular":
+        return [[1, 0], [0, 1/params[0]]]
+    elif lattice == "square":
+        return [[1, 0], [0, 1]]
+    elif lattice == "hexagonal":
+        return [[1, 0], [-1/2, sqrt(3)/2]]
+    else:
+        assert False
 # >>>1
 
 
@@ -986,7 +1046,7 @@ def make_rosette_image(zs,                # <<<2
                        message_queue=None):
 
     matrix = add_symmetries(matrix,
-                            FRIEZES[pattern]["recipe"],
+                            PATTERN[pattern]["recipe"],
                             parity="n-m = 0 mod {}".format(N))
 
     if unwind:
@@ -1013,12 +1073,12 @@ def make_wallpaper_image(zs,     # <<<2
                          message_queue=None):
 
     if color_pattern:
-        cp = COLOR_REVERSING_WALLPAPERS[pattern][color_pattern]
+        cp = PATTERN[color_pattern, pattern]
         matrix = add_symmetries(matrix, cp["recipe"], cp["parity"])
     else:
-        matrix = add_symmetries(matrix, WALLPAPERS[pattern]["recipe"])
+        matrix = add_symmetries(matrix, PATTERN[pattern]["recipe"])
 
-    lattice_basis = WALLPAPERS[pattern]["basis"](*lattice_params)
+    lattice_basis = basis(pattern, *lattice_params)
     C = invert22(lattice_basis)
 
     res = np.zeros(zs.shape, complex)
@@ -1065,15 +1125,15 @@ def make_sphere_image(zs,      # <<<2
                       N=5,
                       message_queue=None):
 
-    recipe = SPHERE_GROUPS[pattern]["recipe"]
-    parity = SPHERE_GROUPS[pattern]["parity"].replace("N", str(N))
+    recipe = PATTERN[pattern]["recipe"]
+    parity = PATTERN[pattern]["parity"].replace("N", str(N))
     matrix = add_symmetries(matrix, recipe, parity)
 
-    if "T" in SPHERE_GROUPS[pattern]["alt_name"]:
+    if "T" in PATTERN[pattern]["alt_name"]:
         average = [([[1, 0], [0, 1]], 1), ([[1, 1j], [1, -1j]], 3)]
-    elif "O" in SPHERE_GROUPS[pattern]["alt_name"]:
+    elif "O" in PATTERN[pattern]["alt_name"]:
         average = [([[1, 0], [0, 1]], 1), ([[1, 1j], [1, -1j]], 3)]
-    elif "I" in SPHERE_GROUPS[pattern]["alt_name"]:
+    elif "I" in PATTERN[pattern]["alt_name"]:
         phi = (1 + sqrt(5)) / 2
         average = [([[1, 1j], [1, -1j]], 3),
                    ([[phi*(1-phi*1j), 1+2j],
@@ -1184,21 +1244,21 @@ def make_image(color=None,     # <<<2
         zs = plane_coordinates_to_sphere(zs, world["sphere_rotations"])
 
 
-    if pattern in FRIEZES:
+    if PATTERN[pattern]["type"] == "frieze":
         res = make_rosette_image(zs,
                                  matrix,
                                  pattern,
                                  N=params["N"],
                                  unwind=not params["rosette"],
                                  message_queue=message_queue)
-    elif pattern in WALLPAPERS:
+    elif PATTERN[pattern]["type"] == "plane group":
         res = make_wallpaper_image(zs,
                                    matrix,
                                    pattern,
                                    lattice_params=params["lattice_params"],
                                    color_pattern=params["color_pattern"],
                                    message_queue=message_queue)
-    elif pattern in SPHERE_GROUPS:
+    elif PATTERN[pattern]["type"] == "sphere group":
         res = make_sphere_image(zs,
                                 matrix,
                                 pattern,
@@ -1256,11 +1316,11 @@ def background_output(     # <<<2
     if function["tab"] == "wallpaper":
         info["type"] = "planar"
         info["name"] = function["wallpaper_pattern"]
-        info["alt_name"] = WALLPAPERS[info["name"]]["alt_name"]
+        info["alt_name"] = PATTERN[info["name"]]["alt_name"]
         cp = function["wallpaper_color_pattern"]
         if cp != "--":
             info["name"] = cp + "_" + info["name"]
-            info["alt_name"] = (WALLPAPERS[cp]["alt_name"] +
+            info["alt_name"] = (PATTERN[cp]["alt_name"] +
                                 "_" +
                                 info["alt_name"])
     elif function["tab"] == "sphere":
@@ -1268,7 +1328,7 @@ def background_output(     # <<<2
         p = function["sphere_pattern"]
         N = function["sphere_N"]
         info["name"] = p.replace("N", str(N))
-        info["alt_name"] = SPHERE_GROUPS[p]["alt_name"]
+        info["alt_name"] = PATTERN[p]["alt_name"]
         info["alt_name"] = info["alt_name"].replace("N", str(N))
     elif function["tab"] == "frieze":
         if function["rosette"]:
@@ -1279,7 +1339,7 @@ def background_output(     # <<<2
             info["type"] = "frieze"
             p = function["frieze_pattern"]
             info["name"] = p
-            info["alt_name"] = FRIEZES[p]["alt_name"]
+            info["alt_name"] = PATTERN[p]["alt_name"]
     elif function["tab"] == "raw":
         info["type"] = "lattice"
         N = function["raw_N"]
@@ -2056,7 +2116,6 @@ class World(LabelFrame):     # <<<2
         self._save_button.pack(side=RIGHT, padx=10, pady=10)
         # >>>4
 
-        width, height = self.size
         self.adjust_geometry()
     # >>>3
 
@@ -2352,7 +2411,7 @@ class Function(LabelFrame):     # <<<2
     @property
     def lattice_basis(self):       # <<<4
         if self.current_tab == "wallpaper":
-            return WALLPAPERS[self.pattern]["basis"](*self._lattice_params.get())
+            return basis(self.pattern, *self._lattice_params.get())
         elif self.current_tab == "raw":
             v1 = self._basis_matrix1.get()
             v2 = self._basis_matrix2.get()
@@ -2690,22 +2749,23 @@ class Function(LabelFrame):     # <<<2
             for (n, m) in keys:
                 if (n-m) % p != 0 or n == m:
                     del M[(n, m)]
-            M = add_symmetries(M, FRIEZES[pattern]["recipe"])
+            M = add_symmetries(M, PATTERN[pattern]["recipe"])
         elif self.current_tab == "frieze":
-            M = add_symmetries(M, FRIEZES[pattern]["recipe"])
+            M = add_symmetries(M, PATTERN[pattern]["recipe"])
         elif self.current_tab == "wallpaper":
-            M = add_symmetries(M, WALLPAPERS[pattern]["recipe"])
+            M = add_symmetries(M, PATTERN[pattern]["recipe"])
             color_pattern = self.color_pattern
             if color_pattern:
-                sub = COLOR_REVERSING_WALLPAPERS[pattern][color_pattern]
+                sub = PATTERN[color_pattern, pattern]
                 parity = sub["parity"]
                 M = add_symmetries(M, sub["recipe"], parity)
             else:
-                M = add_symmetries(M, WALLPAPERS[pattern]["recipe"])
+                M = add_symmetries(M, PATTERN[pattern]["recipe"])
         elif self.current_tab == "sphere":
             M = add_symmetries(M,
-                               SPHERE_GROUPS[pattern]["recipe"],
-                               SPHERE_GROUPS[pattern]["parity"])
+                               PATTERN[pattern]["recipe"],
+                               PATTERN[pattern]["parity"]
+                               .replace("N", str(self.sphere_N)))
 
         return M
     # >>>3
@@ -2820,7 +2880,7 @@ class Function(LabelFrame):     # <<<2
 
         # wallpaper tab     <<<4
         pattern = self._wallpaper_type.get().split()[0]
-        lattice = WALLPAPERS[pattern]["lattice"]
+        lattice = PATTERN[pattern]["description"].split()[0]
         if lattice == "general":
             self._lattice_params.enable()
             self._lattice_params.label_widget.config(text="x, y")
@@ -2847,14 +2907,12 @@ class Function(LabelFrame):     # <<<2
             assert False
 
         # color reversing combo
-        CRW = COLOR_REVERSING_WALLPAPERS[pattern]
-        names = [p.split()[0] for p in WALLPAPER_NAMES]
-        c_names = [p for p in names if p in CRW]
-        color_groups = []
+        c_names = [p[0] for p in PATTERN
+                   if isinstance(p, tuple) and p[1] == pattern]
         self._color_reversing_combo.configure(
                 values=["--"] + ["{} ({})"
                                  .format(g,
-                                         WALLPAPERS[g]["alt_name"])
+                                         PATTERN[g]["alt_name"])
                                  for g in c_names]
                 )
         self._color_reversing_combo.current(0)
