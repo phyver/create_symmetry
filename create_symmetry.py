@@ -3385,6 +3385,8 @@ Keyboard shortcuts:
             elif self.world.geometry_tab == "plane":
                 if dx != 0 or dy != 0:
                     self.world.translate(dx/10, dy/10)
+                elif dz != 0:
+                    self.world.angle -= dz
             else:
                 assert False
         return translate_rotate_tmp
