@@ -682,7 +682,6 @@ NAMES = [    # <<<1
         "∞×",
         "2*∞",
         ]
-# >>>1
 
 W_NAMES = ["{} ({})".format(p, PATTERN[p]["alt_name"])
            for p in NAMES
@@ -703,6 +702,9 @@ def C_NAMES(s):
         if (p, s) in PATTERN:
             r.append("{} ({})".format(p, PATTERN[p]["alt_name"]))
     return r
+# >>>1
+
+
 ###
 # utility functions
 # <<<1
@@ -1223,7 +1225,9 @@ def make_sphere_background(zs, img, background="back.jpg", shade=128, stars=0):
                                            color=color)
             seed(RANDOM_SEED)
             for i in range(stars):
-                background_img.putpixel((randrange(0, width), randrange(0, height)), getrgb(STAR_COLOR))
+                background_img.putpixel((randrange(0, width),
+                                        randrange(0, height)),
+                                        getrgb(STAR_COLOR))
             seed()
         except ValueError:
             background_img = PIL.Image.new(mode="RGB",
@@ -1686,11 +1690,6 @@ class ColorWheel(LabelFrame):   # <<<2
                                  width=4, justify=RIGHT)
         self._y_max.grid(row=1, column=1, padx=5, pady=5)
 
-        self._reset_button = Button(coord_frame, text="reset",
-                                    command=self.reset_geometry)
-        self._reset_button.grid(row=2, column=0, columnspan=2,
-                                padx=5, pady=5)
-
         transformation_frame = LabelFrame(self, text="transformation")
         transformation_frame.grid(row=6, column=0, sticky=E+W, padx=5, pady=5)
         self._modulus = LabelEntry(transformation_frame, label="modulus",
@@ -1704,6 +1703,11 @@ class ColorWheel(LabelFrame):   # <<<2
                                  convert=float,
                                  width=4)
         self._angle.pack(padx=5, pady=5)
+
+        self._reset_button = Button(self, text="reset",
+                                    command=self.reset_geometry)
+        self._reset_button.grid(row=7, column=0,
+                                padx=5, pady=(5, 10))
 
         self.update_defaultcolor()
 
@@ -2012,7 +2016,7 @@ class World(LabelFrame):     # <<<2
 
         # the preview image     <<<4
         self._canvas = Canvas(self, width=PREVIEW_SIZE, height=PREVIEW_SIZE,
-                              bg="white")
+                              bg="light gray")
         for i in range(5, PREVIEW_SIZE, 10):
             for j in range(5, PREVIEW_SIZE, 10):
                 self._canvas.create_line(i-1, j, i+2, j, fill="gray")
@@ -2058,10 +2062,6 @@ class World(LabelFrame):     # <<<2
                                  width=4, justify=RIGHT)
         self._y_max.grid(row=1, column=1, padx=5, pady=5)
 
-        Button(coord_frame, text="reset",
-               command=self.reset_geometry).grid(row=4, column=0, columnspan=2,
-                                                 padx=5, pady=5)
-
         transformation_frame = LabelFrame(self._geometry_plane_tab,
                                           text="transformation")
         transformation_frame.pack(padx=5, pady=5, fill=BOTH)
@@ -2083,6 +2083,11 @@ class World(LabelFrame):     # <<<2
         Button(transformation_frame, text="zoom +",
                command=self.zoom(2**-.1)).pack(side=RIGHT,
                                                padx=5, pady=5)
+
+        Button(self._geometry_plane_tab, text="reset",
+               command=self.reset_geometry).pack(side=TOP,
+                                                 padx=5, pady=(5, 10))
+
         # >>>4
 
         # sphere parameters     <<<4
