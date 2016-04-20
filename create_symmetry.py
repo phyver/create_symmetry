@@ -34,8 +34,8 @@ from math import sqrt, pi, sin, cos, asin, acos, atan2
 from random import randrange, uniform, shuffle, seed
 
 # multiprocessing
-import multiprocessing
-import threading
+from multiprocessing import Process, Queue
+from threading import Thread
 import queue
 # >>>1
 
@@ -49,7 +49,6 @@ DEFAULT_COLOR = "black"
 FILENAME_TEMPLATE = "output-{type:}-{name:}~{nb:}"
 UNDO_SIZE = 100
 DEFAULT_SPHERE_BACKGROUND = "#000066"
-
 STAR_COLOR = "#FFC"
 
 RANDOM_SEED = uniform(0, 1)
@@ -995,7 +994,7 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
 # >>>2
 
 
-def basis(pattern, *params):
+def basis(pattern, *params):        # <<<2
     lattice = PATTERN[pattern]["description"].split()[0]
     if lattice == "general":
         return [[1, 0], [params[0], params[1]]]
@@ -1009,6 +1008,7 @@ def basis(pattern, *params):
         return [[1, 0], [-1/2, sqrt(3)/2]]
     else:
         assert False
+# >>>2
 # >>>1
 
 
@@ -1307,8 +1307,13 @@ def make_image(color=None,     # <<<2
         _zs = np.copy(zs)
         zs = plane_coordinates_to_sphere(zs, world["sphere_rotations"])
 
-
-    if PATTERN[pattern]["type"] == "frieze":
+    if pattern == "":
+        res = make_lattice_image(zs,
+                                 matrix,
+                                 basis=params["basis"],
+                                 N=params["N"],
+                                 message_queue=message_queue)
+    elif PATTERN[pattern]["type"] == "frieze":
         res = make_rosette_image(zs,
                                  matrix,
                                  pattern,
@@ -1329,11 +1334,7 @@ def make_image(color=None,     # <<<2
                                 N=params["N"],
                                 message_queue=message_queue)
     else:
-        res = make_lattice_image(zs,
-                                 matrix,
-                                 basis=params["basis"],
-                                 N=params["N"],
-                                 message_queue=message_queue)
+        assert False
 
     if stretch_color:
         np.divide(res, np.sqrt(1 + res.real**2 * res.imag**2), out=res)
@@ -1382,7 +1383,7 @@ def background_output(     # <<<2
         info["name"] = function["wallpaper_pattern"]
         info["alt_name"] = PATTERN[info["name"]]["alt_name"]
         cp = function["wallpaper_color_pattern"]
-        if cp != "--":
+        if cp:
             info["name"] = cp + "_" + info["name"]
             info["alt_name"] = (PATTERN[cp]["alt_name"] +
                                 "_" +
@@ -2005,7 +2006,7 @@ class World(LabelFrame):     # <<<2
                                                 "text")):
             return "sphere"
         elif ("plane" in self._geometry_tabs.tab(self._geometry_tabs.select(),
-                                                "text")):
+                                                 "text")):
             return "plane"
         else:
             assert False
@@ -2165,7 +2166,8 @@ class World(LabelFrame):     # <<<2
                                   width=6, justify=RIGHT)
         self._height.pack(padx=5, pady=5)
 
-        self._filename_template = LabelEntry(settings_frame, label="filename template",
+        self._filename_template = LabelEntry(settings_frame,
+                                             label="filename template",
                                              orientation="V",
                                              value=FILENAME_TEMPLATE,
                                              font="TkNormal 8",
@@ -2205,7 +2207,10 @@ class World(LabelFrame):     # <<<2
         x_min, x_max, y_min, y_max = self.geometry
         delta_x = x_max - x_min
         delta_y = y_max - y_min
-        self.geometry = x_min + dx*delta_x, x_max + dx*delta_x, y_min + dy*delta_y, y_max + dy*delta_y
+        self.geometry = (x_min + dx*delta_x,
+                         x_max + dx*delta_x,
+                         y_min + dy*delta_y,
+                         y_max + dy*delta_y)
     # >>>3
 
     def rotate(self, dx, dy, dz=0):   # <<<3
@@ -2252,12 +2257,18 @@ class World(LabelFrame):     # <<<2
             delta_y = y_max - y_min
             delta_x = delta_y * ratio
             middle_x = (x_min+x_max) / 2
-            self.geometry = middle_x - delta_x/2, middle_x + delta_x/2, y_min, y_max
+            self.geometry = (middle_x - delta_x/2,
+                             middle_x + delta_x/2,
+                             y_min,
+                             y_max)
         else:
             delta_x = x_max - x_min
             delta_y = delta_x / ratio
             middle_y = (y_min+y_max) / 2
-            self.geometry = x_min, x_max, middle_y - delta_y/2, middle_y + delta_y/2
+            self.geometry = (x_min,
+                             x_max,
+                             middle_y - delta_y/2,
+                             middle_y + delta_y/2)
     # >>>3
 
     def get_config(self):           # <<<3
@@ -2433,67 +2444,97 @@ class Function(LabelFrame):     # <<<2
         self._change_entry.set(s)
     # >>>4
 
-    # TODO: refactor
     @property
-    def rotational_symmetry(self):      # <<<4
-        if self.current_tab == "raw":
-            return self._raw_N
-        elif self.current_tab == "wallpaper":
-            return 1
-        elif self.current_tab == "frieze":
-            if self.rosette:
-                return self.rosette_N
-            else:
-                return 1
-        elif self.current_tab == "sphere":
-            return self.sphere_N
-        else:
-            assert False
+    def wallpaper_pattern(self):    # <<<4
+        return self._wallpaper_pattern.get().split()[0]
+    # >>>4
+
+    @wallpaper_pattern.setter
+    def wallpaper_pattern(self, p):    # <<<4
+        values = self._wallpaper_combo["values"]
+        for i in range(len(values)):
+            tmp = values[i]
+            tmp = re.sub("--.*$", "", tmp)
+            tmp = tmp.replace("(", " ").replace(")", " ")
+            tmp = tmp.split()
+            if p in tmp:
+                self._wallpaper_combo.current(i)
     # >>>4
 
     @property
-    def pattern(self):          # <<<4
+    def wallpaper_color_pattern(self):    # <<<4
+        p = self._wallpaper_color_pattern.get().split()[0]
+        if p == "--":
+            return ""
+        else:
+            return p
+    # >>>4
+
+    @wallpaper_color_pattern.setter
+    def wallpaper_color_pattern(self, p):    # <<<4
+        values = self._wallpaper_color_combo["values"]
+        for i in range(len(values)):
+            tmp = values[i]
+            tmp = re.sub("--.*$", "", tmp)
+            tmp = tmp.replace("(", " ").replace(")", " ")
+            tmp = tmp.split()
+            if p in tmp:
+                self._wallpaper_color_combo.current(i)
+    # >>>4
+
+    @property
+    def sphere_pattern(self):    # <<<4
+        return self._sphere_pattern.get().split()[0]
+    # >>>4
+
+    @sphere_pattern.setter
+    def sphere_pattern(self, p):    # <<<4
+        values = self._sphere_combo["values"]
+        for i in range(len(values)):
+            tmp = values[i]
+            tmp = re.sub("--.*$", "", tmp)
+            tmp = tmp.replace("(", " ").replace(")", " ")
+            tmp = tmp.split()
+            if p in tmp:
+                self._sphere_combo.current(i)
+    # >>>4
+
+    @property
+    def frieze_pattern(self):    # <<<4
+        return self._frieze_pattern.get().split()[0]
+    # >>>4
+
+    @frieze_pattern.setter
+    def frieze_pattern(self, p):    # <<<4
+        values = self._frieze_combo["values"]
+        for i in range(len(values)):
+            tmp = values[i]
+            tmp = re.sub("--.*$", "", tmp)
+            tmp = tmp.replace("(", " ").replace(")", " ")
+            tmp = tmp.split()
+            if p in tmp:
+                self._frieze_combo.current(i)
+    # >>>4
+
+    @property
+    def current_pattern(self):          # <<<4
         if self.current_tab == "frieze":
-            return self._frieze_type.get().split()[0]
+            return self.frieze_pattern
         elif self.current_tab == "wallpaper":
-            return self._wallpaper_type.get().split()[0]
-        elif self.current_tab == "sphere":
-            return self._sphere_type.get().split()[0]
-        elif self.current_tab == "raw":
-            return ""
-        else:
-            return ""
-    # >>>4
-
-    @property
-    def color_pattern(self):          # <<<4
-        if self.current_tab == "wallpaper":
-            sub = self._color_reversing_color_pattern.get()
-            if sub == "--":
-                return ""
+            color_pattern = self.wallpaper_color_pattern
+            if color_pattern:
+                return (color_pattern, self.wallpaper_pattern)
             else:
-                return sub.split()[0]
+                return self.wallpaper_pattern
+            return self.wallpaper_pattern
+        elif self.current_tab == "sphere":
+            return self.sphere_pattern
+        elif self.current_tab == "raw":
+            return ""
         else:
             return ""
     # >>>4
 
-    @property
-    def lattice_basis(self):       # <<<4
-        if self.current_tab == "wallpaper":
-            return basis(self.pattern, *self._lattice_params.get())
-        elif self.current_tab == "raw":
-            v1 = self._basis_matrix1.get()
-            v2 = self._basis_matrix2.get()
-            v1 = [v1[0], v1[1]]
-            v2 = [v2[0], v2[1]]
-            return [v1, v2]
-        elif self.current_tab == "frieze":
-            return None
-        elif self.current_tab == "sphere":
-            return None
-        else:
-            assert False
-    # >>>4
     # >>>3
 
     def __init__(self, root):      # <<<3
@@ -2519,13 +2560,12 @@ class Function(LabelFrame):     # <<<2
         # >>>4
 
         # wallpaper tab      <<<4
-        self._wallpaper_type = StringVar()
-
         Label(self._wallpaper_tab,
               text="symmetry group").pack(padx=5, pady=(20, 0))
+        self._wallpaper_pattern = StringVar()
         self._wallpaper_combo = Combobox(
                 self._wallpaper_tab, width=20, exportselection=0,
-                textvariable=self._wallpaper_type,
+                textvariable=self._wallpaper_pattern,
                 state="readonly",
                 values=W_NAMES
                 )
@@ -2544,24 +2584,24 @@ class Function(LabelFrame):     # <<<2
 
         Label(self._wallpaper_tab,
               text="color symmetry group").pack(padx=5, pady=(20, 0))
-        self._color_reversing_color_pattern = StringVar()
-        self._color_reversing_combo = Combobox(
+        self._wallpaper_color_pattern = StringVar()
+        self._wallpaper_color_combo = Combobox(
                 self._wallpaper_tab, width=10, exportselection=0,
-                textvariable=self._color_reversing_color_pattern,
+                textvariable=self._wallpaper_color_pattern,
                 state="readonly",
                 values=["--"]
                 )
-        self._color_reversing_combo.pack(padx=5, pady=5)
-        self._color_reversing_combo.current(0)
+        self._wallpaper_color_combo.pack(padx=5, pady=5)
+        self._wallpaper_color_combo.current(0)
         # # >>>4
 
         # frieze / rosette tab   <<<4
         Label(self._frieze_tab,
               text="frieze pattern").pack(padx=5, pady=(20, 0))
-        self._frieze_type = StringVar()
+        self._frieze_pattern = StringVar()
         self._frieze_combo = Combobox(self._frieze_tab, width=15,
                                       exportselection=0,
-                                      textvariable=self._frieze_type,
+                                      textvariable=self._frieze_pattern,
                                       state="readonly",
                                       values=F_NAMES)
         self._frieze_combo.pack(padx=5, pady=5)
@@ -2601,20 +2641,20 @@ class Function(LabelFrame):     # <<<2
                                  padx=5, pady=(0, 5))
 
         self._raw_N = LabelEntry(self._raw_tab,
-                                        label="rotational symmetry",
-                                        value=1,
-                                        convert=int,
-                                        width=3)
+                                 label="rotational symmetry",
+                                 value=1,
+                                 convert=int,
+                                 width=3)
         self._raw_N.grid(row=2, column=0, padx=5, pady=20)
         # >>>4
 
         # sphere tab        <<<4
         Label(self._sphere_tab,
               text="symmetry group").pack(padx=5, pady=(20, 0))
-        self._sphere_type = StringVar()
+        self._sphere_pattern = StringVar()
         self._sphere_combo = Combobox(self._sphere_tab, width=20,
                                       exportselection=0,
-                                      textvariable=self._sphere_type,
+                                      textvariable=self._sphere_pattern,
                                       state="readonly",
                                       values=S_NAMES)
         self._sphere_combo.pack(padx=5, pady=5)
@@ -2675,9 +2715,9 @@ class Function(LabelFrame):     # <<<2
         random_frame.grid(row=0, column=2, sticky=N+S, padx=5, pady=5)
 
         self._random_nb_coeffs = LabelEntry(random_frame, label="nb entries",
-                                           value=3,
-                                           convert=int,
-                                           width=4)
+                                            value=3,
+                                            convert=int,
+                                            width=4)
         self._random_nb_coeffs.pack(padx=5, pady=5)
 
         self._random_min_degre = LabelEntry(random_frame, label="min degre",
@@ -2706,8 +2746,8 @@ class Function(LabelFrame):     # <<<2
 
         # add noise <<<4
         self._random_noise = LabelEntry(random_frame, label="",
-                                 value=10, convert=float,
-                                 width=3)
+                                        value=10, convert=float,
+                                        width=3)
         self._random_noise.pack(side=RIGHT, padx=5, pady=5)
         self._random_noise.bind("<Return>", self.add_noise)
 
@@ -2810,32 +2850,35 @@ class Function(LabelFrame):     # <<<2
         if self.current_tab == "raw":
             return M
 
-        pattern = self.pattern
-
-        if self.current_tab == "frieze" and self.rosette:
-            p = self.rotational_symmetry
-            keys = list(M.keys())
-            for (n, m) in keys:
-                if (n-m) % p != 0 or n == m:
-                    del M[(n, m)]
-            M = add_symmetries(M, PATTERN[pattern]["recipe"])
-        elif self.current_tab == "frieze":
-            M = add_symmetries(M, PATTERN[pattern]["recipe"])
-        elif self.current_tab == "wallpaper":
-            M = add_symmetries(M, PATTERN[pattern]["recipe"])
-            color_pattern = self.color_pattern
+        if self.current_tab == "wallpaper":
+            pattern = self.wallpaper_pattern
+            color_pattern = self.wallpaper_color_pattern
             if color_pattern:
                 sub = PATTERN[color_pattern, pattern]
                 parity = sub["parity"]
-                M = add_symmetries(M, sub["recipe"], parity)
+                M = add_symmetries(M,
+                                   PATTERN[color_pattern, pattern]["recipe"],
+                                   PATTERN[color_pattern, pattern]["parity"])
             else:
                 M = add_symmetries(M, PATTERN[pattern]["recipe"])
         elif self.current_tab == "sphere":
             M = add_symmetries(M,
-                               PATTERN[pattern]["recipe"],
-                               PATTERN[pattern]["parity"]
+                               PATTERN[self.sphere_pattern]["recipe"],
+                               PATTERN[self.sphere_pattern]["parity"]
                                .replace("N", str(self.sphere_N)))
-
+        elif self.current_tab == "frieze" and self.rosette:
+            p = self.rosette_N
+            keys = list(M.keys())
+            for (n, m) in keys:
+                if (n-m) % p != 0 or n == m:
+                    del M[(n, m)]
+            M = add_symmetries(M, PATTERN[self.frieze_pattern]["recipe"])
+        elif self.current_tab == "frieze":
+            M = add_symmetries(M, PATTERN[self.frieze_pattern]["recipe"])
+        elif self.current_tab == "raw":
+            pass
+        else:
+            assert False
         return M
     # >>>3
 
@@ -2851,11 +2894,11 @@ class Function(LabelFrame):     # <<<2
                 #
                 "tab": self.current_tab,
                 # wallpaper tab
-                "wallpaper_pattern": self._wallpaper_type.get().split()[0],
+                "wallpaper_pattern": self.wallpaper_pattern,
                 "lattice_parameters": self._lattice_params.get(),
-                "wallpaper_color_pattern": self._color_reversing_color_pattern.get().split()[0],
+                "wallpaper_color_pattern": self.wallpaper_color_pattern,
                 # frieze tab
-                "frieze_pattern": self._frieze_type.get(),
+                "frieze_pattern": self.frieze_pattern,
                 "rosette": self.rosette,
                 "rosette_N": self.rosette_N,
                 # raw tab
@@ -2863,7 +2906,7 @@ class Function(LabelFrame):     # <<<2
                               self._basis_matrix2.get()],
                 "raw_N": self.raw_N,
                 # sphere tab
-                "sphere_pattern": self._sphere_type.get().split()[0],
+                "sphere_pattern": self.sphere_pattern,
                 "sphere_N": self.sphere_N,
                 }
     # >>>3
@@ -2883,28 +2926,13 @@ class Function(LabelFrame):     # <<<2
         if "tab" in cfg:
             self.current_tab = cfg["tab"]
         if "wallpaper_pattern" in cfg:
-            for i in range(len(W_NAMES)):
-                tmp = W_NAMES[i]
-                tmp = tmp.replace("(", " ").replace(")", " ")
-                tmp = tmp.split()
-                if cfg["wallpaper_pattern"] in tmp:
-                    self._wallpaper_combo.current(i)
+            self.wallpaper_pattern = cfg["wallpaper_pattern"]
         if "wallpaper_color_pattern" in cfg:
-            l = self._color_reversing_combo.cget("values")
-            for i in range(len(l)):
-                tmp = l[i].replace("(", "").replace(")", "")
-                tmp = tmp.split()
-                if cfg["wallpaper_color_pattern"] in tmp:
-                    self._color_reversing_combo.current(i),
+            self.wallpaper_color_pattern = cfg["wallpaper_color_pattern"]
         if "lattice_parameters" in cfg:
             self._lattice_params.set(floats_to_str(cfg["lattice_parameters"]))
         if "frieze_pattern" in cfg:
-            for i in range(len(F_NAMES)):
-                tmp = F_NAMES[i]
-                tmp = tmp.replace("(", " ").replace(")", " ")
-                tmp = tmp.split()
-                if cfg["frieze_pattern"] in tmp:
-                    self._frieze_combo.current(i)
+            self.frieze_pattern = cfg["frieze_pattern"]
         if "rosette" in cfg:
             self.rosette = cfg["rosette"]
         if "rosette_N" in cfg:
@@ -2934,7 +2962,7 @@ class Function(LabelFrame):     # <<<2
 
     def update(self, *args):     # <<<3
         # sphere tab  <<<4
-        if "N" in self.pattern:
+        if "N" in self.sphere_pattern:
             self._sphere_N.enable()
         else:
             self._sphere_N.disable()
@@ -2948,7 +2976,7 @@ class Function(LabelFrame):     # <<<2
         # >>>4
 
         # wallpaper tab     <<<4
-        pattern = self._wallpaper_type.get().split()[0]
+        pattern = self.wallpaper_pattern
         lattice = PATTERN[pattern]["description"].split()[0]
         if lattice == "general":
             self._lattice_params.enable()
@@ -2976,10 +3004,10 @@ class Function(LabelFrame):     # <<<2
             assert False
 
         # color reversing combo
-        self._color_reversing_combo.configure(
+        self._wallpaper_color_combo.configure(
                 values=["--"] + C_NAMES(pattern)
                 )
-        self._color_reversing_combo.current(0)
+        self._wallpaper_color_combo.current(0)
         # >>>4
     # >>>3
 
@@ -2989,7 +3017,7 @@ class Function(LabelFrame):     # <<<2
                     "rosette": self.rosette}
         elif self.current_tab == "wallpaper":
             return {"lattice_params": self._lattice_params.get(),
-                    "color_pattern": self.color_pattern}
+                    "color_pattern": self.wallpaper_color_pattern}
         elif self.current_tab == "sphere":
             return {"N": self.sphere_N}
         elif self.current_tab == "raw":
@@ -3041,7 +3069,8 @@ class CreateSymmetry(Tk):      # <<<2
                 font="TkFixedFont",
                 borderwidth=3,
                 relief="ridge")
-        self._console.grid(row=1, column=0, sticky=E+W+N+S, padx=10, pady=(10, 0))
+        self._console.grid(row=1, column=0,
+                           sticky=E+W+N+S, padx=10, pady=(10, 0))
         self._console.config(state=DISABLED)
 
         self._preview_console = Text(
@@ -3118,17 +3147,17 @@ class CreateSymmetry(Tk):      # <<<2
         self.undo_index = -1
 
         # queue containing parameters for pending output jobs
-        self.output_params_queue = multiprocessing.Queue()
+        self.output_params_queue = Queue()
         # are there pending output jobs?
         self.pending_output_jobs = False
-        self.output_message_queue = multiprocessing.Queue()
+        self.output_message_queue = Queue()
 
         # queue containing the preview image, computed by make_preview_job
         # the function ``update_GUI`` empties the queue
-        self.preview_image_queue = multiprocessing.Queue()
-        self.preview_message_queue = multiprocessing.Queue()
+        self.preview_image_queue = Queue()
+        self.preview_message_queue = Queue()
 
-        self.message_queue = multiprocessing.Queue()
+        self.message_queue = Queue()
         self.message_queue.put("""  create_symmetry.py
  Control-h for shortcuts
 -------------------------
@@ -3195,7 +3224,8 @@ Keyboard shortcuts:
         # console messages
         self._console.config(state=NORMAL)
         while not self.message_queue.empty():
-            self._console.insert(END, self.message_queue.get(block=False) + "\n")
+            self._console.insert(END,
+                                 self.message_queue.get(block=False) + "\n")
         self._console.yview(END)
         self._console.config(state=DISABLED)
 
@@ -3328,7 +3358,7 @@ Keyboard shortcuts:
                 "world": self.world.get_config(),
                 "function": self.function.get_config(),
                 "params": self.function.get_pattern_params(),
-                "pattern": self.function.pattern,
+                "pattern": self.function.current_pattern,
                 "matrix": self.function.matrix,
                 }
         self.output_params_queue.put(config)
@@ -3341,18 +3371,17 @@ Keyboard shortcuts:
                 except queue.Empty:
                     break
                 config["message_queue"] = self.message_queue
-                config["output_message_queue"] = self.message_queue
-                p = multiprocessing.Process(target=background_output,
-                                            kwargs=config)
+                config["output_message_queue"] = self.output_message_queue
+                p = Process(target=background_output, kwargs=config)
                 p.start()
                 p.join()
             self.pending_output_jobs = False
 
         if not self.pending_output_jobs:
-            threading.Thread(target=output_thread).start()
+            Thread(target=output_thread).start()
     # >>>3
 
-    def make_preview(self, nb_tries=10, *args):      # <<<3
+    def make_preview(self, *args):      # <<<3
 
         self.world.adjust_geometry()
         ratio = self.world.width / self.world.height
@@ -3369,10 +3398,9 @@ Keyboard shortcuts:
             world["size"] = (width, height)
             params = self.function.get_pattern_params()
 
-
             image = make_image(color=color,
                                world=world,
-                               pattern=self.function.pattern,
+                               pattern=self.function.current_pattern,
                                matrix=self.function.matrix,
                                message_queue=self.preview_message_queue,
                                stretch_color=self.colorwheel.stretch,
@@ -3383,13 +3411,13 @@ Keyboard shortcuts:
             self.preview_process.terminate()
             self.preview_process.join()
             # redefine queues to avoid corruption
-            self.preview_message_queue = multiprocessing.Queue()
-            self.preview_image_queue = multiprocessing.Queue()
+            self.preview_message_queue = Queue()
+            self.preview_image_queue = Queue()
         except AttributeError as e:
             pass
 
         try:
-            self.preview_process = multiprocessing.Process(target=make_preview_job)
+            self.preview_process = Process(target=make_preview_job)
             self.preview_process.start()
             self.undo_list = self.undo_list[-UNDO_SIZE:]
             if self.undo_index == -1:
@@ -3415,9 +3443,8 @@ Keyboard shortcuts:
         return translate_rotate_tmp
     # >>>3
 
-    def new_random_preview(self):       # <<<3
-        N = 100
-        for i in range(N):
+    def new_random_preview(self, nb_tries=100):       # <<<3
+        for i in range(nb_tries):
             self.function.new_random_matrix()
             if self.function.add_symmetries(self.function.matrix):
                 break
@@ -3450,16 +3477,17 @@ def main():     # <<<1
     -o FILE  /  --output=FILE           choose output file
     -s W,H  /  --size=W,H               choose width and height of output
     -g X,Y,X,Y  /  --geometry=X,Y,X,Y   choose "geometry of output"
-    --modulus  /  --angle               transformation to apply to the result
+    --modulus  /  --angle               transformation of the result
 
     -c FILE  /  --color=FILE            choose color file
     --color-geometry=X,Y,X,Y            choose "geometry" of the color file
-    --color-modulus  /  --color-angle   transformation to apply to the colorwheel
+    --color-modulus  /  --color-angle   transformation of the colorwheel
 
     --matrix=...                        transformation matrix
     --rotation-symmetry=P               p-fold symmetry around the origin
 
     --wallpaper=...                     name of wallpaper group
+    --sphere=...                        name of sphere group
     --frieze=...                        name of frieze group
     --rosette=...                       name of frieze group
     --raw=...                           rotation for arbitrary function
@@ -3485,7 +3513,7 @@ def main():     # <<<1
             "output=", "size=", "geometry=", "modulus=", "angle=",
             "matrix=", "rotation-symmetry=",
             "preview",
-            "wallpaper=", "frieze=", "rosette=", "raw=", "params=",
+            "wallpaper=", "sphere", "frieze=", "rosette=", "raw=", "params=",
             "color-config=", "world-config=", "function-config="]
 
     try:
@@ -3565,17 +3593,21 @@ def main():     # <<<1
                 error("problem with angle '{}'".format(a))
                 sys.exit(1)
         elif o in ["--wallpaper"]:
-            tab = "wallpaper"
-            pattern = a
+            function_config["tab"] = "wallpaper"
+            function_config["wallpaper_pattern"] = a
+        elif o in ["--sphere"]:
+            function_config["tab"] = "sphere"
+            function_config["sphere_pattern"] = a
         elif o in ["--frieze"]:
-            tab = "frieze"
-            pattern = a
+            function_config["tab"] = "frieze"
+            function_config["frieze_pattern"] = a
+            function_config["rosette"] = False
         elif o in ["--rosette"]:
-            tab = "rosette"
-            pattern = a
+            function_config["tab"] = "frieze"
+            function_config["frieze_pattern"] = a
+            function_config["rosette"] = True
         elif o in ["--raw"]:
-            tab = "raw"
-            pattern = a
+            function_config["tab"] = "raw"
         elif o in ["--params"]:
             params = a
         elif o == "--preview":
@@ -3627,7 +3659,6 @@ def main():     # <<<1
     if make_preview:
         gui.make_preview()
     gui.mainloop()
-
 # >>>1
 
 
