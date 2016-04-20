@@ -854,8 +854,8 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
         indices = recipe_all_indices(recipe, n, m)
         coeffs = [M[nm]/s for (s, nm) in indices if nm in M]
         if len(coeffs) != 0:
-            # coeff = sum(coeffs) / len(indices)
-            coeff = sum(coeffs) / len(coeffs)
+            coeff = sum(coeffs) / len(indices)
+            # coeff = sum(coeffs) / len(coeffs)
             if coeff != 0:
                 for s, nm in indices:
                     R[nm] = s * coeff
@@ -2294,7 +2294,7 @@ class Function(LabelFrame):     # <<<2
         tmp2.pack()
         self._display_matrix = Listbox(tmp2, selectmode=MULTIPLE,
                                        font="TkFixedFont",
-                                       width=30, height=11)
+                                       width=30, height=8)
         self._display_matrix.pack(side=LEFT)
 
         scrollbar = Scrollbar(tmp2)
@@ -2326,7 +2326,7 @@ class Function(LabelFrame):     # <<<2
         tmp = LabelFrame(self, text="random matrix")
         tmp.grid(row=0, column=2, sticky=N+S, padx=5, pady=5)
 
-        self._random_nb_coeff = LabelEntry(tmp, label="nb coefficients",
+        self._random_nb_coeff = LabelEntry(tmp, label="nb entries",
                                            value=3,
                                            convert=int,
                                            width=4)
@@ -2344,17 +2344,11 @@ class Function(LabelFrame):     # <<<2
                                             width=4)
         self._random_max_degre.pack(padx=5, pady=5)
 
-        self._random_min_coeff = LabelEntry(tmp, label="min coefficient",
-                                            value=-.3,
-                                            convert=float,
-                                            width=4)
-        self._random_min_coeff.pack(padx=5, pady=5)
-
-        self._random_max_coeff = LabelEntry(tmp, label="max coefficient",
-                                            value=.3,
-                                            convert=float,
-                                            width=4)
-        self._random_max_coeff.pack(padx=5, pady=5)
+        self._random_modulus = LabelEntry(tmp, label="modulus",
+                                          value=1,
+                                          convert=float,
+                                          width=4)
+        self._random_modulus.pack(padx=5, pady=5)
 
         generate = Button(tmp, text="generate", command=self.new_random_matrix)
         generate.pack(padx=5, pady=5)
@@ -2363,13 +2357,13 @@ class Function(LabelFrame):     # <<<2
         # add noise <<<4
         tmp3 = Frame(tmp)
         tmp3.pack(padx=5, pady=5)
-        self._noise = LabelEntry(tmp3, label="(%)",
+        self._noise = LabelEntry(tmp3, label="",
                                  value=10, convert=float,
                                  width=3)
         self._noise.pack(side=RIGHT, padx=5, pady=5)
         self._noise.bind("<Return>", self.add_noise)
 
-        random_noise = Button(tmp3, text="random noise",
+        random_noise = Button(tmp3, text="noise (%)",
                               command=self.add_noise)
         random_noise.pack(side=LEFT, padx=5, pady=5)
         # >>>4
@@ -2470,11 +2464,11 @@ class Function(LabelFrame):     # <<<2
         shuffle(coeffs)
         n = self._random_nb_coeff.get()
         coeffs = coeffs[:n]
-        a = self._random_min_coeff.get()
-        b = self._random_max_coeff.get()
         M = {}
         for (n, m) in coeffs:
-            M[(n, m)] = complex(uniform(a, b), uniform(a, b))
+            modulus = uniform(0, self._random_modulus.get()) / self._random_nb_coeff.get()
+            angle = uniform(0, 2*pi)
+            M[(n, m)] = complex(modulus*cos(angle), modulus*sin(angle))
         self.change_matrix(M)
     # >>>3
 
@@ -2605,8 +2599,7 @@ class Function(LabelFrame):     # <<<2
                 "random_nb_coeff": self._random_nb_coeff.get(),
                 "random_degre": (self._random_min_degre.get(),
                                  self._random_max_degre.get()),
-                "random_coeff": (self._random_min_coeff.get(),
-                                 self._random_max_coeff.get()),
+                "random_modulus": self._random_modulus.get(),
                 "random_noise": self._noise.get(),
                 #
                 "tab": self.current_tab,
@@ -2636,9 +2629,8 @@ class Function(LabelFrame):     # <<<2
         if "random_degre" in cfg:
             self._random_min_degre.set(cfg["random_degre"][0])
             self._random_max_degre.set(cfg["random_degre"][1])
-        if "random_coeff" in cfg:
-            self._random_min_coeff.set(cfg["random_coeff"][0])
-            self._random_max_coeff.set(cfg["random_coeff"][1])
+        if "random_modulus" in cfg:
+            self._random_modulus.set(cfg["random_modulus"])
         if "random_noise" in cfg:
             self._noise.set(cfg["random_noise"])
         if "tab" in cfg:
