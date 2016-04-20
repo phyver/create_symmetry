@@ -256,7 +256,7 @@ PATTERN = {     # <<<1
         "recipe": "n,m = m,n = -n,-m = -m,-n",
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
-        "description": "cyclic symmetry",
+        "description": "dihedral symmetry",
         },
     'N×': {
         "alt_name": "S2N",
@@ -660,36 +660,50 @@ NAMES = [    # <<<1
         "*632",
         # sphere groups
         "332",
-        "432",
-        "532",
-        "3*2",
         "*332",
+        "3*2",
+        "432",
         "*432",
+        "532",
         "*532",
         "NN",
-        "22N",
         "*NN",
         "N*",
-        "*22N",
         "N×",
+        "22N",
+        "*22N",
         "2*N",
         # friezes
         "∞∞",
-        "22∞",
         "*∞∞",
         "∞*",
-        "*22∞",
         "∞×",
+        "22∞",
+        "*22∞",
         "2*∞",
         ]
 
 W_NAMES = ["{} ({})".format(p, PATTERN[p]["alt_name"])
            for p in NAMES
            if PATTERN[p]["type"] == "plane group"]
+_t = None
+for i in range(len(W_NAMES)):
+    p = W_NAMES[i].split()[0]
+    t = PATTERN[p]["description"].split()[0]
+    if _t != t:
+        W_NAMES[i] += "     -- {}".format(t)
+    _t = t
 
 S_NAMES = ["{} ({})".format(p, PATTERN[p]["alt_name"])
            for p in NAMES
            if PATTERN[p]["type"] == "sphere group"]
+_t = None
+for i in range(len(S_NAMES)):
+    p = S_NAMES[i].split()[0]
+    t = PATTERN[p]["description"].split()[0]
+    if _t != t:
+        S_NAMES[i] += "     -- {}".format(t)
+    _t = t
 
 F_NAMES = ["{} ({})".format(p, PATTERN[p]["alt_name"])
            for p in NAMES
@@ -2598,7 +2612,7 @@ class Function(LabelFrame):     # <<<2
         Label(self._sphere_tab,
               text="symmetry group").pack(padx=5, pady=(20, 0))
         self._sphere_type = StringVar()
-        self._sphere_combo = Combobox(self._sphere_tab, width=15,
+        self._sphere_combo = Combobox(self._sphere_tab, width=20,
                                       exportselection=0,
                                       textvariable=self._sphere_type,
                                       state="readonly",
