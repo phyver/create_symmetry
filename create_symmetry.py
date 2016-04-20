@@ -1789,10 +1789,35 @@ class ColorWheel(LabelFrame):   # <<<2
             self._canvas.create_image((100, 100), image=tk_img)
             self.filename = filename
             self._filename_button.config(text=os.path.basename(filename))
+
+            self.draw_unit_circle()
+
         except Exception as e:
             error("problem while loading {} for color image: {}"
                   .format(filename, e))
     # >>>3
+
+    def draw_unit_circle(self):
+        try:
+            self._canvas.delete(self._unit_circle1)
+            self._canvas.delete(self._unit_circle2)
+        except:
+            pass
+        x_min, x_max, y_min, y_max = self.geometry
+        delta_x = COLOR_SIZE / (x_max - x_min)
+        delta_y = COLOR_SIZE / (y_max - y_min)
+        x0 = - delta_x * x_min
+        y0 = delta_y * y_max
+        r = delta_x
+        self._unit_circle1 = self._canvas.create_oval(x0-r, y0-r, x0+r, y0+r,
+                                                      width=2,
+                                                      outline="white",
+                                                      dash=[10, 10])
+        self._unit_circle2 = self._canvas.create_oval(x0-r, y0-r, x0+r, y0+r,
+                                                      width=2,
+                                                      outline="black",
+                                                      dash=[10, 10],
+                                                      dashoff=10)
 
     def choose_colorwheel(self, *args):    # <<<3
         filename = filedialog.askopenfilename(
@@ -1817,6 +1842,8 @@ class ColorWheel(LabelFrame):   # <<<2
         y_max = y/COLOR_SIZE * delta_y
         y_min = y_max - delta_y
         self.geometry = x_min, x_max, y_min, y_max
+
+        self.draw_unit_circle()
     # >>>3
 
     def reset_geometry(self, *args):        # <<<3
