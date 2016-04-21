@@ -2100,16 +2100,21 @@ class World(LabelFrame):     # <<<2
                                      width=15)
         self._rotations.pack(padx=5, pady=10)
 
-        self._sphere_background = LabelEntry(self._geometry_sphere_tab,
-                                             label="background",
-                                             value=DEFAULT_SPHERE_BACKGROUND,
-                                             width=10)
-        self._sphere_background_full_filename = ""
+        background_frame = Frame(self._geometry_sphere_tab)
+        background_frame.pack(padx=5, pady=5)
 
+        self._sphere_background_full_filename = ""
+        self._sphere_background = StringVar()
+
+        Button(background_frame,
+               text="background",
+               command=self.choose_sphere_background,
+               padx=1, pady=1
+               ).pack(side=LEFT)
+        Entry(background_frame,
+              textvar=self._sphere_background,
+              width=10).pack(side=RIGHT)
         self.sphere_background = DEFAULT_SPHERE_BACKGROUND
-        self._sphere_background.pack(padx=5, pady=10)
-        self._sphere_background.bind("<Double-Button-1>",
-                                     self.choose_sphere_background)
 
         self._sphere_shading = LabelEntry(self._geometry_sphere_tab,
                                           label="shading",
