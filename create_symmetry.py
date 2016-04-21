@@ -1071,28 +1071,40 @@ def apply_color(        # <<<2
 def make_wallpaper_image(zs,     # <<<2
                          matrix,
                          pattern,
-                         lattice_basis,      # additional parameters
+                         basis,      # additional parameters
+                         N=1,
                          color_pattern="",
                          message_queue=None):
 
-    if color_pattern:
+    if pattern and color_pattern:
         cp = PATTERN[color_pattern, pattern]
         matrix = add_symmetries(matrix, cp["recipe"], cp["parity"])
-    else:
+    elif pattern:
         matrix = add_symmetries(matrix, PATTERN[pattern]["recipe"])
 
-    C = invert22(lattice_basis)
+    B = invert22(basis)
 
     res = np.zeros(zs.shape, complex)
 
     w1, w2 = 1, len(matrix)
     for (n, m) in matrix:
-        xs = zs.real
-        ys = zs.imag
-        np.add(res,
-               matrix[(n, m)] * np.exp(2j*pi*(n*(C[0][0]*xs+C[1][0]*ys) +
-                                              m*(C[0][1]*xs+C[1][1]*ys))),
-               out=res)
+        ZS = np.zeros(zs.shape, dtype=complex)
+
+        for k in range(0, N):
+            rho = complex(cos(2*pi*k/N),
+                          sin(2*pi*k/N))
+            _tmp = zs * rho
+            _xs = _tmp.real
+            _ys = _tmp.imag
+            _tmp = (n*(B[0][0]*_xs+B[1][0]*_ys) +
+                    m*(B[0][1]*_xs+B[1][1]*_ys)).astype(complex)
+            np.multiply(_tmp, 2j*pi, out=_tmp)
+            np.exp(_tmp, out=_tmp)
+            np.add(ZS, _tmp, out=ZS)
+        np.divide(ZS, N, out=ZS)
+        np.multiply(ZS, matrix[(n, m)], out=ZS)
+        np.add(res, ZS, out=res)
+
         if message_queue is not None:
             message_queue.put(w1/w2)
         w1 += 1
@@ -1205,43 +1217,6 @@ def make_sphere_background(zs, img, background="back.jpg", shade=128, stars=0):
 # >>>2
 
 
-def make_lattice_image(zs,          # <<<2
-                       matrix,
-                       basis=None,
-                       N=1,
-                       message_queue=None):
-    if basis is None:
-        basis = [[1, 0], [0, 1]]
-
-    B = invert22(basis)
-
-    res = np.zeros(zs.shape, dtype=complex)
-    w1, w2 = 1, len(matrix)
-    for (n, m) in matrix:
-        ZS = np.zeros(zs.shape, dtype=complex)
-
-        for k in range(0, N):
-            rho = complex(cos(2*pi*k/N),
-                          sin(2*pi*k/N))
-            _tmp = zs * rho
-            _xs = _tmp.real
-            _ys = _tmp.imag
-            _tmp = (n*(B[0][0]*_xs+B[1][0]*_ys) +
-                    m*(B[0][1]*_xs+B[1][1]*_ys)).astype(complex)
-            np.multiply(_tmp, 2j*pi, out=_tmp)
-            np.exp(_tmp, out=_tmp)
-            np.add(ZS, _tmp, out=ZS)
-        np.divide(ZS, N, out=ZS)
-        np.multiply(ZS, matrix[(n, m)], out=ZS)
-        np.add(res, ZS, out=res)
-
-        if message_queue is not None:
-            message_queue.put(w1/w2)
-        w1 += 1
-    return res
-# >>>2
-
-
 def make_image(color=None,     # <<<2
                world=None,
                pattern="",
@@ -1261,17 +1236,19 @@ def make_image(color=None,     # <<<2
         zs = plane_coordinates_to_sphere(zs, world["sphere_rotations"])
 
     if pattern == "":
-        res = make_lattice_image(zs,
-                                 matrix,
-                                 basis=params["basis"],
-                                 N=params["N"],
-                                 message_queue=message_queue)
+        res = make_wallpaper_image(zs,
+                                   matrix,
+                                   "",
+                                   basis=params["basis"],
+                                   N=params["N"],
+                                   message_queue=message_queue)
     elif PATTERN[pattern]["type"] in ["plane group",
                                       "color reversing plane group"]:
         res = make_wallpaper_image(zs,
                                    matrix,
                                    pattern,
                                    params["lattice_basis"],
+                                   N=params["N"],
                                    message_queue=message_queue)
     elif PATTERN[pattern]["type"] in ["sphere group", "frieze", "rosette"]:
         res = make_sphere_image(zs,
@@ -1343,11 +1320,6 @@ def background_output(     # <<<2
         info["name"] = p.replace("N", str(N))
         info["alt_name"] = PATTERN[p]["alt_name"]
         info["alt_name"] = info["alt_name"].replace("N", str(N))
-    elif function["tab"] == "raw":
-        info["type"] = "lattice"
-        N = function["raw_N"]
-        if N != 1:
-            info["type"] += "_{}fold_symmetry".format(N)
     else:
         assert False
     info["nb"] = 1
@@ -1486,6 +1458,13 @@ class LabelEntry(Frame):  # <<<2
         self.entry_widget.config(state=NORMAL)
         if self.label_widget is not None:
             self.label_widget.config(state=NORMAL)
+    # >>>3
+
+    def toggle(self):  # <<<3
+        if self.entry_widget.cget("state") == NORMAL:
+            self.disable()
+        else:
+            self.enable()
     # >>>3
 # >>>2
 
@@ -2311,8 +2290,6 @@ class Function(LabelFrame):     # <<<2
     def current_tab(self):      # <<<4
         if ("wallpaper" in self._tabs.tab(self._tabs.select(), "text")):
             return "wallpaper"
-        elif ("raw" in self._tabs.tab(self._tabs.select(), "text")):
-            return "raw"
         elif ("sphere" in self._tabs.tab(self._tabs.select(), "text")):
             return "sphere"
         else:
@@ -2326,8 +2303,6 @@ class Function(LabelFrame):     # <<<2
             self._tabs.select(self._wallpaper_tab)
         elif tab == "sphere":
             self._tabs.select(self._sphere_tab)
-        elif tab == "raw":
-            self._tabs.select(self._raw_tab)
     # >>>4
 
     @property
@@ -2401,16 +2376,6 @@ class Function(LabelFrame):     # <<<2
     # >>>4
 
     @property
-    def raw_N(self):     # <<<4
-        return self._raw_N.get()
-    # >>>4
-
-    @raw_N.setter
-    def raw_N(self, N):     # <<<4
-        self._raw_N.set(N)
-    # >>>4
-
-    @property
     def change_entry(self):     # <<<4
         return self._change_entry.get().strip()
     # >>>4
@@ -2463,6 +2428,16 @@ class Function(LabelFrame):     # <<<2
     # >>>4
 
     @property
+    def wallpaper_N(self):     # <<<4
+        return self._wallpaper_N.get()
+    # >>>4
+
+    @wallpaper_N.setter
+    def wallpaper_N(self, N):     # <<<4
+        self._wallpaper_N.set(N)
+    # >>>4
+
+    @property
     def sphere_pattern(self):    # <<<4
         return self._sphere_pattern.get().split()[0]
     # >>>4
@@ -2492,8 +2467,6 @@ class Function(LabelFrame):     # <<<2
             return self.wallpaper_pattern
         elif self.current_tab == "sphere":
             return self.sphere_pattern
-        elif self.current_tab == "raw":
-            return ""
         else:
             return ""
     # >>>4
@@ -2523,9 +2496,6 @@ class Function(LabelFrame):     # <<<2
 
         self._sphere_tab = Frame(self._tabs)
         self._tabs.add(self._sphere_tab, text="sphere")
-
-        self._raw_tab = Frame(self._tabs)
-        self._tabs.add(self._raw_tab, text="raw")
         # >>>4
 
         # wallpaper tab      <<<4
@@ -2562,31 +2532,17 @@ class Function(LabelFrame):     # <<<2
                                           convert=str_to_floats,
                                           width=7)
         self._lattice_params.pack(padx=5, pady=5)
+
+        self._wallpaper_N = LabelEntry(self._wallpaper_tab,
+                                       orientation="V",
+                                       label="forced rotational symmetry",
+                                       value=1,
+                                       convert=int,
+                                       width=3)
+        self._wallpaper_N.pack(padx=5, pady=5)
+        self._wallpaper_N.disable()
+        self._wallpaper_N.bind("<Double-Button-1>", sequence(self._wallpaper_N.toggle))
         # # >>>4
-
-        # raw tab   <<<4
-        self._basis_matrix1 = LabelEntry(self._raw_tab,
-                                         label="first vector",
-                                         value="1, 0",
-                                         convert=str_to_floats,
-                                         width=10)
-        self._basis_matrix2 = LabelEntry(self._raw_tab,
-                                         label="second vector",
-                                         value="0, 1",
-                                         convert=str_to_floats,
-                                         width=10)
-        self._basis_matrix1.grid(row=0, column=0, sticky=E,
-                                 padx=5, pady=(20, 0))
-        self._basis_matrix2.grid(row=1, column=0, sticky=E,
-                                 padx=5, pady=(0, 5))
-
-        self._raw_N = LabelEntry(self._raw_tab,
-                                 label="rotational symmetry",
-                                 value=1,
-                                 convert=int,
-                                 width=3)
-        self._raw_N.grid(row=2, column=0, padx=5, pady=20)
-        # >>>4
 
         # sphere tab        <<<4
         Label(self._sphere_tab,
@@ -2813,8 +2769,6 @@ class Function(LabelFrame):     # <<<2
     # >>>3
 
     def add_symmetries(self, M):        # <<<3
-        if self.current_tab == "raw":
-            return M
 
         if self.current_tab == "wallpaper":
             pattern = self.wallpaper_pattern
@@ -2832,8 +2786,6 @@ class Function(LabelFrame):     # <<<2
                                PATTERN[self.sphere_pattern]["recipe"],
                                PATTERN[self.sphere_pattern]["parity"]
                                .replace("N", str(self.sphere_N)))
-        elif self.current_tab == "raw":
-            pass
         else:
             assert False
         return M
@@ -2854,10 +2806,6 @@ class Function(LabelFrame):     # <<<2
                 "wallpaper_pattern": self.wallpaper_pattern,
                 "lattice_parameters": self.lattice_params,
                 "wallpaper_color_pattern": self.wallpaper_color_pattern,
-                # raw tab
-                "raw_basis": [self._basis_matrix1.get(),
-                              self._basis_matrix2.get()],
-                "raw_N": self.raw_N,
                 # sphere tab
                 "sphere_pattern": self.sphere_pattern,
                 "sphere_N": self.sphere_N,
@@ -2885,11 +2833,6 @@ class Function(LabelFrame):     # <<<2
             self.wallpaper_color_pattern = cfg["wallpaper_color_pattern"]
         if "lattice_parameters" in cfg:
             self.lattice_params = floats_to_str(cfg["lattice_parameters"])
-        if "raw_basis" in cfg:
-            self._basis_matrix1.set(floats_to_str(cfg["raw_basis"][0]))
-            self._basis_matrix2.set(floats_to_str(cfg["raw_basis"][1]))
-        if "raw_N" in cfg:
-            self.raw_N = cfg["raw_N"]
         if "sphere_pattern" in cfg:
             for i in range(len(S_NAMES)):
                 tmp = S_NAMES[i]
@@ -2962,14 +2905,11 @@ class Function(LabelFrame):     # <<<2
         if self.current_tab == "wallpaper":
             return {"lattice_basis": basis(self.wallpaper_pattern,
                                            *self.lattice_params),
-                    "color_pattern": self.wallpaper_color_pattern}
+                    "color_pattern": self.wallpaper_color_pattern,
+                    "N": self.wallpaper_N}
         elif self.current_tab == "sphere":
             return {"N": self.sphere_N,
                     "sphere_mode": self.sphere_mode}
-        elif self.current_tab == "raw":
-            return {"N": self.raw_N,
-                    "basis": [self._basis_matrix1.get(),
-                              self._basis_matrix2.get()]}
         else:
             assert False
     # >>>3
@@ -3489,11 +3429,9 @@ def main():     # <<<1
     --sphere=...                        name of sphere group
     --frieze=...                        name of frieze group
     --rosette=...                       name of frieze group
-    --raw=...                           rotation for arbitrary function
     --params=...                        additional parameters:
                                            basis for lattice (for wallpaper)
                                            nb of rotations for rosettes
-                                           basis for lattice (for raw)
 
     --color-config=...
     --world-config=...
@@ -3512,7 +3450,7 @@ def main():     # <<<1
             "output=", "size=", "geometry=", "modulus=", "angle=",
             "matrix=", "rotation-symmetry=",
             "preview",
-            "wallpaper=", "sphere", "frieze=", "rosette=", "raw=", "params=",
+            "wallpaper=", "sphere", "frieze=", "rosette=", "params=",
             "color-config=", "world-config=", "function-config="]
 
     try:
@@ -3605,8 +3543,6 @@ def main():     # <<<1
             function_config["tab"] = "sphere"
             function_config["sphere_pattern"] = a
             function_config["sphere_mode"] = "rosette"
-        elif o in ["--raw"]:
-            function_config["tab"] = "raw"
         elif o in ["--params"]:
             params = a
         elif o == "--preview":
