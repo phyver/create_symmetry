@@ -818,6 +818,7 @@ def is_rgb(s):  # <<<2
         return False
 # >>>2
 
+
 def eqn_indices(eq, n, m):        # <<<2
     """return a list of (s, (j, k))"""
     eq = eq.strip()
@@ -1265,7 +1266,8 @@ def make_image(color=None,     # <<<2
                                  basis=params["basis"],
                                  N=params["N"],
                                  message_queue=message_queue)
-    elif PATTERN[pattern]["type"] in ["plane group", "color reversing plane group"]:
+    elif PATTERN[pattern]["type"] in ["plane group",
+                                      "color reversing plane group"]:
         res = make_wallpaper_image(zs,
                                    matrix,
                                    pattern,
@@ -2177,7 +2179,6 @@ class World(LabelFrame):     # <<<2
     def enable_geometry_sphere_tab(self):
         self._geometry_tabs.tab(self._geometry_sphere_tab, state=NORMAL)
 
-
     def reset_geometry(self, *args):        # <<<3
         self.geometry = WORLD_GEOMETRY
         self.adjust_geometry()
@@ -2198,7 +2199,7 @@ class World(LabelFrame):     # <<<2
         delta_y = y_max - y_min
         self.geometry = (x_min + dx*delta_x,
                          x_max + dx*delta_x,
-                         y_min + dy*delta_y,
+                             y_min + dy*delta_y,
                          y_max + dy*delta_y)
     # >>>3
 
@@ -2555,7 +2556,6 @@ class Function(LabelFrame):     # <<<2
         self._wallpaper_color_combo.pack(padx=5, pady=5)
         self._wallpaper_color_combo.current(0)
 
-
         self._lattice_params = LabelEntry(self._wallpaper_tab,
                                           label="lattice parameters",
                                           value="1,1",
@@ -2610,7 +2610,7 @@ class Function(LabelFrame):     # <<<2
         self._sphere_N.pack(padx=5, pady=5)
 
         radio_frame = Frame(self._sphere_tab)
-        radio_frame.pack(padx=5, pady=(10,5))
+        radio_frame.pack(padx=5, pady=(10, 5))
         self._sphere_mode = StringVar()
         self._sphere_mode.set("sphere")
         Radiobutton(radio_frame,
