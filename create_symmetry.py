@@ -2374,26 +2374,6 @@ class Function(LabelFrame):     # <<<2
         self._random_noise.set(d)
     # >>>4
 
-    # @property
-    # def rosette(self):     # <<<4
-    #     return self._rosette.get()
-    # # >>>4
-
-    # @rosette.setter
-    # def rosette(self, b):     # <<<4
-    #     self._rosette.set(b)
-    # # >>>4
-
-    # @property
-    # def rosette_N(self):     # <<<4
-    #     return self._rosette_N.get()
-    # # >>>4
-
-    # @rosette_N.setter
-    # def rosette_N(self, N):     # <<<4
-    #     self._rosette_N.set(N)
-    # # >>>4
-
     @property
     def sphere_N(self):     # <<<4
         return self._sphere_N.get()
@@ -2938,13 +2918,6 @@ class Function(LabelFrame):     # <<<2
             else:
                 self._sphere_N.disable()
         # >>>4
-
-        # # rosette tab   <<<4
-        # if self.rosette:
-        #     self._rosette_N.enable()
-        # else:
-        #     self._rosette_N.disable()
-        # # >>>4
 
         # wallpaper tab     <<<4
         pattern = self.wallpaper_pattern
