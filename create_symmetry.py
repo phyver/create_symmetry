@@ -1086,7 +1086,7 @@ def make_wallpaper_image(zs,     # <<<2
 
     res = np.zeros(zs.shape, complex)
 
-    w1, w2 = 1, len(matrix)
+    w1, w2 = 1, len(matrix)*N
     for (n, m) in matrix:
         ZS = np.zeros(zs.shape, dtype=complex)
 
@@ -1101,13 +1101,12 @@ def make_wallpaper_image(zs,     # <<<2
             np.multiply(_tmp, 2j*pi, out=_tmp)
             np.exp(_tmp, out=_tmp)
             np.add(ZS, _tmp, out=ZS)
+            if message_queue is not None:
+                message_queue.put(w1/w2)
+            w1 += 1
         np.divide(ZS, N, out=ZS)
         np.multiply(ZS, matrix[(n, m)], out=ZS)
         np.add(res, ZS, out=res)
-
-        if message_queue is not None:
-            message_queue.put(w1/w2)
-        w1 += 1
     return res
 # >>>2
 
