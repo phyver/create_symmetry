@@ -1070,7 +1070,7 @@ def apply_color(        # <<<2
 def make_wallpaper_image(zs,     # <<<2
                          matrix,
                          pattern,
-                         lattice_params=None,      # additional parameters
+                         lattice_basis,      # additional parameters
                          color_pattern="",
                          message_queue=None):
 
@@ -1080,7 +1080,6 @@ def make_wallpaper_image(zs,     # <<<2
     else:
         matrix = add_symmetries(matrix, PATTERN[pattern]["recipe"])
 
-    lattice_basis = basis(pattern, *lattice_params)
     C = invert22(lattice_basis)
 
     res = np.zeros(zs.shape, complex)
@@ -1270,7 +1269,7 @@ def make_image(color=None,     # <<<2
         res = make_wallpaper_image(zs,
                                    matrix,
                                    pattern,
-                                   lattice_params=params["lattice_params"],
+                                   params["lattice_basis"],
                                    message_queue=message_queue)
     elif PATTERN[pattern]["type"] in ["sphere group", "frieze", "rosette"]:
         res = make_sphere_image(zs,
@@ -2512,6 +2511,16 @@ class Function(LabelFrame):     # <<<2
         else:
             return ""
     # >>>4
+
+    @property
+    def lattice_params(self):
+        return self._lattice_params.get()
+    # >>>4
+
+    @lattice_params.setter
+    def lattice_params(self, l):
+        self._lattice_params.set(floats_to_str(l))
+    # >>>4
     # >>>3
 
     def __init__(self, root):      # <<<3
@@ -2858,7 +2867,7 @@ class Function(LabelFrame):     # <<<2
                 "tab": self.current_tab,
                 # wallpaper tab
                 "wallpaper_pattern": self.wallpaper_pattern,
-                "lattice_parameters": self._lattice_params.get(),
+                "lattice_parameters": self.lattice_params,
                 "wallpaper_color_pattern": self.wallpaper_color_pattern,
                 # raw tab
                 "raw_basis": [self._basis_matrix1.get(),
@@ -2890,7 +2899,7 @@ class Function(LabelFrame):     # <<<2
         if "wallpaper_color_pattern" in cfg:
             self.wallpaper_color_pattern = cfg["wallpaper_color_pattern"]
         if "lattice_parameters" in cfg:
-            self._lattice_params.set(floats_to_str(cfg["lattice_parameters"]))
+            self.lattice_params = floats_to_str(cfg["lattice_parameters"])
         if "raw_basis" in cfg:
             self._basis_matrix1.set(floats_to_str(cfg["raw_basis"][0]))
             self._basis_matrix2.set(floats_to_str(cfg["raw_basis"][1]))
@@ -2943,21 +2952,21 @@ class Function(LabelFrame):     # <<<2
         if lattice == "general":
             self._lattice_params.enable()
             self._lattice_params.label_widget.config(text="x, y")
-            self._lattice_params.set("1, 1")
+            self.lattice_params = [1, 1]
         elif lattice == "rhombic":
             self._lattice_params.enable()
             self._lattice_params.label_widget.config(text="b")
-            self._lattice_params.set(".5")
+            self.lattice_params = [.5]
         elif lattice == "rectangular":
             self._lattice_params.enable()
-            self._lattice_params.set(".5")
+            self.lattice_params = [.5]
             self._lattice_params.label_widget.config(text="H")
         elif lattice == "square":
-            self._lattice_params.set("")
+            self.lattice_params = []
             self._lattice_params.label_widget.config(text="lattice parameters")
             self._lattice_params.disable()
         elif lattice == "hexagonal":
-            self._lattice_params.set("")
+            self.lattice_params = []
             self._lattice_params.label_widget.config(text="lattice parameters")
             self._lattice_params.disable()
         else:
@@ -2973,7 +2982,8 @@ class Function(LabelFrame):     # <<<2
 
     def get_pattern_params(self):       # <<<3
         if self.current_tab == "wallpaper":
-            return {"lattice_params": self._lattice_params.get(),
+            return {"lattice_basis": basis(self.wallpaper_pattern,
+                                           *self.lattice_params),
                     "color_pattern": self.wallpaper_color_pattern}
         elif self.current_tab == "sphere":
             return {"N": self.sphere_N,
