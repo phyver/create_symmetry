@@ -2470,6 +2470,16 @@ class Function(LabelFrame):     # <<<2
     # >>>4
 
     @property
+    def sphere_frieze(self):     # <<<4
+        return self._sphere_frieze.get()
+    # >>>4
+
+    @sphere_frieze.setter
+    def sphere_frieze(self, b):     # <<<4
+        self._sphere_frieze.set(b)
+    # >>>4
+
+    @property
     def raw_N(self):     # <<<4
         return self._raw_N.get()
     # >>>4
@@ -2504,6 +2514,8 @@ class Function(LabelFrame):     # <<<2
             tmp = tmp.split()
             if p in tmp:
                 self._wallpaper_combo.current(i)
+                return
+        self._wallpaper_combo.current(0)
     # >>>4
 
     @property
@@ -2525,6 +2537,8 @@ class Function(LabelFrame):     # <<<2
             tmp = tmp.split()
             if p in tmp:
                 self._wallpaper_color_combo.current(i)
+                return
+        self._wallpaper_color_combo.current(0)
     # >>>4
 
     @property
@@ -2542,6 +2556,8 @@ class Function(LabelFrame):     # <<<2
             tmp = tmp.split()
             if p in tmp:
                 self._sphere_combo.current(i)
+                return
+        self._sphere_combo.current(0)
     # >>>4
 
     @property
@@ -2559,6 +2575,8 @@ class Function(LabelFrame):     # <<<2
             tmp = tmp.split()
             if p in tmp:
                 self._frieze_combo.current(i)
+                return
+        self._frieze_combo.current(0)
     # >>>4
 
     @property
@@ -2713,6 +2731,15 @@ class Function(LabelFrame):     # <<<2
                                     convert=int,
                                     width=2)
         self._sphere_N.pack(padx=5, pady=5)
+
+        self._sphere_frieze = BooleanVar()
+        self._sphere_frieze.set(False)
+        self._sphere_frieze_button = Checkbutton(
+                self._sphere_tab, text="frieze",
+                variable=self._sphere_frieze,
+                onvalue=True, offvalue=False,
+                command=self.update)
+        self._sphere_frieze_button.pack(padx=5, pady=5)
         # >>>4
 
         # display matrix    <<<4
@@ -2953,6 +2980,7 @@ class Function(LabelFrame):     # <<<2
                 # sphere tab
                 "sphere_pattern": self.sphere_pattern,
                 "sphere_N": self.sphere_N,
+                "sphere_frieze": self.sphere_frieze,
                 }
     # >>>3
 
@@ -2996,10 +3024,11 @@ class Function(LabelFrame):     # <<<2
                     self._sphere_combo.current(i)
         if "sphere_N" in cfg:
             self.sphere_N = cfg["sphere_N"]
+        if "sphere_frieze" in cfg:
+            self.sphere_frieze = cfg["sphere_frieze"]
         self.update()
     # >>>3
 
-    # refactor
     def set_frieze_type(self, *args):       # <<<3
         frieze_combo.select_clear()
         self.function["frieze_type"] = frieze_combo.stringvar.get()
@@ -3007,10 +3036,23 @@ class Function(LabelFrame):     # <<<2
 
     def update(self, *args):     # <<<3
         # sphere tab  <<<4
-        if "N" in self.sphere_pattern:
+        pattern = self.sphere_pattern
+        if self.sphere_frieze:
+            self._sphere_combo["values"] = F_NAMES
+            pattern = pattern.replace("N", "∞")
+            self.sphere_pattern = pattern
+            self._sphere_N.label_widget.configure(text="period")
             self._sphere_N.enable()
         else:
-            self._sphere_N.disable()
+            pattern = pattern.replace("∞", "N")
+            self._sphere_combo["values"] = S_NAMES
+            self.sphere_pattern = pattern
+            self._sphere_N.label_widget.configure(text="N")
+            if "N" in self.sphere_pattern:
+                self._sphere_N.enable()
+            else:
+                self._sphere_N.disable()
+
         # >>>4
 
         # rosette tab   <<<4
@@ -3192,6 +3234,10 @@ class CreateSymmetry(Tk):      # <<<2
         # <<<4
         self.function._tabs.bind("<<NotebookTabChanged>>",
                                  self.update_sphere_tab)
+        self.function._sphere_frieze_button.bind(
+                "<Button-1>",
+                self.update_sphere_tab,
+                add="+")
         # >>>4
 
         # list of matrices, for UNDO
@@ -3274,6 +3320,10 @@ Keyboard shortcuts:
     def update_sphere_tab(self, *args):       # <<<3
         if self.function.current_tab == "sphere":
             self.world.enable_geometry_sphere_tab()
+            if self.function.sphere_frieze:
+                self.world.stereographic = True
+            else:
+                self.world.stereographic = False
         else:
             self.world.disable_geometry_sphere_tab()
     # >>>3
