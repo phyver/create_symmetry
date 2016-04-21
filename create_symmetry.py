@@ -3172,6 +3172,8 @@ class CreateSymmetry(Tk):      # <<<2
                                           self.make_preview))
         self.bind("<Control-r>", sequence(self.redo,
                                           self.make_preview))
+
+        self.world._canvas.bind("<Double-Button-1>", self.show_bigger_preview)
         # >>>4
 
         # list of matrices, for UNDO
@@ -3311,6 +3313,7 @@ Keyboard shortcuts:
                 if image is not None:
                     # FIXME: methode change_preview in World class
                     self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
+                    self.world._canvas._img = image
                     self.world._canvas.delete(self.world._image_id)
                     # self.world._canvas.delete(ALL)
                     self.world._image_id = self.world._canvas.create_image(
@@ -3318,6 +3321,7 @@ Keyboard shortcuts:
                                     image=self.world._canvas.tk_img)
                 break
 
+        # <<<4
         #         # draw tile
         #         if self.function.lattice_basis is not None:
 
@@ -3380,6 +3384,7 @@ Keyboard shortcuts:
         #                     self.world._canvas.create_oval(
         #                         x0-10, y0-10, x0+10, y0+10,
         #                         fill="", outline="white", width=1))
+        # >>>4
 
         self.after(100, self.update_GUI)
     # >>>3
@@ -3462,6 +3467,26 @@ Keyboard shortcuts:
                     self.undo_list.append(self.function.matrix)
         except Error as e:
             self.message_queue.put("* {}".format(e))
+    # >>>3
+
+    def show_bigger_preview(self, *args, alpha=2):       # <<<3
+        try:
+            img = self.world._canvas._img
+            width, height = img.size
+            width = alpha * width
+            height = alpha * height
+            big_img = img.resize((width, height), resample=PIL.Image.BICUBIC)
+            dialog = Toplevel(self)
+            dialog.resizable(width=False, height=False)
+            dialog.tk_img = PIL.ImageTk.PhotoImage(big_img)
+            canvas = Canvas(dialog, width=width, height=height)
+            canvas.pack()
+            canvas.create_image((width/2, height/2), image=dialog.tk_img)
+            dialog.bind("<Key>", sequence(dialog.destroy, self.deiconify))
+            dialog.bind("<Button-1>", sequence(dialog.destroy, self.deiconify))
+            self.withdraw()
+        except AttributeError:
+            pass
     # >>>3
 
     def translate_rotate(self, dx, dy, dz=0):   # <<<3
