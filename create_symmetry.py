@@ -1204,7 +1204,7 @@ def make_sphere_background(zs, img, background="back.jpg", shade=128, stars=0):
     mask = (zs.real**2 + zs.imag**2 > 1).astype(int).transpose(1, 0)
 
     mask_background = PIL.Image.fromarray(
-            np.array(mask*(255-shade), dtype=np.uint8),
+            np.array(mask*shade, dtype=np.uint8),
             "L")
     background_img.paste(0, None, mask=mask_background)
 
