@@ -1351,7 +1351,11 @@ def make_image(color=None,     # <<<2
 
     if PATTERN[pattern]["type"] in ["plane group",
                                     "color reversing plane group"]:
-        make_tile(world["geometry"], (world["modulus"], world["angle"]), pattern, params["lattice_basis"], img)
+        make_tile(world["geometry"],
+                  (world["modulus"], world["angle"]),
+                  pattern,
+                  params["lattice_basis"],
+                  img)
 
     if world["sphere_background"] and not world["sphere_projection"]:
         return make_sphere_background(_zs,
@@ -1364,9 +1368,14 @@ def make_image(color=None,     # <<<2
 # >>>2
 
 
-def make_tile(geometry, transformation, pattern, basis, img):
-
-    # print(basis)
+def make_tile(geometry,         # <<<2
+              transformation,
+              pattern,
+              basis,
+              img,
+              draw_tile=True,
+              draw_orbifold=True,
+              draw_mirrors=False):
 
     draw = ImageDraw.Draw(img)
 
@@ -1386,108 +1395,130 @@ def make_tile(geometry, transformation, pattern, basis, img):
         return px, py
 
     def XY_to_pixel(X, Y):
-        # [a, b], [c, d] = invert22(basis)
         [a, b], [c, d] = basis
         x = a*X + c*Y
         y = b*X + d*Y
         return xy_to_pixel(x, y)
 
+    def disks(*coord, color="white"):
+        R = 5
+        for i in range(0, len(coord), 2):
+            x, y = XY_to_pixel(coord[i], coord[i+1])
+            draw.ellipse((x-R, y-R, x+R, y+R), fill=color)
+
+    def line(*coord, color="white", width=1):
+        for i in range(2, len(coord), 2):
+            x1, y1 = XY_to_pixel(coord[i-2], coord[i-1])
+            x2, y2 = XY_to_pixel(coord[i], coord[i+1])
+            draw.line((x1, y1, x2, y2), fill=color, width=width)
+
+    def mirrors(*coord, color="white", width=1):
+        if draw_mirrors:
+            for i in range(0, len(coord), 4):
+                x1, y1 = XY_to_pixel(coord[i], coord[i+1])
+                x2, y2 = XY_to_pixel(coord[i+2], coord[i+3])
+                draw.line((x1, y1, x2, y2), fill=color, width=width)
+
     # tile
-    x0, y0 = XY_to_pixel(0, 0)
-    x1, y1 = XY_to_pixel(0, 1)
-    x2, y2 = XY_to_pixel(1, 1)
-    x3, y3 = XY_to_pixel(1, 0)
-    draw.line((x0, y0, x1, y1), fill="white", width=2)
-    draw.line((x1, y1, x2, y2), fill="white", width=2)
-    draw.line((x2, y2, x3, y3), fill="white", width=2)
-    draw.line((x3, y3, x0, y0), fill="white", width=2)
+    if draw_tile:
+        line(0, 0, 0, 1, 1, 1, 1, 0, 0, 0, color="white", width=1)
 
-    R = 5
-    if pattern == "o":
-        pass
-    elif pattern == "2222":
-        for X, Y in [(0, 0), (0, 1/2), (1/2, 0), (1/2, 1/2)]:
-            x, y = XY_to_pixel(X, Y)
-            draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
-    elif pattern == "442":
-        for X, Y in [(0, 0), (1/2, 0), (1/2, 1/2)]:
-            x, y = XY_to_pixel(X, Y)
-            draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
-    elif pattern == "333":
-        for X, Y in [(0, 0), (1/3, 2/3), (2/3, 1/3)]:
-            x, y = XY_to_pixel(X, Y)
-            draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
-    elif pattern == "632":
-        for X, Y in [(0, 0), (1/2, 0), (2/3, 1/3)]:
-            x, y = XY_to_pixel(X, Y)
-            draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
-    elif pattern == "*2222":
-        for X, Y in [(0, 0), (0, 1/2), (1/2, 0), (1/2, 1/2)]:
-            x, y = XY_to_pixel(X, Y)
-            draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
-    elif pattern == "*442":
-        for X, Y in [(0, 0), (1/2, 0), (1/2, 1/2)]:
-            x, y = XY_to_pixel(X, Y)
-            draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
-    elif pattern == "*333":
-        for X, Y in [(0, 0), (1/3, 2/3), (2/3, 1/3)]:
-            x, y = XY_to_pixel(X, Y)
-            draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
-    elif pattern == "*632":
-        for X, Y in [(0, 0), (1/2, 0), (2/3, 1/3)]:
-            x, y = XY_to_pixel(X, Y)
-            draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
-    elif pattern == "4*2":
-        x, y = XY_to_pixel(1/2, 0)
-        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
-        x, y = XY_to_pixel(0, 0)
-        draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
-    elif pattern == "2*22":
-        x, y = XY_to_pixel(0, 0)
-        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
-        x, y = XY_to_pixel(1/2, 1/2)
-        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
-        x, y = XY_to_pixel(0, 1/2)
-        draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
-    elif pattern == "22*":
-        x, y = XY_to_pixel(0, 0)
-        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
-        x, y = XY_to_pixel(1/2, 0)
-        draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
-        x, y = XY_to_pixel(0, 1/2)
-        draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
-    elif pattern == "3*3":
-        x, y = XY_to_pixel(2/3, 1/3)
-        draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
-        x, y = XY_to_pixel(0, 0)
-        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
-    elif pattern == "**":
-        x, y = XY_to_pixel(0, 0)
-        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
-        x, y = XY_to_pixel(0, 1/2)
-        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
+    if draw_orbifold:
+        if pattern == "o":
+            line(1, 0, 0, 0, 0, 1, color="white", width=3)
+        elif pattern == "2222":
+            disks(0, 0, 0, 1/2, 1/2, 0, 1/2, 1/2, color="blue")
+        elif pattern == "442":
+            disks(0, 0, 1/2, 0, 1/2, 1/2, color="blue")
+        elif pattern == "333":
+            disks(0, 0, 1/3, 2/3, 2/3, 1/3, color="blue")
+        elif pattern == "632":
+            disks(0, 0, 1/2, 0, 2/3, 1/3, color="blue")
+        elif pattern == "*2222":
+            line(0, 0, 0, 1/2, 1/2, 1/2, 1/2, 0, 0, 0, color="red", width=3)
+            disks(0, 0, 0, 1/2, 1/2, 1/2, 1/2, 0, color="red")
+            mirrors(0, -1/2, 0, 1,
+                    -1/2, 0, 1, 0,
+                    -1/2, 1/2, 1/2, 1/2,
+                    0, 1/2, 1, 1/2,
+                    1/2, -1/2, 1/2, 1/2,
+                    1/2, 0, 1/2, 1,
+                    color="red")
+        elif pattern == "*442":
+            line(0, 0, 1/2, 0, 1/2, 1/2, 0, 0, color="red", width=3)
+            disks(0, 0, 1/2, 0, 1/2, 1/2, color="red")
+            mirrors(1/2, 1, 1/2, -1/2,
+                    -1/2, 0, 1, 0,
+                    -1/2, -1/2, 1, 1,
+                    0, -1/2, 0, 1/2,
+                    0, 1/2, 1, 1/2,
+                    0, 1, 1, 0,
+                    -1/2, 1/2, 1/2, -1/2,
+                    color="red")
+        elif pattern == "*333":
+            line(0, 0, 1/3, 2/3, 2/3, 1/3, 0, 0, color="red", width=3)
+            disks(0, 0, 1/3, 2/3, 2/3, 1/3, color="red")
+            mirrors(-1/3, -2/3, 2/3, 4/3,
+                    -2/3, -1/3, 4/3, 2/3,
+                    1, 0, 0, 1,
+                    1/3, -1/3, -1/3, 1/3,
+                    1/3, -1/3, 1, 1,
+                    1, 1, -1/3, 1/3,
+                    color="red")
+        elif pattern == "*632":
+            line(0, 0, 1/2, 0, 2/3, 1/3, 0, 0, color="red", width=3)
+            disks(0, 0, 1/2, 0, 2/3, 1/3, color="red")
+            mirrors(-2/3, 0, 1, 0,
+                    -1/3, -2/3, 1/3, 2/3,
+                    -2/3, -1/3, 4/3, 2/3,
+                    1, 0, 1/3, 2/3,
+                    1, 1, 1/3, -1/3,
+                    1/3, -1/3, -1/3, 1/3,
+                    0, 2/3, 0, -2/3,
+                    -2/3, -2/3, 2/3, 2/3,
+                    color="red")
+        elif pattern == "4*2":
+            disks(0, 0, color="blue")
+            disks(1/2, 0, color="red")
+            mirrors(0, 0, 1, 0,
+                    1/2, 1/2, 1/2, -1/2,
+                    color="red")
+        elif pattern == "2*22":
+            disks(0, 1/2, color="blue")
+            disks(0, 0, 1/2, 1/2, color="red")
+            mirrors(-1/2, -1/2, 1, 1,
+                    0, 1, 1, 0,
+                    1/2, -1/2, -1/2, 1/2,
+                    color="red")
+        elif pattern == "3*3":
+            disks(2/3, 1/3, color="blue")
+            disks(0, 0, color="red")
+            mirrors(-2/3, 0, 2/3, 0,
+                    0, -2/3, 0, 2/3,
+                    -2/3, -2/3, 2/3, 2/3,
+                    color="red")
+        elif pattern == "**":
+            # disks(0, 0, 0, 1/2, color="red")
+            mirrors(0, 0, 1, 0,
+                    0, 1/2, 1, 1/2,
+                    color="red", width=2)
+        elif pattern == "22×":
+            disks(0, 0, 1/2, 0, color="blue")
+            disks(0, 1/4, 1/2, 1/4, color="lightgreen")
+            line(0, 1/4, 1/2, 1/4, color="lightgreen", width=3)
 
-    elif pattern == "××":
-        pass
-    elif pattern == "*×":
-        x, y = XY_to_pixel(0, 0)
-        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
-        pass
-    elif pattern == "22×":
-        x1, y1 = XY_to_pixel(0, 1/4)
-        x2, y2 = XY_to_pixel(1/2, 1/4)
-        draw.line((x1, y1, x2, y2), fill="lightgreen")
-        draw.ellipse((x1-R, y1-R, x1+R, y1+R), fill="lightgreen")
-        draw.ellipse((x2-R, y2-R, x2+R, y2+R), fill="lightgreen")
-
-        x, y = XY_to_pixel(0, 0)
-        draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
-        x, y = XY_to_pixel(1/2, 0)
-        draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
-
-
-
-
+        elif pattern == "22*":
+            # TODO
+            disks(0, 1/2, 1/2, 0, color="blue")
+            disks(0, 0, color="red")
+        elif pattern == "*×":
+            # TODO
+            disks(0, 0, color="red")
+            pass
+        elif pattern == "××":
+            # TODO
+            pass
+# >>>2
 # >>>1
 
 
