@@ -6,6 +6,7 @@
 
 # image manipulation (Pillow)
 import PIL
+from PIL import ImageDraw
 import PIL.ImageTk
 from PIL.ImageColor import getrgb
 
@@ -1011,6 +1012,27 @@ def make_coordinates_array(         # <<<2
 # >>>2
 
 
+def plane_coordinates_to_sphere(zs, rotations=(0, 0, 0)):       # <<<2
+    x = zs.real
+    y = zs.imag
+    with np.errstate(invalid='ignore'):
+        z = np.sqrt(1 - x**2 - y**2)
+
+    theta_x, theta_y, theta_z = rotations
+    theta_x = theta_x * pi / 180
+    theta_y = theta_y * pi / 180
+    theta_z = theta_z * pi / 180
+    R = rotation_matrix(theta_x, theta_y, theta_z)
+
+    _x = R[0][0]*x + R[0][1]*y + R[0][2]*z
+    _y = R[1][0]*x + R[1][1]*y + R[1][2]*z
+    _z = R[2][0]*x + R[2][1]*y + R[2][2]*z
+
+    zs = _x/(1-_z) + 1j*_y/(1-_z)
+    return zs
+# >>>2
+
+
 def apply_color(        # <<<2
         res,
         filename=None,                  # image for the colorwheel image
@@ -1111,27 +1133,6 @@ def make_wallpaper_image(zs,     # <<<2
 # >>>2
 
 
-def plane_coordinates_to_sphere(zs, rotations=(0, 0, 0)):       # <<<2
-    x = zs.real
-    y = zs.imag
-    with np.errstate(invalid='ignore'):
-        z = np.sqrt(1 - x**2 - y**2)
-
-    theta_x, theta_y, theta_z = rotations
-    theta_x = theta_x * pi / 180
-    theta_y = theta_y * pi / 180
-    theta_z = theta_z * pi / 180
-    R = rotation_matrix(theta_x, theta_y, theta_z)
-
-    _x = R[0][0]*x + R[0][1]*y + R[0][2]*z
-    _y = R[1][0]*x + R[1][1]*y + R[1][2]*z
-    _z = R[2][0]*x + R[2][1]*y + R[2][2]*z
-
-    zs = _x/(1-_z) + 1j*_y/(1-_z)
-    return zs
-# >>>2
-
-
 def make_sphere_image(zs,      # <<<2
                       matrix,
                       pattern,
@@ -1216,71 +1217,6 @@ def make_sphere_background(zs, img, background="back.jpg", shade=128, stars=0):
 # >>>2
 
 
-def make_image(color=None,     # <<<2
-               world=None,
-               pattern="",
-               matrix=None,
-               message_queue=None,
-               stretch_color=False,
-               **params):
-
-    zs = make_coordinates_array(world["size"],
-                                world["geometry"],
-                                world["modulus"],
-                                world["angle"])
-    _zs = zs
-
-    if not world["sphere_projection"]:
-        _zs = np.copy(zs)
-        zs = plane_coordinates_to_sphere(zs, world["sphere_rotations"])
-
-    if pattern == "":
-        res = make_wallpaper_image(zs,
-                                   matrix,
-                                   "",
-                                   basis=params["basis"],
-                                   N=params["N"],
-                                   message_queue=message_queue)
-    elif PATTERN[pattern]["type"] in ["plane group",
-                                      "color reversing plane group"]:
-        res = make_wallpaper_image(zs,
-                                   matrix,
-                                   pattern,
-                                   params["lattice_basis"],
-                                   N=params["N"],
-                                   message_queue=message_queue)
-    elif PATTERN[pattern]["type"] in ["sphere group", "frieze", "rosette"]:
-        res = make_sphere_image(zs,
-                                matrix,
-                                pattern,
-                                N=params["N"],
-                                unwind=params["sphere_mode"] == "frieze",
-                                message_queue=message_queue)
-    else:
-        print(PATTERN[pattern]["type"])
-        assert False
-
-    if stretch_color:
-        np.divide(res, np.sqrt(1 + res.real**2 * res.imag**2), out=res)
-
-    img = apply_color(res,
-                      color["filename"],
-                      color["geometry"],
-                      color["modulus"],
-                      color["angle"],
-                      color["color"])
-
-    if world["sphere_background"] and not world["sphere_projection"]:
-        return make_sphere_background(_zs,
-                                      img,
-                                      background=world["sphere_background"],
-                                      shade=world["sphere_shading"],
-                                      stars=world["sphere_stars"])
-    else:
-        return img
-# >>>2
-
-
 def background_output(     # <<<2
         message_queue=None,
         output_message_queue=None, **config):
@@ -1357,6 +1293,201 @@ $CREATE_SYM --color-config='{color_config:}' \\
     cs.write(cmd)
     cs.close()
 # >>>2
+
+
+def make_image(color=None,     # <<<2
+               world=None,
+               pattern="",
+               matrix=None,
+               message_queue=None,
+               stretch_color=False,
+               **params):
+
+    zs = make_coordinates_array(world["size"],
+                                world["geometry"],
+                                world["modulus"],
+                                world["angle"])
+    _zs = zs
+
+    if not world["sphere_projection"]:
+        _zs = np.copy(zs)
+        zs = plane_coordinates_to_sphere(zs, world["sphere_rotations"])
+
+    if pattern == "":
+        res = make_wallpaper_image(zs,
+                                   matrix,
+                                   "",
+                                   basis=params["basis"],
+                                   N=params["N"],
+                                   message_queue=message_queue)
+    elif PATTERN[pattern]["type"] in ["plane group",
+                                      "color reversing plane group"]:
+        res = make_wallpaper_image(zs,
+                                   matrix,
+                                   pattern,
+                                   params["lattice_basis"],
+                                   N=params["N"],
+                                   message_queue=message_queue)
+    elif PATTERN[pattern]["type"] in ["sphere group", "frieze", "rosette"]:
+        res = make_sphere_image(zs,
+                                matrix,
+                                pattern,
+                                N=params["N"],
+                                unwind=params["sphere_mode"] == "frieze",
+                                message_queue=message_queue)
+    else:
+        print(PATTERN[pattern]["type"])
+        assert False
+
+    if stretch_color:
+        np.divide(res, np.sqrt(1 + res.real**2 * res.imag**2), out=res)
+
+    img = apply_color(res,
+                      color["filename"],
+                      color["geometry"],
+                      color["modulus"],
+                      color["angle"],
+                      color["color"])
+
+    if PATTERN[pattern]["type"] in ["plane group",
+                                    "color reversing plane group"]:
+        make_tile(world["geometry"], (world["modulus"], world["angle"]), pattern, params["lattice_basis"], img)
+
+    if world["sphere_background"] and not world["sphere_projection"]:
+        return make_sphere_background(_zs,
+                                      img,
+                                      background=world["sphere_background"],
+                                      shade=world["sphere_shading"],
+                                      stars=world["sphere_stars"])
+    else:
+        return img
+# >>>2
+
+
+def make_tile(geometry, transformation, pattern, basis, img):
+
+    # print(basis)
+
+    draw = ImageDraw.Draw(img)
+
+    modulus, angle = transformation
+
+    x_min, x_max, y_min, y_max = geometry
+    width, height = img.size
+
+    def xy_to_pixel(x, y):
+        z = modulus * complex(cos(angle), sin(angle)) * complex(x, y)
+        x = z.real
+        y = z.imag
+        delta_x = (x_max - x_min) / (width-1)
+        delta_y = (y_max - y_min) / (height-1)
+        px = (x-x_min) / delta_x
+        py = (y_max-y) / delta_y
+        return px, py
+
+    def XY_to_pixel(X, Y):
+        # [a, b], [c, d] = invert22(basis)
+        [a, b], [c, d] = basis
+        x = a*X + c*Y
+        y = b*X + d*Y
+        return xy_to_pixel(x, y)
+
+    # tile
+    x0, y0 = XY_to_pixel(0, 0)
+    x1, y1 = XY_to_pixel(0, 1)
+    x2, y2 = XY_to_pixel(1, 1)
+    x3, y3 = XY_to_pixel(1, 0)
+    draw.line((x0, y0, x1, y1), fill="white", width=2)
+    draw.line((x1, y1, x2, y2), fill="white", width=2)
+    draw.line((x2, y2, x3, y3), fill="white", width=2)
+    draw.line((x3, y3, x0, y0), fill="white", width=2)
+
+    R = 5
+    if pattern == "o":
+        pass
+    elif pattern == "2222":
+        for X, Y in [(0, 0), (0, 1/2), (1/2, 0), (1/2, 1/2)]:
+            x, y = XY_to_pixel(X, Y)
+            draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
+    elif pattern == "442":
+        for X, Y in [(0, 0), (1/2, 0), (1/2, 1/2)]:
+            x, y = XY_to_pixel(X, Y)
+            draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
+    elif pattern == "333":
+        for X, Y in [(0, 0), (1/3, 2/3), (2/3, 1/3)]:
+            x, y = XY_to_pixel(X, Y)
+            draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
+    elif pattern == "632":
+        for X, Y in [(0, 0), (1/2, 0), (2/3, 1/3)]:
+            x, y = XY_to_pixel(X, Y)
+            draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
+    elif pattern == "*2222":
+        for X, Y in [(0, 0), (0, 1/2), (1/2, 0), (1/2, 1/2)]:
+            x, y = XY_to_pixel(X, Y)
+            draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
+    elif pattern == "*442":
+        for X, Y in [(0, 0), (1/2, 0), (1/2, 1/2)]:
+            x, y = XY_to_pixel(X, Y)
+            draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
+    elif pattern == "*333":
+        for X, Y in [(0, 0), (1/3, 2/3), (2/3, 1/3)]:
+            x, y = XY_to_pixel(X, Y)
+            draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
+    elif pattern == "*632":
+        for X, Y in [(0, 0), (1/2, 0), (2/3, 1/3)]:
+            x, y = XY_to_pixel(X, Y)
+            draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
+    elif pattern == "4*2":
+        x, y = XY_to_pixel(1/2, 0)
+        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
+        x, y = XY_to_pixel(0, 0)
+        draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
+    elif pattern == "2*22":
+        x, y = XY_to_pixel(0, 0)
+        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
+        x, y = XY_to_pixel(1/2, 1/2)
+        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
+        x, y = XY_to_pixel(0, 1/2)
+        draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
+    elif pattern == "22*":
+        x, y = XY_to_pixel(0, 0)
+        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
+        x, y = XY_to_pixel(1/2, 0)
+        draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
+        x, y = XY_to_pixel(0, 1/2)
+        draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
+    elif pattern == "3*3":
+        x, y = XY_to_pixel(2/3, 1/3)
+        draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
+        x, y = XY_to_pixel(0, 0)
+        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
+    elif pattern == "**":
+        x, y = XY_to_pixel(0, 0)
+        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
+        x, y = XY_to_pixel(0, 1/2)
+        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
+
+    elif pattern == "××":
+        pass
+    elif pattern == "*×":
+        x, y = XY_to_pixel(0, 0)
+        draw.rectangle((x-R, y-R, x+R, y+R), fill="red")
+        pass
+    elif pattern == "22×":
+        x1, y1 = XY_to_pixel(0, 1/4)
+        x2, y2 = XY_to_pixel(1/2, 1/4)
+        draw.line((x1, y1, x2, y2), fill="lightgreen")
+        draw.ellipse((x1-R, y1-R, x1+R, y1+R), fill="lightgreen")
+        draw.ellipse((x2-R, y2-R, x2+R, y2+R), fill="lightgreen")
+
+        x, y = XY_to_pixel(0, 0)
+        draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
+        x, y = XY_to_pixel(1/2, 0)
+        draw.ellipse((x-R, y-R, x+R, y+R), fill="blue")
+
+
+
+
 # >>>1
 
 
@@ -3579,7 +3710,7 @@ def main():     # <<<1
     # color_config["modulus"] = 1.5
 
     # color_config["modulus"] = 2
-    # function_config["wallpaper_pattern"] = "4*2"
+    function_config["wallpaper_pattern"] = "××"
     # function_config["wallpaper_color_pattern"] = "*442"
     # function_config["matrix"] = { (0,1): 1 }
 
