@@ -19,6 +19,7 @@ import tkinter.font
 from tkinter import filedialog
 
 # misc functions
+import copy
 import getopt
 import sys
 import os.path
@@ -223,102 +224,53 @@ PATTERN = {     # <<<1
         "description": "icosahedral symmetry",
         },
     'NN': {
-        "alt_name": "CN",
+        "alt_name": "CN p111",
         "recipe": "",
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
         "description": "cyclic symmetry",
         },
     '22N': {
-        "alt_name": "DN",
+        "alt_name": "DN p211",
         "recipe": "n,m = -n,-m",
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
         "description": "dihedral symmetry",
         },
     '*NN': {
-        "alt_name": "CNv",
+        "alt_name": "CNv p1m1",
         "recipe": "n,m = m,n",
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
         "description": "cyclic symmetry",
         },
     'N*': {
-        "alt_name": "CNh",
+        "alt_name": "CNh p11m",
         "recipe": "n,m = -m,-n",
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
         "description": "cyclic symmetry",
         },
     '*22N': {
-        "alt_name": "DNh",
+        "alt_name": "DNh p2mm",
         "recipe": "n,m = m,n = -n,-m = -m,-n",
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
         "description": "dihedral symmetry",
         },
     'N×': {
-        "alt_name": "S2N",
+        "alt_name": "S2N p11g",
         "recipe": "n,m = -{n+m}(-m,-n)",
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
         "description": "cyclic symmetry",
         },
     '2*N': {
-        "alt_name": "DNd",
+        "alt_name": "DNd p2mg",
         "recipe": "n,m = -n,-m = -{n+m}(-m,-n) = -{n+m}(m,n)",
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
         "description": "dihedral symmetry",
-        },
-    '∞∞': {
-        "alt_name": "p111",
-        "recipe": "",
-        "parity": "",
-        "type": "frieze",
-        "description": "",
-        },
-    '22∞': {
-        "alt_name": "p211",
-        "recipe": "n,m = -n,-m",
-        "parity": "",
-        "type": "frieze",
-        "description": "",
-        },
-    '*∞∞': {
-        "alt_name": "p1m1",
-        "recipe": "n,m = m,n",
-        "parity": "",
-        "type": "frieze",
-        "description": "",
-        },
-    '∞*': {
-        "alt_name": "p11m",
-        "recipe": "n,m = -m,-n",
-        "parity": "",
-        "type": "frieze",
-        "description": "",
-        },
-    '*22∞': {
-        "alt_name": "p2mm",
-        "recipe": "n,m = m,n = -n,-m = -m,-n",
-        "parity": "",
-        "type": "frieze",
-        "description": "",
-        },
-    '∞×': {
-        "alt_name": "p11g",
-        "recipe": "n,m = -{n+m}(-m,-n)",
-        "parity": "",
-        "type": "frieze",
-        "description": "",
-        },
-    '2*∞': {
-        "alt_name": "p2mg",
-        "recipe": "n,m = -n,-m = -{n+m}(-m,-n) = -{n+m}(m,n)",
-        "parity": "",
-        "type": "frieze",
-        "description": "",
         },
     ('o', 'o'): {
         "alt_name": "",
@@ -636,6 +588,18 @@ PATTERN = {     # <<<1
         "description": "",
         },
     }
+_F = {}
+for p in PATTERN:
+    if PATTERN[p]["type"] == "sphere group" and "N" in p:
+        fp = p.replace("N", "∞")
+        _F[fp] = copy.deepcopy(PATTERN[p])
+        _F[fp]["type"] = "frieze"
+        _F[fp]["description"] = ""
+        alt_name1, alt_name2 = PATTERN[p]["alt_name"].split()
+        _F[fp]["alt_name"] = alt_name2
+        PATTERN[p]["alt_name"] = alt_name1
+PATTERN.update(_F)
+del _F
 # >>>1
 
 NAMES = [    # <<<1
@@ -672,15 +636,8 @@ NAMES = [    # <<<1
         "22N",
         "*22N",
         "2*N",
-        # friezes
-        "∞∞",
-        "*∞∞",
-        "∞*",
-        "∞×",
-        "22∞",
-        "*22∞",
-        "2*∞",
         ]
+NAMES = NAMES + [p.replace("N", "∞") for p in NAMES if "N" in p]
 
 W_NAMES = ["{} ({})".format(p, PATTERN[p]["alt_name"])
            for p in NAMES
@@ -707,6 +664,7 @@ for i in range(len(S_NAMES)):
 F_NAMES = ["{} ({})".format(p, PATTERN[p]["alt_name"])
            for p in NAMES
            if PATTERN[p]["type"] == "frieze"]
+del _t
 
 
 def C_NAMES(s):
@@ -1109,33 +1067,6 @@ def apply_color(        # <<<2
 # >>>2
 
 
-def make_rosette_image(zs,                # <<<2
-                       matrix,
-                       pattern,
-                       N=5,
-                       unwind=False,
-                       message_queue=None):
-
-    matrix = add_symmetries(matrix,
-                            PATTERN[pattern]["recipe"],
-                            parity="n-m = 0 mod {}".format(N))
-
-    if unwind:
-        np.multiply(1j, zs, out=zs)
-        np.exp(zs, out=zs)
-    zsc = np.conj(zs)
-
-    res = np.zeros(zs.shape, complex)
-    w1, w2 = 1, len(matrix)
-    for (n, m) in matrix:
-        np.add(res,  matrix[(n, m)] * zs**n * zsc**m, out=res)
-        if message_queue is not None:
-            message_queue.put(w1/w2)
-        w1 += 1
-    return res
-# >>>2
-
-
 def make_wallpaper_image(zs,     # <<<2
                          matrix,
                          pattern,
@@ -1335,26 +1266,21 @@ def make_image(color=None,     # <<<2
                                  basis=params["basis"],
                                  N=params["N"],
                                  message_queue=message_queue)
-    elif PATTERN[pattern]["type"] == "frieze":
-        res = make_rosette_image(zs,
-                                 matrix,
-                                 pattern,
-                                 N=params["N"],
-                                 unwind=not params["rosette"],
-                                 message_queue=message_queue)
     elif PATTERN[pattern]["type"] in ["plane group", "color reversing plane group"]:
         res = make_wallpaper_image(zs,
                                    matrix,
                                    pattern,
                                    lattice_params=params["lattice_params"],
                                    message_queue=message_queue)
-    elif PATTERN[pattern]["type"] == "sphere group":
+    elif PATTERN[pattern]["type"] in ["sphere group", "frieze", "rosette"]:
         res = make_sphere_image(zs,
                                 matrix,
                                 pattern,
                                 N=params["N"],
+                                unwind=params["sphere_mode"] == "frieze",
                                 message_queue=message_queue)
     else:
+        print(PATTERN[pattern]["type"])
         assert False
 
     if stretch_color:
@@ -1416,16 +1342,6 @@ def background_output(     # <<<2
         info["name"] = p.replace("N", str(N))
         info["alt_name"] = PATTERN[p]["alt_name"]
         info["alt_name"] = info["alt_name"].replace("N", str(N))
-    elif function["tab"] == "frieze":
-        if function["rosette"]:
-            info["type"] = "rosette"
-            N = function["rosette_N"]
-            info["type"] += "_{}fold_symmetry".format(N)
-        else:
-            info["type"] = "frieze"
-            p = function["frieze_pattern"]
-            info["name"] = p
-            info["alt_name"] = PATTERN[p]["alt_name"]
     elif function["tab"] == "raw":
         info["type"] = "lattice"
         N = function["raw_N"]
@@ -2390,8 +2306,6 @@ class Function(LabelFrame):     # <<<2
     def current_tab(self):      # <<<4
         if ("wallpaper" in self._tabs.tab(self._tabs.select(), "text")):
             return "wallpaper"
-        elif ("frieze" in self._tabs.tab(self._tabs.select(), "text")):
-            return "frieze"
         elif ("raw" in self._tabs.tab(self._tabs.select(), "text")):
             return "raw"
         elif ("sphere" in self._tabs.tab(self._tabs.select(), "text")):
@@ -2407,8 +2321,6 @@ class Function(LabelFrame):     # <<<2
             self._tabs.select(self._wallpaper_tab)
         elif tab == "sphere":
             self._tabs.select(self._sphere_tab)
-        elif tab == "frieze":
-            self._tabs.select(self._frieze_tab)
         elif tab == "raw":
             self._tabs.select(self._raw_tab)
     # >>>4
@@ -2463,25 +2375,25 @@ class Function(LabelFrame):     # <<<2
         self._random_noise.set(d)
     # >>>4
 
-    @property
-    def rosette(self):     # <<<4
-        return self._rosette.get()
-    # >>>4
+    # @property
+    # def rosette(self):     # <<<4
+    #     return self._rosette.get()
+    # # >>>4
 
-    @rosette.setter
-    def rosette(self, b):     # <<<4
-        self._rosette.set(b)
-    # >>>4
+    # @rosette.setter
+    # def rosette(self, b):     # <<<4
+    #     self._rosette.set(b)
+    # # >>>4
 
-    @property
-    def rosette_N(self):     # <<<4
-        return self._rosette_N.get()
-    # >>>4
+    # @property
+    # def rosette_N(self):     # <<<4
+    #     return self._rosette_N.get()
+    # # >>>4
 
-    @rosette_N.setter
-    def rosette_N(self, N):     # <<<4
-        self._rosette_N.set(N)
-    # >>>4
+    # @rosette_N.setter
+    # def rosette_N(self, N):     # <<<4
+    #     self._rosette_N.set(N)
+    # # >>>4
 
     @property
     def sphere_N(self):     # <<<4
@@ -2494,13 +2406,13 @@ class Function(LabelFrame):     # <<<2
     # >>>4
 
     @property
-    def sphere_frieze(self):     # <<<4
-        return self._sphere_frieze.get()
+    def sphere_mode(self):     # <<<4
+        return self._sphere_mode.get()
     # >>>4
 
-    @sphere_frieze.setter
-    def sphere_frieze(self, b):     # <<<4
-        self._sphere_frieze.set(b)
+    @sphere_mode.setter
+    def sphere_mode(self, b):     # <<<4
+        self._sphere_mode.set(b)
     # >>>4
 
     @property
@@ -2585,29 +2497,8 @@ class Function(LabelFrame):     # <<<2
     # >>>4
 
     @property
-    def frieze_pattern(self):    # <<<4
-        return self._frieze_pattern.get().split()[0]
-    # >>>4
-
-    @frieze_pattern.setter
-    def frieze_pattern(self, p):    # <<<4
-        values = self._frieze_combo["values"]
-        for i in range(len(values)):
-            tmp = values[i]
-            tmp = re.sub("--.*$", "", tmp)
-            tmp = tmp.replace("(", " ").replace(")", " ")
-            tmp = tmp.split()
-            if p in tmp:
-                self._frieze_combo.current(i)
-                return
-        self._frieze_combo.current(0)
-    # >>>4
-
-    @property
     def current_pattern(self):          # <<<4
-        if self.current_tab == "frieze":
-            return self.frieze_pattern
-        elif self.current_tab == "wallpaper":
+        if self.current_tab == "wallpaper":
             color_pattern = self.wallpaper_color_pattern
             if color_pattern:
                 return (color_pattern, self.wallpaper_pattern)
@@ -2621,7 +2512,6 @@ class Function(LabelFrame):     # <<<2
         else:
             return ""
     # >>>4
-
     # >>>3
 
     def __init__(self, root):      # <<<3
@@ -2638,9 +2528,6 @@ class Function(LabelFrame):     # <<<2
 
         self._sphere_tab = Frame(self._tabs)
         self._tabs.add(self._sphere_tab, text="sphere")
-
-        self._frieze_tab = Frame(self._tabs)
-        self._tabs.add(self._frieze_tab, text="frieze")
 
         self._raw_tab = Frame(self._tabs)
         self._tabs.add(self._raw_tab, text="raw")
@@ -2659,18 +2546,11 @@ class Function(LabelFrame):     # <<<2
         self._wallpaper_combo.pack(padx=5, pady=5)
         self._wallpaper_combo.current(0)
 
-        self._lattice_params = LabelEntry(self._wallpaper_tab,
-                                          label="lattice parameters",
-                                          value="1,1",
-                                          convert=str_to_floats,
-                                          width=7)
-        self._lattice_params.pack(padx=5, pady=5)
-
         self._wallpaper_combo.bind("<<ComboboxSelected>>",
                                    self.update)
 
         Label(self._wallpaper_tab,
-              text="color symmetry group").pack(padx=5, pady=(20, 0))
+              text="color symmetry group").pack(padx=5, pady=(5, 0))
         self._wallpaper_color_pattern = StringVar()
         self._wallpaper_color_combo = Combobox(
                 self._wallpaper_tab, width=10, exportselection=0,
@@ -2680,35 +2560,14 @@ class Function(LabelFrame):     # <<<2
                 )
         self._wallpaper_color_combo.pack(padx=5, pady=5)
         self._wallpaper_color_combo.current(0)
-        # # >>>4
 
-        # frieze / rosette tab   <<<4
-        Label(self._frieze_tab,
-              text="frieze pattern").pack(padx=5, pady=(20, 0))
-        self._frieze_pattern = StringVar()
-        self._frieze_combo = Combobox(self._frieze_tab, width=15,
-                                      exportselection=0,
-                                      textvariable=self._frieze_pattern,
-                                      state="readonly",
-                                      values=F_NAMES)
-        self._frieze_combo.pack(padx=5, pady=5)
-        self._frieze_combo.current(0)
 
-        self._rosette = BooleanVar()
-        self.rosette = False
-
-        self._rosette_button = Checkbutton(self._frieze_tab, text="rosette",
-                                           variable=self._rosette,
-                                           onvalue=True, offvalue=False,
-                                           command=self.update)
-        self._rosette_button.pack(padx=5, pady=5)
-
-        self._rosette_N = LabelEntry(self._frieze_tab,
-                                     label="symmetries",
-                                     value=5,
-                                     convert=int,
-                                     width=2)
-        self._rosette_N.pack(padx=5, pady=5)
+        self._lattice_params = LabelEntry(self._wallpaper_tab,
+                                          label="lattice parameters",
+                                          value="1,1",
+                                          convert=str_to_floats,
+                                          width=7)
+        self._lattice_params.pack(padx=5, pady=5)
         # # >>>4
 
         # raw tab   <<<4
@@ -2756,14 +2615,31 @@ class Function(LabelFrame):     # <<<2
                                     width=2)
         self._sphere_N.pack(padx=5, pady=5)
 
-        self._sphere_frieze = BooleanVar()
-        self._sphere_frieze.set(False)
-        self._sphere_frieze_button = Checkbutton(
-                self._sphere_tab, text="frieze",
-                variable=self._sphere_frieze,
-                onvalue=True, offvalue=False,
-                command=self.update)
-        self._sphere_frieze_button.pack(padx=5, pady=5)
+        radio_frame = Frame(self._sphere_tab)
+        radio_frame.pack(padx=5, pady=(10,5))
+        self._sphere_mode = StringVar()
+        self._sphere_mode.set("sphere")
+        Radiobutton(radio_frame,
+                    indicatoron=0,
+                    text="sphere",
+                    variable=self._sphere_mode,
+                    value="sphere",
+                    command=self.update
+                    ).grid(row=0, column=0, padx=5, pady=5)
+        Radiobutton(radio_frame,
+                    indicatoron=0,
+                    text="rosette",
+                    variable=self._sphere_mode,
+                    value="rosette",
+                    command=self.update
+                    ).grid(row=0, column=1, padx=5, pady=5)
+        Radiobutton(radio_frame,
+                    indicatoron=0,
+                    text="frieze",
+                    variable=self._sphere_mode,
+                    value="frieze",
+                    command=self.update
+                    ).grid(row=0, column=2, padx=5, pady=5)
         # >>>4
 
         # display matrix    <<<4
@@ -2962,15 +2838,6 @@ class Function(LabelFrame):     # <<<2
                                PATTERN[self.sphere_pattern]["recipe"],
                                PATTERN[self.sphere_pattern]["parity"]
                                .replace("N", str(self.sphere_N)))
-        elif self.current_tab == "frieze" and self.rosette:
-            p = self.rosette_N
-            keys = list(M.keys())
-            for (n, m) in keys:
-                if (n-m) % p != 0 or n == m:
-                    del M[(n, m)]
-            M = add_symmetries(M, PATTERN[self.frieze_pattern]["recipe"])
-        elif self.current_tab == "frieze":
-            M = add_symmetries(M, PATTERN[self.frieze_pattern]["recipe"])
         elif self.current_tab == "raw":
             pass
         else:
@@ -2993,10 +2860,6 @@ class Function(LabelFrame):     # <<<2
                 "wallpaper_pattern": self.wallpaper_pattern,
                 "lattice_parameters": self._lattice_params.get(),
                 "wallpaper_color_pattern": self.wallpaper_color_pattern,
-                # frieze tab
-                "frieze_pattern": self.frieze_pattern,
-                "rosette": self.rosette,
-                "rosette_N": self.rosette_N,
                 # raw tab
                 "raw_basis": [self._basis_matrix1.get(),
                               self._basis_matrix2.get()],
@@ -3004,7 +2867,7 @@ class Function(LabelFrame):     # <<<2
                 # sphere tab
                 "sphere_pattern": self.sphere_pattern,
                 "sphere_N": self.sphere_N,
-                "sphere_frieze": self.sphere_frieze,
+                "sphere_mode": self.sphere_mode,
                 }
     # >>>3
 
@@ -3028,12 +2891,6 @@ class Function(LabelFrame):     # <<<2
             self.wallpaper_color_pattern = cfg["wallpaper_color_pattern"]
         if "lattice_parameters" in cfg:
             self._lattice_params.set(floats_to_str(cfg["lattice_parameters"]))
-        if "frieze_pattern" in cfg:
-            self.frieze_pattern = cfg["frieze_pattern"]
-        if "rosette" in cfg:
-            self.rosette = cfg["rosette"]
-        if "rosette_N" in cfg:
-            self.rosette_N = cfg["rosette_N"]
         if "raw_basis" in cfg:
             self._basis_matrix1.set(floats_to_str(cfg["raw_basis"][0]))
             self._basis_matrix2.set(floats_to_str(cfg["raw_basis"][1]))
@@ -3048,26 +2905,21 @@ class Function(LabelFrame):     # <<<2
                     self._sphere_combo.current(i)
         if "sphere_N" in cfg:
             self.sphere_N = cfg["sphere_N"]
-        if "sphere_frieze" in cfg:
-            self.sphere_frieze = cfg["sphere_frieze"]
+        if "sphere_mode" in cfg:
+            self.sphere_mode = cfg["sphere_mode"]
         self.update()
-    # >>>3
-
-    def set_frieze_type(self, *args):       # <<<3
-        frieze_combo.select_clear()
-        self.function["frieze_type"] = frieze_combo.stringvar.get()
     # >>>3
 
     def update(self, *args):     # <<<3
         # sphere tab  <<<4
         pattern = self.sphere_pattern
-        if self.sphere_frieze:
+        if self.sphere_mode in ["frieze", "rosette"]:
             self._sphere_combo["values"] = F_NAMES
             pattern = pattern.replace("N", "∞")
             self.sphere_pattern = pattern
             self._sphere_N.label_widget.configure(text="period")
             self._sphere_N.enable()
-        else:
+        elif self.sphere_mode == "sphere":
             pattern = pattern.replace("∞", "N")
             self._sphere_combo["values"] = S_NAMES
             self.sphere_pattern = pattern
@@ -3076,15 +2928,14 @@ class Function(LabelFrame):     # <<<2
                 self._sphere_N.enable()
             else:
                 self._sphere_N.disable()
-
         # >>>4
 
-        # rosette tab   <<<4
-        if self.rosette:
-            self._rosette_N.enable()
-        else:
-            self._rosette_N.disable()
-        # >>>4
+        # # rosette tab   <<<4
+        # if self.rosette:
+        #     self._rosette_N.enable()
+        # else:
+        #     self._rosette_N.disable()
+        # # >>>4
 
         # wallpaper tab     <<<4
         pattern = self.wallpaper_pattern
@@ -3109,8 +2960,6 @@ class Function(LabelFrame):     # <<<2
             self._lattice_params.set("")
             self._lattice_params.label_widget.config(text="lattice parameters")
             self._lattice_params.disable()
-        elif lattice == "frieze":
-            pass
         else:
             assert False
 
@@ -3123,14 +2972,12 @@ class Function(LabelFrame):     # <<<2
     # >>>3
 
     def get_pattern_params(self):       # <<<3
-        if self.current_tab == "frieze":
-            return {"N": self.rosette_N,
-                    "rosette": self.rosette}
-        elif self.current_tab == "wallpaper":
+        if self.current_tab == "wallpaper":
             return {"lattice_params": self._lattice_params.get(),
                     "color_pattern": self.wallpaper_color_pattern}
         elif self.current_tab == "sphere":
-            return {"N": self.sphere_N}
+            return {"N": self.sphere_N,
+                    "sphere_mode": self.sphere_mode}
         elif self.current_tab == "raw":
             return {"N": self.raw_N,
                     "basis": [self._basis_matrix1.get(),
@@ -3258,10 +3105,9 @@ class CreateSymmetry(Tk):      # <<<2
         # <<<4
         self.function._tabs.bind("<<NotebookTabChanged>>",
                                  self.update_sphere_tab)
-        self.function._sphere_frieze_button.bind(
-                "<Button-1>",
-                self.update_sphere_tab,
-                add="+")
+        self.function._sphere_mode.trace(
+                "w",
+                callback=self.update_sphere_tab)
         # >>>4
 
         # list of matrices, for UNDO
@@ -3343,11 +3189,16 @@ Keyboard shortcuts:
 
     def update_sphere_tab(self, *args):       # <<<3
         if self.function.current_tab == "sphere":
-            self.world.enable_geometry_sphere_tab()
-            if self.function.sphere_frieze:
+            if self.function.sphere_mode in ["rosette", "frieze"]:
                 self.world.stereographic = True
-            else:
+                self.world.disable_geometry_sphere_tab()
+                self.world.geometry_tab = "plane"
+            elif self.function.sphere_mode == "sphere":
+                self.world.enable_geometry_sphere_tab()
                 self.world.stereographic = False
+                self.world.geometry_tab = "sphere"
+            else:
+                assert False
         else:
             self.world.disable_geometry_sphere_tab()
     # >>>3
@@ -3759,13 +3610,13 @@ def main():     # <<<1
             function_config["tab"] = "sphere"
             function_config["sphere_pattern"] = a
         elif o in ["--frieze"]:
-            function_config["tab"] = "frieze"
-            function_config["frieze_pattern"] = a
-            function_config["rosette"] = False
+            function_config["tab"] = "sphere"
+            function_config["sphere_pattern"] = a
+            function_config["sphere_mode"] = "frieze"
         elif o in ["--rosette"]:
-            function_config["tab"] = "frieze"
-            function_config["frieze_pattern"] = a
-            function_config["rosette"] = True
+            function_config["tab"] = "sphere"
+            function_config["sphere_pattern"] = a
+            function_config["sphere_mode"] = "rosette"
         elif o in ["--raw"]:
             function_config["tab"] = "raw"
         elif o in ["--params"]:
