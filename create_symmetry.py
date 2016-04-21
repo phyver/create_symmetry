@@ -852,6 +852,14 @@ def parse_matrix(s):        # <<<2
 # >>>2
 
 
+def is_rgb(s):  # <<<2
+    try:
+        color = getrgb(s)
+        return True
+    except:
+        return False
+# >>>2
+
 def eqn_indices(eq, n, m):        # <<<2
     """return a list of (s, (j, k))"""
     eq = eq.strip()
@@ -1231,9 +1239,6 @@ def make_sphere_image(zs,      # <<<2
 
 def make_sphere_background(zs, img, background="back.jpg", shade=128, stars=0):
     width, height = zs.shape
-    mask = (zs.real**2 + zs.imag**2 > 1).astype(int).transpose(1, 0)
-    mask = (255-shade) * mask
-    mask = PIL.Image.fromarray(np.array(mask, dtype=np.uint8), "L")
     try:
         background_img = PIL.Image.open(background)
         background_img = background_img.resize((width, height))
@@ -1253,7 +1258,18 @@ def make_sphere_background(zs, img, background="back.jpg", shade=128, stars=0):
             background_img = PIL.Image.new(mode="RGB",
                                            size=(width, height),
                                            color=DEFAULT_SPHERE_BACKGROUND)
-    img.paste(background_img, None, mask)
+
+    mask = (zs.real**2 + zs.imag**2 > 1).astype(int).transpose(1, 0)
+
+    mask_background = PIL.Image.fromarray(
+            np.array(mask*(255-shade), dtype=np.uint8),
+            "L")
+    background_img.paste(0, None, mask=mask_background)
+
+    mask_sphere = PIL.Image.fromarray(
+            np.array(mask*255, dtype=np.uint8),
+            "L")
+    img.paste(background_img, None, mask_sphere)
     return img
 # >>>2
 
@@ -1996,19 +2012,25 @@ class World(LabelFrame):     # <<<2
 
     @property
     def sphere_background(self):    # <<<4
-        try:
-            return self._sphere_background_str
-        except:
-            return ""
+        s = self._sphere_background.get()
+        if is_rgb(s):
+            return s
+        elif os.path.exists(self._sphere_background_full_filename):
+            return self._sphere_background_full_filename
+        else:
+            return s
     # >>>4
 
     @sphere_background.setter
     def sphere_background(self, s):    # <<<4
-        if os.path.exists(s):
-            self._sphere_background_str = s
+        if is_rgb(s):
+            self._sphere_background_full_filename = ""
+            self._sphere_background.set(s)
+        elif os.path.exists(s):
+            self._sphere_background_full_filename = s
             self._sphere_background.set(os.path.basename(s))
         else:
-            self._sphere_background_str = s
+            self._sphere_background_full_filename = ""
             self._sphere_background.set(s)
     # >>>4
 
@@ -2167,6 +2189,8 @@ class World(LabelFrame):     # <<<2
                                              label="background",
                                              value=DEFAULT_SPHERE_BACKGROUND,
                                              width=10)
+        self._sphere_background_full_filename = ""
+
         self.sphere_background = DEFAULT_SPHERE_BACKGROUND
         self._sphere_background.pack(padx=5, pady=10)
         self._sphere_background.bind("<Double-Button-1>",
