@@ -2140,6 +2140,11 @@ class World(LabelFrame):     # <<<2
         # sphere parameters     <<<4
         self._geometry_sphere_tab = Frame(self._geometry_tabs)
         self._geometry_tabs.add(self._geometry_sphere_tab, text="sphere")
+        self._geometry_tabs.bind(
+                "<Double-Button-1>",
+                lambda _: self._geometry_tabs.tab(self._geometry_sphere_tab,
+                                                  state=NORMAL))
+
         self._stereographic = BooleanVar()
         self._stereographic.set(True)
 
@@ -2220,6 +2225,14 @@ class World(LabelFrame):     # <<<2
 
         self.adjust_geometry()
     # >>>3
+
+    def disable_geometry_sphere_tab(self):
+        self.stereographic = True
+        self._geometry_tabs.tab(self._geometry_sphere_tab, state=DISABLED)
+
+    def enable_geometry_sphere_tab(self):
+        self._geometry_tabs.tab(self._geometry_sphere_tab, state=NORMAL)
+
 
     def reset_geometry(self, *args):        # <<<3
         self.geometry = WORLD_GEOMETRY
@@ -2642,11 +2655,11 @@ class Function(LabelFrame):     # <<<2
         self._rosette = BooleanVar()
         self.rosette = False
 
-        rosette_button = Checkbutton(self._frieze_tab, text="rosette",
-                                     variable=self._rosette,
-                                     onvalue=True, offvalue=False,
-                                     command=self.update)
-        rosette_button.pack(padx=5, pady=5)
+        self._rosette_button = Checkbutton(self._frieze_tab, text="rosette",
+                                           variable=self._rosette,
+                                           onvalue=True, offvalue=False,
+                                           command=self.update)
+        self._rosette_button.pack(padx=5, pady=5)
 
         self._rosette_N = LabelEntry(self._frieze_tab,
                                      label="symmetries",
@@ -3176,6 +3189,11 @@ class CreateSymmetry(Tk):      # <<<2
         self.world._canvas.bind("<Double-Button-1>", self.show_bigger_preview)
         # >>>4
 
+        # <<<4
+        self.function._tabs.bind("<<NotebookTabChanged>>",
+                                 self.update_sphere_tab)
+        # >>>4
+
         # list of matrices, for UNDO
         self.undo_list = []
         self.undo_index = -1
@@ -3251,6 +3269,13 @@ Keyboard shortcuts:
         ok.pack(padx=10, pady=10)
         ok.focus_set()
         self.wait_window(dialog)
+    # >>>3
+
+    def update_sphere_tab(self, *args):       # <<<3
+        if self.function.current_tab == "sphere":
+            self.world.enable_geometry_sphere_tab()
+        else:
+            self.world.disable_geometry_sphere_tab()
     # >>>3
 
     def update_GUI(self):        # <<<3
