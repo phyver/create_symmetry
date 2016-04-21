@@ -945,7 +945,6 @@ def apply_parity(parity, M):    # <<<2
     if parity == "":
         return M
 
-    print("parity:", parity)
     r = re.match("^([-+nm ()0-9]*)\s*==?\s*([0-9]+)\s*mod\s*([0-9]+)",
                  parity)
     if r:
@@ -995,6 +994,8 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
 
 
 def basis(pattern, *params):        # <<<2
+    if isinstance(pattern, tuple):
+        pattern = pattern[0]
     lattice = PATTERN[pattern]["description"].split()[0]
     if lattice == "general":
         return [[1, 0], [params[0], params[1]]]
@@ -1185,11 +1186,16 @@ def make_sphere_image(zs,      # <<<2
                       matrix,
                       pattern,
                       N=5,
+                      unwind=False,
                       message_queue=None):
 
     recipe = PATTERN[pattern]["recipe"]
     parity = PATTERN[pattern]["parity"].replace("N", str(N))
     matrix = add_symmetries(matrix, recipe, parity)
+
+    if unwind:
+        np.multiply(1j, zs, out=zs)
+        np.exp(zs, out=zs)
 
     if "T" in PATTERN[pattern]["alt_name"]:
         average = [([[1, 0], [0, 1]], 1), ([[1, 1j], [1, -1j]], 3)]
@@ -1320,12 +1326,11 @@ def make_image(color=None,     # <<<2
                                  N=params["N"],
                                  unwind=not params["rosette"],
                                  message_queue=message_queue)
-    elif PATTERN[pattern]["type"] == "plane group":
+    elif PATTERN[pattern]["type"] in ["plane group", "color reversing plane group"]:
         res = make_wallpaper_image(zs,
                                    matrix,
                                    pattern,
                                    lattice_params=params["lattice_params"],
-                                   color_pattern=params["color_pattern"],
                                    message_queue=message_queue)
     elif PATTERN[pattern]["type"] == "sphere group":
         res = make_sphere_image(zs,
@@ -3412,7 +3417,11 @@ Keyboard shortcuts:
 
         self.world.adjust_geometry()
         ratio = self.world.width / self.world.height
-        if ratio > 1:
+        if (self.world.width < PREVIEW_SIZE and
+                self.world.height < PREVIEW_SIZE):
+            width = self.world.width
+            height = self.world.height
+        elif ratio > 1:
             width = PREVIEW_SIZE
             height = round(PREVIEW_SIZE / ratio)
         else:
