@@ -589,6 +589,8 @@ PATTERN = {     # <<<1
         "description": "",
         },
     }
+
+# transform all the cyclic sphere groups into frieze groups
 _F = {}
 for p in PATTERN:
     if PATTERN[p]["type"] == "sphere group" and "N" in p:
@@ -604,6 +606,7 @@ del _F
 # >>>1
 
 NAMES = [    # <<<1
+        # order of the groups in menus
         # plane groups
         "o",       # general
         "2222",
@@ -638,8 +641,11 @@ NAMES = [    # <<<1
         "*22N",
         "2*N",
         ]
+
+# add names for frieze patterns
 NAMES = NAMES + [p.replace("N", "∞") for p in NAMES if "N" in p]
 
+# names, with alternative names, for wallpaper groups
 W_NAMES = ["{} ({})".format(p, PATTERN[p]["alt_name"])
            for p in NAMES
            if PATTERN[p]["type"] == "plane group"]
@@ -651,6 +657,7 @@ for i in range(len(W_NAMES)):
         W_NAMES[i] += "     -- {}".format(t)
     _t = t
 
+# names, with alternative names, for sphere groups
 S_NAMES = ["{} ({})".format(p, PATTERN[p]["alt_name"])
            for p in NAMES
            if PATTERN[p]["type"] == "sphere group"]
@@ -662,12 +669,14 @@ for i in range(len(S_NAMES)):
         S_NAMES[i] += "     -- {}".format(t)
     _t = t
 
+# names, with alternative names, for frieze groups
 F_NAMES = ["{} ({})".format(p, PATTERN[p]["alt_name"])
            for p in NAMES
            if PATTERN[p]["type"] == "frieze"]
 del _t
 
 
+# names, with alternative names, for color reversing groups
 def C_NAMES(s):
     r = []
     for p in NAMES:
@@ -681,6 +690,7 @@ def C_NAMES(s):
 # utility functions
 # <<<1
 class Error(Exception):     # <<<2
+    """generic class for errors"""
     pass
 # >>>2
 
@@ -698,6 +708,9 @@ def message(*args, **kwargs):       # <<<2
 
 
 def sequence(*fs):      # <<<2
+    """return a function calling all the argument functions in sequence
+    useful for running several functions in a callback
+    """
     def res(*args):
         for f in fs:
             f()
@@ -706,6 +719,7 @@ def sequence(*fs):      # <<<2
 
 
 def invert22(M):        # <<<2
+    """invert a 2x2 matrix"""
     d = M[0][0] * M[1][1] - M[1][0] * M[0][1]
     I = [[M[1][1]/d, -M[0][1]/d],
          [-M[1][0]/d, M[0][0]/d]]
@@ -714,6 +728,7 @@ def invert22(M):        # <<<2
 
 
 def mult_M(M1, M2):     # <<<2
+    """matrix multiplication"""
     assert len(M1[0]) == len(M2)
     R = [[0]*len(M2[0]) for i in range(len(M1))]
     for i in range(len(M1)):
@@ -725,7 +740,10 @@ def mult_M(M1, M2):     # <<<2
 
 
 def rotation_matrix(x, y, z):       # <<<2
-    # see https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
+    """rotation matrix corresponding to the Euler-Tait angles
+    ("yaw", "pitch" and "roll")
+    see https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
+    """
     a = cos(x)*cos(y)
     b = cos(x)*sin(y)*sin(z) - cos(z)*sin(x)
     c = sin(x)*sin(z) + cos(x)*cos(z)*sin(y)
@@ -740,7 +758,9 @@ def rotation_matrix(x, y, z):       # <<<2
 
 
 def tait_angle(R):                  # <<<2
-    # see http://stackoverflow.com/questions/18433801/converting-a-3x3-matrix-to-euler-tait-bryan-angles-pitch-yaw-roll
+    """compute the Euler-Tait angles from a rotation matrix
+    see http://stackoverflow.com/questions/18433801/converting-a-3x3-matrix-to-euler-tait-bryan-angles-pitch-yaw-roll
+    """
     theta_z = atan2(R[2][1], R[2][2])
     theta_y = -asin(R[2][0])
     theta_x = atan2(R[1][0], R[0][0])
@@ -749,6 +769,7 @@ def tait_angle(R):                  # <<<2
 
 
 def str_to_floats(s):       # <<<2
+    """transform a string into a list of floats"""
     if s.strip() == "":
         return []
     else:
@@ -757,16 +778,25 @@ def str_to_floats(s):       # <<<2
 
 
 def float_to_str(x):       # <<<2
-    return re.sub("\.0*\s*$", "", str(x))
+    """transform a float into a string, removing trailing decimal 0s,
+    and decimal points if possible
+    """
+    s = re.sub("\.0*\s*$", "", str(x))
+    if s == "":
+        return "0"
+    else:
+        return s
 # >>>2
 
 
 def floats_to_str(l):       # <<<2
+    """transform a list of floats into a string"""
     return ", ".join(map(float_to_str, l))
 # >>>2
 
 
 def complex_to_str(z, precision=4):    # <<<2
+    """transform a complex number into a string"""
     if z == 0:
         return "0"
     elif z == z.real:
@@ -788,11 +818,20 @@ def complex_to_str(z, precision=4):    # <<<2
 
 
 def matrix_to_list(M):      # <<<2
+    """transform a "matrix" (ie a dictionnary with pairs of integers as keys
+    and complex numbers as values) into a list of pairs of pairs:
+        - the pair of integers of the key
+        - the real and imaginary parts of the value
+    """
     return [((n, m), (z.real, z.imag)) for (n, m), z in M.items()]
 # >>>2
 
 
 def list_to_matrix(L):      # <<<2
+    """transform a list of pairs of pairs into a matrix:
+        - the first pairs are integers
+        - the second pairs are floats (real and imaginary parts)
+    """
     return dict([((n, m), complex(x, y)) for ((n, m), (x, y)) in L])
 # >>>2
 
@@ -812,6 +851,7 @@ def parse_matrix(s):        # <<<2
 
 
 def is_rgb(s):  # <<<2
+    """check if a string is a color"""
     try:
         color = getrgb(s)
         return True
@@ -821,7 +861,12 @@ def is_rgb(s):  # <<<2
 
 
 def eqn_indices(eq, n, m):        # <<<2
-    """return a list of (s, (j, k))"""
+    """return a list of (s, (j, k))
+        - eq is a string representing a list of equations involving "n" and "m"
+        - n and m are integers
+    for eq = "n,m = -n,m = -{n+m}(m,n)" and n = 7 and m = 4, the result will be
+    [ (1, (7, 4)), (1, (-7, 4)), (-1, (4, 7)) ]
+    """
     eq = eq.strip()
 
     if eq == "":
@@ -865,7 +910,12 @@ def eqn_indices(eq, n, m):        # <<<2
 
 
 def recipe_all_indices(recipe, n, m):   # <<<2
-    """BFS like algorithm to compute all the related indices to n and m"""
+    """BFS like algorithm to compute all the related indices to n and m
+        - recipe is a string containing a list of equations, like
+            "n,m = -n,m  ; n,m = -m,-n = -{n}(n, m)"
+    the result will contain all the related indices, removing any indices that
+    leads to a contradiction
+    """
     R = {}
     todo = set([(1, (n, m))])
     bad = set([])
@@ -891,6 +941,7 @@ def recipe_all_indices(recipe, n, m):   # <<<2
 
 
 def check_matrix_recipe(M, recipe):     # <<<2
+    """check if a matrix agrees with a recipe"""
     for eq in map(lambda s: s.strip(), recipe.split(";")):
         for n, m in M:
             coeff = None
@@ -909,6 +960,9 @@ def check_matrix_recipe(M, recipe):     # <<<2
 
 
 def apply_parity(parity, M):    # <<<2
+    """remove all entries of the matrix that do not agree with the parity rule
+        - parity is a string of the form "n+m = 3 mod 7"
+    """
     parity = parity.strip()
     if parity == "":
         return M
@@ -935,8 +989,8 @@ def apply_parity(parity, M):    # <<<2
 
 
 def add_symmetries(M, recipe, parity=""):      # <<<2
-    """return a matrix computed from ``M`` by adding symmetries given by ``recipe``
-``recipe`` can be of the form "n,m = -n,-m = -(m,n) ; n,m = -{n+m}(n,m)"...
+    """return a matrix computed from M by adding symmetries given by recipe
+recipe can be of the form "n,m = -n,-m = -(m,n) ; n,m = -{n+m}(n,m)"...
 """
     M = apply_parity(parity, M)
 
@@ -962,6 +1016,8 @@ def add_symmetries(M, recipe, parity=""):      # <<<2
 
 
 def basis(pattern, *params):        # <<<2
+    """return the matrix for the basis of the wallpaper pattern, using
+    arguments from params if necessary (see Farris)"""
     if isinstance(pattern, tuple):
         pattern = pattern[0]
     lattice = PATTERN[pattern]["description"].split()[0]
@@ -990,6 +1046,7 @@ def make_coordinates_array(         # <<<2
         modulus=1,
         angle=0,
         ):
+    """compute the array of floating point numbers associated to each pixel"""
     rho = modulus * complex(cos(angle*pi/180), sin(angle*pi/180))
 
     x_min, x_max, y_min, y_max = geometry
@@ -1013,6 +1070,10 @@ def make_coordinates_array(         # <<<2
 
 
 def plane_coordinates_to_sphere(zs, rotations=(0, 0, 0)):       # <<<2
+    """transform an array of pixel values into an array of pixel values on the
+    sphere
+    the original array is taken as the stereographic projection of a sphere of
+    radius 1 centered at the origin"""
     x = zs.real
     y = zs.imag
     with np.errstate(invalid='ignore'):
@@ -1040,6 +1101,9 @@ def apply_color(        # <<<2
         modulus="1",
         angle="0",
         color="black"):
+    """replace each complex value in the array res by the color taken from an
+    image in filename
+    the resulting image is returned"""
 
     if isinstance(color, str):
         color = getrgb(color)
@@ -1097,6 +1161,17 @@ def make_wallpaper_image(zs,     # <<<2
                          N=1,
                          color_pattern="",
                          message_queue=None):
+    """use the given matrix to make an image for the given pattern
+    the ``N`` parameter is used to enforce rotational symmetry around the
+    origin but will usually destroy periodicity
+
+    (the basis could be infered from the pattern in most cases)
+
+    ``color_pattern`` is used to create color reversing wallpaper (the
+    colorwheel file should then be symmetric)
+
+    ``message_queue`` is used to keep track of progress
+    """
 
     if pattern and color_pattern:
         cp = PATTERN[color_pattern, pattern]
@@ -1139,6 +1214,14 @@ def make_sphere_image(zs,      # <<<2
                       N=5,
                       unwind=False,
                       message_queue=None):
+    """use the given matrix to make an image for the given spherical pattern
+
+    the ``N`` parameter is used for cyclic groups
+
+    ``unwind`` is used to transform cyclic groups into frieze patterns
+
+    ``message_queue`` is used to keep track of progress
+    """
 
     recipe = PATTERN[pattern]["recipe"]
     parity = PATTERN[pattern]["parity"].replace("N", str(N))
@@ -1180,7 +1263,15 @@ def make_sphere_image(zs,      # <<<2
 # >>>2
 
 
-def make_sphere_background(zs, img, background="back.jpg", shade=128, stars=0):
+def make_sphere_background(zs, img, background="back.jpg", fade=128, stars=0):
+    """compute the background for a sphere
+        - background can either be a color, or a filename containing an image
+          to display
+        - fade is used to fade the background (0: no fading, 255: black
+          background)
+        - stars is the number of random "stars" (pixels) to add to the
+          background
+      """
     width, height = zs.shape
     try:
         background_img = PIL.Image.open(background)
@@ -1205,7 +1296,7 @@ def make_sphere_background(zs, img, background="back.jpg", shade=128, stars=0):
     mask = (zs.real**2 + zs.imag**2 > 1).astype(int).transpose(1, 0)
 
     mask_background = PIL.Image.fromarray(
-            np.array(mask*shade, dtype=np.uint8),
+            np.array(mask*fade, dtype=np.uint8),
             "L")
     background_img.paste(0, mask=mask_background)
 
@@ -1220,6 +1311,8 @@ def make_sphere_background(zs, img, background="back.jpg", shade=128, stars=0):
 def background_output(     # <<<2
         message_queue=None,
         output_message_queue=None, **config):
+    """compute an image from the configuration in config, and save it to a file
+    used by the GUI for output jobs"""
 
     filename_template = config["world"]["filename"]
 
@@ -1321,6 +1414,7 @@ def make_image(color=None,     # <<<2
                message_queue=None,
                stretch_color=False,
                **params):
+    """compute an image for a pattern"""
 
     zs = make_coordinates_array(world["size"],
                                 world["geometry"],
@@ -1372,7 +1466,7 @@ def make_image(color=None,     # <<<2
         return make_sphere_background(_zs,
                                       img,
                                       background=world["sphere_background"],
-                                      shade=world["sphere_shading"],
+                                      fade=world["sphere_background_fading"],
                                       stars=world["sphere_stars"])
     else:
         return img
@@ -1387,6 +1481,8 @@ def make_tile(geometry,         # <<<2
               draw_tile=True,
               draw_orbifold=True,
               draw_mirrors=False):
+    """compute a transparent image with a tile and orbifold information
+    this image can be added on top of a wallpaper image"""
 
     coeff = 2       # draw bigger tile and resize with antialiasing
     width = size[0]*coeff
@@ -1428,6 +1524,9 @@ def make_tile(geometry,         # <<<2
             draw.line((x1, y1, x2, y2), fill=color, width=width*coeff)
 
     def mirror(X0, Y0, X1, Y1, order, pixels=50):
+
+        disks(X0, Y0, color="red")
+
         if not draw_mirrors:
             return
 
@@ -1459,58 +1558,49 @@ def make_tile(geometry,         # <<<2
             disks(0, 0, 1/2, 0, 2/3, 1/3, color="blue")
         elif pattern == "*2222":
             line(0, 0, 0, 1/2, 1/2, 1/2, 1/2, 0, 0, 0, color="red", width=3)
-            disks(0, 0, 0, 1/2, 1/2, 1/2, 1/2, 0, color="red")
             mirror(0, 0, 1/2, 0, 2)
             mirror(1/2, 0, 0, 0, 2)
             mirror(0, 1/2, 0, 0, 2)
             mirror(1/2, 1/2, 0, 1/2, 2)
         elif pattern == "*442":
             line(0, 0, 1/2, 0, 1/2, 1/2, 0, 0, color="red", width=3)
-            disks(0, 0, 1/2, 0, 1/2, 1/2, color="red")
             mirror(0, 0, 0, 1, 4)
             mirror(1/2, 1/2, 0, 1, 4)
             mirror(1/2, 0, 1/2, 1/2, 2)
         elif pattern == "*333":
-            disks(0, 0, 1/3, 2/3, 2/3, 1/3, color="red")
             line(0, 0, 1/3, 2/3, 2/3, 1/3, 0, 0, color="red", width=3)
             mirror(0, 0, 1/3, 2/3, 3)
             mirror(1/3, 2/3, 0, 0, 3)
             mirror(2/3, 1/3, 0, 0, 3)
         elif pattern == "*632":
             line(0, 0, 1/2, 0, 2/3, 1/3, 0, 0, color="red", width=3)
-            disks(0, 0, 1/2, 0, 2/3, 1/3, color="red")
             mirror(0, 0, 1/2, 0, 6)
             mirror(1/2, 0, 0, 0, 2)
             mirror(2/3, 1/3, 0, 0, 3)
         elif pattern == "4*2":
             disks(0, 0, color="blue")
-            disks(1/2, 0, color="red")
             mirror(1/2, 0, 0, 1/2, 2)
         elif pattern == "2*22":
             disks(0, 1/2, color="blue")
-            disks(0, 0, 1/2, 1/2, color="red")
             mirror(0, 0, 1/2, 1/2, 2)
             mirror(1/2, 1/2, 0, 0, 2)
         elif pattern == "3*3":
             disks(2/3, 1/3, color="blue")
-            disks(0, 0, color="red")
             mirror(0, 0, 1/2, 0, 3)
         elif pattern == "**":
-            # disks(0, 0, 0, 1/2, color="red")
             mirror(1/2, 0, 0, 0, 1)
             mirror(1/2, 1/2, 0, 1/2, 1)
         elif pattern == "22×":
             disks(0, 0, 1/2, 0, color="blue")
             disks(0, 1/4, 1/2, 1/4, color="lightgreen")
             line(0, 1/4, 1/2, 1/4, color="lightgreen", width=3)
-
         elif pattern == "22*":
-            # TODO
             disks(0, 1/2, 1/2, 0, color="blue")
-            disks(0, 0, color="red")
+            mirror(1/4, 0, 1/4, 1/2, 1)
+
         elif pattern == "*×":
             # TODO
-            disks(0, 0, color="red")
+            mirror(0, 0, 1, 1, 1)
             pass
         elif pattern == "××":
             # TODO
@@ -1523,6 +1613,7 @@ def make_tile(geometry,         # <<<2
 
 
 def fade_image(image, coeff=100):       # <<<2
+    """return a faded version of the image"""
     mask = PIL.Image.new("L", image.size, coeff)
     white = PIL.Image.new("RGB", image.size, (255, 255, 255))
     white.paste(image, mask=mask)
@@ -2102,13 +2193,13 @@ class World(LabelFrame):     # <<<2
     # >>>4
 
     @property
-    def sphere_shading(self):    # <<<4
-        return self._sphere_shading.get()
+    def sphere_background_fading(self):    # <<<4
+        return self._sphere_background_fading.get()
     # >>>4
 
-    @sphere_shading.setter
-    def sphere_shading(self, n):    # <<<4
-        self._sphere_shading.set(n)
+    @sphere_background_fading.setter
+    def sphere_background_fading(self, n):    # <<<4
+        self._sphere_background_fading.set(n)
     # >>>4
 
     @property
@@ -2352,12 +2443,12 @@ class World(LabelFrame):     # <<<2
               width=10).pack(side=RIGHT)
         self.sphere_background = DEFAULT_SPHERE_BACKGROUND
 
-        self._sphere_shading = LabelEntry(self._geometry_sphere_tab,
+        self._sphere_background_fading = LabelEntry(self._geometry_sphere_tab,
                                           label="shading",
                                           value=128,
                                           width=5,
                                           convert=int)
-        self._sphere_shading.pack(padx=5, pady=10)
+        self._sphere_background_fading.pack(padx=5, pady=10)
 
         self._sphere_stars = LabelEntry(self._geometry_sphere_tab,
                                         label="random stars",
@@ -2510,7 +2601,7 @@ class World(LabelFrame):     # <<<2
                 "sphere_projection": self.stereographic,
                 "sphere_rotations": self.sphere_rotations,
                 "sphere_background": self.sphere_background,
-                "sphere_shading": self.sphere_shading,
+                "sphere_background_fading": self.sphere_background_fading,
                 "sphere_stars": self.sphere_stars,
                 "geometry_tab": self.geometry_tab,
                 "size": self.size,
@@ -2535,8 +2626,8 @@ class World(LabelFrame):     # <<<2
             self.sphere_rotations = cfg["sphere_rotations"]
         if "sphere_background" in cfg:
             self.sphere_background = cfg["sphere_background"]
-        if "sphere_shading" in cfg:
-            self.sphere_shading = cfg["sphere_shading"]
+        if "sphere_background_fading" in cfg:
+            self.sphere_background_fading = cfg["sphere_background_fading"]
         if "sphere_stars" in cfg:
             self.sphere_stars = cfg["sphere_stars"]
         if "size" in cfg:
@@ -3399,6 +3490,14 @@ Keyboard shortcuts:
 
     def update(self, *args):       # <<<3
         if self.function.current_tab == "sphere":
+            self.world.draw_tile = False
+            self.world.draw_orbifold = False
+            self.world.draw_mirrors = False
+            self.world.shade = False
+            self.world._draw_tile_button.config(state=DISABLED)
+            self.world._draw_orbifold_button.config(state=DISABLED)
+            self.world._draw_mirrors_button.config(state=DISABLED)
+            self.world._fade_button.config(state=DISABLED)
             if self.function.sphere_mode in ["rosette", "frieze"]:
                 self.world.stereographic = True
                 self.world.disable_geometry_sphere_tab()
@@ -3411,6 +3510,11 @@ Keyboard shortcuts:
                 assert False
         else:
             self.world.disable_geometry_sphere_tab()
+            self.world._draw_tile_button.config(state=NORMAL)
+            self.world._draw_orbifold_button.config(state=NORMAL)
+            self.world._draw_mirrors_button.config(state=NORMAL)
+            self.world._fade_button.config(state=NORMAL)
+            self.world.update()
 
         try:
             self.world._canvas.delete(self.world._canvas._image_id)
@@ -3912,12 +4016,12 @@ def main():     # <<<1
     # function_config["matrix"] = M
     # color_config["modulus"] = 1.5
 
-    color_config["modulus"] = 3
-    function_config["wallpaper_pattern"] = "*632"
-    world_config["draw_orbifold"] = True
-    world_config["draw_tile"] = True
-    world_config["draw_mirrors"] = True
-    world_config["fade"] = True
+    # color_config["modulus"] = 3
+    # function_config["wallpaper_pattern"] = "*632"
+    # world_config["draw_orbifold"] = True
+    # world_config["draw_tile"] = True
+    # world_config["draw_mirrors"] = True
+    # world_config["fade"] = True
     # function_config["wallpaper_color_pattern"] = "*442"
     # function_config["matrix"] = { (0,1): 1 }
 
