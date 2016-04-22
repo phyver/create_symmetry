@@ -1388,13 +1388,16 @@ def make_tile(geometry,         # <<<2
               draw_orbifold=True,
               draw_mirrors=False):
 
-    img = PIL.Image.new("RGBA", size, (255, 0, 0, 0))
+    coeff = 2       # draw bigger tile and resize with antialiasing
+    width = size[0]*coeff
+    height = size[1]*coeff
+
+    img = PIL.Image.new("RGBA", (width, height), (255, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
     modulus, angle = transformation
 
     x_min, x_max, y_min, y_max = geometry
-    width, height = img.size
 
     def xy_to_pixel(x, y):
         z = modulus * complex(cos(angle), sin(angle)) * complex(x, y)
@@ -1413,7 +1416,7 @@ def make_tile(geometry,         # <<<2
         return xy_to_pixel(x, y)
 
     def disks(*coord, color="white"):
-        R = 5
+        R = 5*coeff
         for i in range(0, len(coord), 2):
             x, y = XY_to_pixel(coord[i], coord[i+1])
             draw.ellipse((x-R, y-R, x+R, y+R), fill=color)
@@ -1422,22 +1425,22 @@ def make_tile(geometry,         # <<<2
         for i in range(2, len(coord), 2):
             x1, y1 = XY_to_pixel(coord[i-2], coord[i-1])
             x2, y2 = XY_to_pixel(coord[i], coord[i+1])
-            draw.line((x1, y1, x2, y2), fill=color, width=width)
+            draw.line((x1, y1, x2, y2), fill=color, width=width*coeff)
 
-    def mirror(X0, Y0, X1, Y1, order, pixels=30):
+    def mirror(X0, Y0, X1, Y1, order, pixels=50):
         if not draw_mirrors:
             return
 
         x0, y0 = XY_to_pixel(X0, Y0)
         x1, y1 = XY_to_pixel(X1, Y1)
         p = complex(x1-x0, y1-y0)
-        p = p / abs(p)
+        p = p / abs(p) * coeff
 
         for i in range(order):
             q = p * exp(i*pi*1j/order) * pixels
             x2, y2 = q.real, q.imag
             x3, y3 = -x2, -y2
-            draw.line((x2+x0, y2+y0, x3+x0, y3+y0), width=3, fill="red")
+            draw.line((x2+x0, y2+y0, x3+x0, y3+y0), width=3*coeff, fill="red")
 
     # tile
     if draw_tile:
@@ -1512,6 +1515,8 @@ def make_tile(geometry,         # <<<2
         elif pattern == "××":
             # TODO
             pass
+
+    img = img.resize(size, PIL.Image.ANTIALIAS)
 
     return img
 # >>>2
@@ -3430,6 +3435,13 @@ Keyboard shortcuts:
             pass
         try:
             if self.world.draw_tile:
+                if isinstance(
+                        self.world._canvas._tile_img,
+                        tuple):
+                    self.world._canvas._tile_img = make_tile(*self.world._canvas._tile_img)
+                    self.world._canvas.tk_tile_img = PIL.ImageTk.PhotoImage(
+                            self.world._canvas._tile_img
+                            )
                 self.world._canvas._tile_image_id = self.world._canvas.create_image(
                             (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
                             image=self.world._canvas.tk_tile_img)
@@ -3442,6 +3454,13 @@ Keyboard shortcuts:
             pass
         try:
             if self.world.draw_orbifold:
+                if isinstance(
+                        self.world._canvas._orbifold_img,
+                        tuple):
+                    self.world._canvas._orbifold_img = make_tile(*self.world._canvas._orbifold_img)
+                    self.world._canvas.tk_orbifold_img = PIL.ImageTk.PhotoImage(
+                            self.world._canvas._orbifold_img
+                            )
                 self.world._canvas._orbifold_image_id = self.world._canvas.create_image(
                             (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
                             image=self.world._canvas.tk_orbifold_img)
@@ -3454,6 +3473,13 @@ Keyboard shortcuts:
             pass
         try:
             if self.world.draw_orbifold and self.world.draw_mirrors:
+                if isinstance(
+                        self.world._canvas._mirrors_img,
+                        tuple):
+                    self.world._canvas._mirrors_img = make_tile(*self.world._canvas._mirrors_img)
+                    self.world._canvas.tk_mirrors_img = PIL.ImageTk.PhotoImage(
+                            self.world._canvas._mirrors_img
+                            )
                 self.world._canvas._mirrors_image_id = self.world._canvas.create_image(
                             (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
                             image=self.world._canvas.tk_mirrors_img)
@@ -3521,8 +3547,9 @@ Keyboard shortcuts:
                 if image is not None:
                     # FIXME: methode change_preview in World class
 
-                    self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
                     self.world._canvas._img = image
+                    self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
+
                     try:
                         self.world._canvas.delete(self.world._canvas._image_id)
                     except AttributeError:
@@ -3532,7 +3559,7 @@ Keyboard shortcuts:
                                     (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
                                     image=self.world._canvas.tk_img)
 
-                    self.world._canvas._tile_img = make_tile(
+                    self.world._canvas._tile_img = (
                                 self.world.geometry,
                                 (self.world.modulus, self.world.angle),
                                 self.function.current_pattern,
@@ -3543,11 +3570,7 @@ Keyboard shortcuts:
                                 False
                                 )
 
-                    self.world._canvas.tk_tile_img = PIL.ImageTk.PhotoImage(
-                            self.world._canvas._tile_img
-                            )
-
-                    self.world._canvas._orbifold_img = make_tile(
+                    self.world._canvas._orbifold_img = (
                                 self.world.geometry,
                                 (self.world.modulus, self.world.angle),
                                 self.function.current_pattern,
@@ -3557,11 +3580,8 @@ Keyboard shortcuts:
                                 True,
                                 False
                                 )
-                    self.world._canvas.tk_orbifold_img = PIL.ImageTk.PhotoImage(
-                            self.world._canvas._orbifold_img
-                            )
 
-                    self.world._canvas._mirrors_img = make_tile(
+                    self.world._canvas._mirrors_img = (
                                 self.world.geometry,
                                 (self.world.modulus, self.world.angle),
                                 self.function.current_pattern,
@@ -3571,9 +3591,6 @@ Keyboard shortcuts:
                                 True,
                                 True
                                 )
-                    self.world._canvas.tk_mirrors_img = PIL.ImageTk.PhotoImage(
-                            self.world._canvas._mirrors_img
-                            )
 
                     self.update()
                 break
@@ -3895,11 +3912,12 @@ def main():     # <<<1
     # function_config["matrix"] = M
     # color_config["modulus"] = 1.5
 
-    # color_config["modulus"] = 2
-    # function_config["wallpaper_pattern"] = "**"
-    # world_config["draw_orbifold"] = True
-    # world_config["draw_tile"] = True
-    # world_config["draw_mirrors"] = True
+    color_config["modulus"] = 3
+    function_config["wallpaper_pattern"] = "*632"
+    world_config["draw_orbifold"] = True
+    world_config["draw_tile"] = True
+    world_config["draw_mirrors"] = True
+    world_config["fade"] = True
     # function_config["wallpaper_color_pattern"] = "*442"
     # function_config["matrix"] = { (0,1): 1 }
 
