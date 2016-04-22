@@ -1058,7 +1058,7 @@ def apply_color(        # <<<2
                              (width+1,
                               height+1),
                              color=color)
-    color_im.paste(tmp, (1, 1))
+    color_im.paste(tmp, box=(1, 1))
 
     np.divide(res, rho, out=res)
 
@@ -1207,12 +1207,12 @@ def make_sphere_background(zs, img, background="back.jpg", shade=128, stars=0):
     mask_background = PIL.Image.fromarray(
             np.array(mask*shade, dtype=np.uint8),
             "L")
-    background_img.paste(0, None, mask=mask_background)
+    background_img.paste(0, mask=mask_background)
 
     mask_sphere = PIL.Image.fromarray(
             np.array(mask*255, dtype=np.uint8),
             "L")
-    img.paste(background_img, None, mask_sphere)
+    img.paste(background_img, mask=mask_sphere)
     return img
 # >>>2
 
@@ -1233,6 +1233,7 @@ def background_output(     # <<<2
                        pattern=pattern,
                        matrix=matrix,
                        message_queue=output_message_queue,
+                       tile=True,
                        stretch_color=color["stretch"],
                        **params)
 
@@ -1301,6 +1302,7 @@ def make_image(color=None,     # <<<2
                matrix=None,
                message_queue=None,
                stretch_color=False,
+               tile=False,
                **params):
 
     zs = make_coordinates_array(world["size"],
@@ -1349,17 +1351,21 @@ def make_image(color=None,     # <<<2
                       color["angle"],
                       color["color"])
 
-    if (world["draw_tile"] or world["draw_orbifold"]) and PATTERN[pattern]["type"] in ["plane group",
-                                    "color reversing plane group"]:
-        make_tile(world["geometry"],
-                  (world["modulus"], world["angle"]),
-                  pattern,
-                  params["lattice_basis"],
-                  img,
-                  draw_tile=world["draw_tile"],
-                  draw_orbifold=world["draw_orbifold"],
-                  draw_mirrors=world["draw_mirrors"]
-                  )
+    if (tile and
+            (world["draw_tile"] or world["draw_orbifold"]) and
+            PATTERN[pattern]["type"] in ["plane group",
+                                         "color reversing plane group"]):
+        tile = make_tile(
+                world["geometry"],
+                (world["modulus"], world["angle"]),
+                pattern,
+                params["lattice_basis"],
+                img.size,
+                draw_tile=world["draw_tile"],
+                draw_orbifold=world["draw_orbifold"],
+                draw_mirrors=world["draw_mirrors"]
+                )
+        img.paste(tile, mask=tile)
 
     if world["sphere_background"] and not world["sphere_projection"]:
         return make_sphere_background(_zs,
@@ -1376,11 +1382,12 @@ def make_tile(geometry,         # <<<2
               transformation,
               pattern,
               basis,
-              img,
+              size,
               draw_tile=True,
               draw_orbifold=True,
               draw_mirrors=False):
 
+    img = PIL.Image.new("RGBA", size, (255, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
     modulus, angle = transformation
@@ -1504,6 +1511,8 @@ def make_tile(geometry,         # <<<2
         elif pattern == "××":
             # TODO
             pass
+
+    return img
 # >>>2
 # >>>1
 
@@ -2169,7 +2178,6 @@ class World(LabelFrame):     # <<<2
                 self._canvas.create_line(i-1, j, i+2, j, fill="gray")
                 self._canvas.create_line(i, j-1, i, j+2, fill="gray")
         self._canvas.pack(padx=5, pady=5)
-        self._image_id = None
 
         self._draw_tile = BooleanVar()
         self._draw_tile_button = Checkbutton(
@@ -2391,7 +2399,7 @@ class World(LabelFrame):     # <<<2
         delta_y = y_max - y_min
         self.geometry = (x_min + dx*delta_x,
                          x_max + dx*delta_x,
-                             y_min + dy*delta_y,
+                         y_min + dy*delta_y,
                          y_max + dy*delta_y)
     # >>>3
 
@@ -2709,6 +2717,12 @@ class Function(LabelFrame):     # <<<2
     def lattice_params(self, l):
         self._lattice_params.set(floats_to_str(l))
     # >>>4
+
+    @property
+    def wallpaper_basis(self):      # <<<4
+        return basis(self.wallpaper_pattern, *self.lattice_params)
+    # >>>4
+
     # >>>3
 
     def __init__(self, root):      # <<<3
@@ -2770,7 +2784,9 @@ class Function(LabelFrame):     # <<<2
                                        width=3)
         self._wallpaper_N.pack(padx=5, pady=5)
         self._wallpaper_N.disable()
-        self._wallpaper_N.bind("<Double-Button-1>", sequence(self._wallpaper_N.toggle))
+        self._wallpaper_N.bind(
+                "<Double-Button-1>",
+                sequence(self._wallpaper_N.toggle))
         # # >>>4
 
         # sphere tab        <<<4
@@ -3132,8 +3148,7 @@ class Function(LabelFrame):     # <<<2
 
     def get_pattern_params(self):       # <<<3
         if self.current_tab == "wallpaper":
-            return {"lattice_basis": basis(self.wallpaper_pattern,
-                                           *self.lattice_params),
+            return {"lattice_basis": self.wallpaper_basis,
                     "color_pattern": self.wallpaper_color_pattern,
                     "N": self.wallpaper_N}
         elif self.current_tab == "sphere":
@@ -3261,10 +3276,16 @@ class CreateSymmetry(Tk):      # <<<2
 
         # <<<4
         self.function._tabs.bind("<<NotebookTabChanged>>",
-                                 self.update_sphere_tab)
+                                 self.update)
         self.function._sphere_mode.trace(
                 "w",
-                callback=self.update_sphere_tab)
+                callback=self.update)
+
+        # self.world._draw_tile.trace("w", self.update)
+        # self.world._draw_orbifold.trace("w", self.update)
+        self.world._draw_tile_button.config(command=self.update)
+        self.world._draw_orbifold_button.config(command=self.update)
+        self.world._draw_mirrors_button.config(command=self.update)
         # >>>4
 
         # list of matrices, for UNDO
@@ -3344,7 +3365,7 @@ Keyboard shortcuts:
         self.wait_window(dialog)
     # >>>3
 
-    def update_sphere_tab(self, *args):       # <<<3
+    def update(self, *args):       # <<<3
         if self.function.current_tab == "sphere":
             if self.function.sphere_mode in ["rosette", "frieze"]:
                 self.world.stereographic = True
@@ -3358,6 +3379,42 @@ Keyboard shortcuts:
                 assert False
         else:
             self.world.disable_geometry_sphere_tab()
+
+        try:
+            self.world._canvas.delete(self.world._tile_image_id)
+        except AttributeError:
+            pass
+        try:
+            if self.world.draw_tile:
+                self.world._tile_image_id = self.world._canvas.create_image(
+                            (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
+                            image=self.world._canvas.tk_tile_img)
+        except AttributeError:
+            pass
+
+        try:
+            self.world._canvas.delete(self.world._orbifold_image_id)
+        except AttributeError:
+            pass
+        try:
+            if self.world.draw_orbifold:
+                self.world._orbifold_image_id = self.world._canvas.create_image(
+                            (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
+                            image=self.world._canvas.tk_orbifold_img)
+        except AttributeError:
+            pass
+
+        try:
+            self.world._canvas.delete(self.world._mirrors_image_id)
+        except AttributeError:
+            pass
+        try:
+            if self.world.draw_orbifold and self.world.draw_mirrors:
+                self.world._mirrors_image_id = self.world._canvas.create_image(
+                            (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
+                            image=self.world._canvas.tk_mirrors_img)
+        except AttributeError:
+            pass
     # >>>3
 
     def update_GUI(self):        # <<<3
@@ -3421,77 +3478,59 @@ Keyboard shortcuts:
                     # FIXME: methode change_preview in World class
                     self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
                     self.world._canvas._img = image
-                    self.world._canvas.delete(self.world._image_id)
-                    # self.world._canvas.delete(ALL)
+                    try:
+                        self.world._canvas.delete(self.world._image_id)
+                    except AttributeError:
+                        pass
+
                     self.world._image_id = self.world._canvas.create_image(
                                     (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
                                     image=self.world._canvas.tk_img)
+
+                    self.world._canvas._tile_img = make_tile(
+                                self.world.geometry,
+                                (self.world.modulus, self.world.angle),
+                                self.function.current_pattern,
+                                self.function.wallpaper_basis,
+                                image.size,
+                                True,
+                                False,
+                                False
+                                )
+                    self.world._canvas.tk_tile_img = PIL.ImageTk.PhotoImage(
+                            self.world._canvas._tile_img
+                            )
+
+                    self.world._canvas._orbifold_img = make_tile(
+                                self.world.geometry,
+                                (self.world.modulus, self.world.angle),
+                                self.function.current_pattern,
+                                self.function.wallpaper_basis,
+                                image.size,
+                                False,
+                                True,
+                                False
+                                )
+                    self.world._canvas.tk_orbifold_img = PIL.ImageTk.PhotoImage(
+                            self.world._canvas._orbifold_img
+                            )
+
+                    self.world._canvas._mirrors_img = make_tile(
+                                self.world.geometry,
+                                (self.world.modulus, self.world.angle),
+                                self.function.current_pattern,
+                                self.function.wallpaper_basis,
+                                image.size,
+                                False,
+                                True,
+                                True
+                                )
+                    self.world._canvas.tk_mirrors_img = PIL.ImageTk.PhotoImage(
+                            self.world._canvas._mirrors_img
+                            )
+
+                    self.update()
                 break
-
-        # <<<4
-        #         # draw tile
-        #         if self.function.lattice_basis is not None:
-
-        #             B = self.function.lattice_basis
-
-        #             corner = self.world._canvas.coords(self.world._image_id)
-        #             xc = corner[0] - width / 2
-        #             yc = corner[1] - height / 2
-
-        #             x_min, x_max, y_min, y_max = self.world.geometry
-        #             delta_x = (x_max-x_min) / (width-1)
-        #             delta_y = (y_max-y_min) / (height-1)
-        #             a = self.world.angle * pi / 180
-        #             t = self.world.modulus * complex(cos(a), sin(a))
-
-        #             x0, y0 = 0, 0
-        #             x0, y0 = x0*B[0][0] + y0*B[1][0], x0*B[0][1] + y0*B[1][1]
-        #             z0 = complex(x0, y0) * t
-        #             x0, y0 = z0.real, z0.imag
-        #             x0, y0 = xc + (x0-x_min)/delta_x, yc + (y_max-y0)/delta_y
-
-        #             x1, y1 = 1, 0
-        #             x1, y1 = x1*B[0][0] + y1*B[1][0], x1*B[0][1] + y1*B[1][1]
-        #             z1 = complex(x1, y1) * t
-        #             x1, y1 = z1.real, z1.imag
-        #             x1, y1 = xc + (x1-x_min)/delta_x, yc + (y_max-y1)/delta_y
-
-        #             x2, y2 = 0, 1
-        #             x2, y2 = x2*B[0][0] + y2*B[1][0], x2*B[0][1] + y2*B[1][1]
-        #             z2 = complex(x2, y2) * t
-        #             x2, y2 = z2.real, z2.imag
-        #             x2, y2 = xc + (x2-x_min)/delta_x, yc + (y_max-y2)/delta_y
-
-        #             x3, y3 = 1, 1
-        #             x3, y3 = x3*B[0][0] + y3*B[1][0], x3*B[0][1] + y3*B[1][1]
-        #             z3 = complex(x3, y3) * t
-        #             x3, y3 = z3.real, z3.imag
-        #             x3, y3 = xc + (x3-x_min)/delta_x, yc + (y_max-y3)/delta_y
-
-        #             try:
-        #                 for tmp in self.__tmp:
-        #                     self.world._canvas.delete(tmp)
-        #             except Exception as e:
-        #                 self.__tmp = []
-        #             self.__tmp.append(
-        #                     self.world._canvas.create_polygon(
-        #                         x0, y0, x1, y1, x3, y3, x2, y2,
-        #                         fill="",
-        #                         width=1, outline="white"))
-
-        #             # self.__tmp.append(
-        #             #         self.world._canvas.create_oval(
-        #             #             x1-10, y1-10, x1+10, y1+10,
-        #             #             fill="", outline="blue", width=3))
-        #             # self.__tmp.append(
-        #             #         self.world._canvas.create_oval(
-        #             #             x2-10, y2-10, x2+10, y2+10,
-        #             #             fill="", outline="green", width=3))
-        #             self.__tmp.append(
-        #                     self.world._canvas.create_oval(
-        #                         x0-10, y0-10, x0+10, y0+10,
-        #                         fill="", outline="white", width=1))
-        # >>>4
 
         self.after(100, self.update_GUI)
     # >>>3
@@ -3552,6 +3591,7 @@ Keyboard shortcuts:
                                matrix=self.function.matrix,
                                message_queue=self.preview_message_queue,
                                stretch_color=self.colorwheel.stretch,
+                               tile=False,
                                **params)
             self.preview_image_queue.put(image)
 
