@@ -1349,13 +1349,17 @@ def make_image(color=None,     # <<<2
                       color["angle"],
                       color["color"])
 
-    if PATTERN[pattern]["type"] in ["plane group",
+    if (world["draw_tile"] or world["draw_orbifold"]) and PATTERN[pattern]["type"] in ["plane group",
                                     "color reversing plane group"]:
         make_tile(world["geometry"],
                   (world["modulus"], world["angle"]),
                   pattern,
                   params["lattice_basis"],
-                  img)
+                  img,
+                  draw_tile=world["draw_tile"],
+                  draw_orbifold=world["draw_orbifold"],
+                  draw_mirrors=world["draw_mirrors"]
+                  )
 
     if world["sphere_background"] and not world["sphere_projection"]:
         return make_sphere_background(_zs,
@@ -1420,6 +1424,7 @@ def make_tile(geometry,         # <<<2
                 draw.line((x1, y1, x2, y2), fill=color, width=width)
 
     # tile
+    print("draw_tile:", draw_tile)
     if draw_tile:
         line(0, 0, 0, 1, 1, 1, 1, 0, 0, 0, color="white", width=1)
 
@@ -1737,7 +1742,8 @@ class ColorWheel(LabelFrame):   # <<<2
         Checkbutton(self, text="stretch unit disk",
                     variable=self._stretch_color,
                     onvalue=True, offvalue=False,
-                    command=lambda: self.change_colorwheel(self.filename)
+                    command=lambda: self.change_colorwheel(self.filename),
+                    indicatoron=False
                     ).grid(row=1, column=0, padx=5, pady=0)
 
         self._canvas = Canvas(self, width=200, height=200, bg="white")
@@ -2131,6 +2137,36 @@ class World(LabelFrame):     # <<<2
         elif tab == "plane":
             self._geometry_tabs.select(self._geometry_plane_tab)
     # >>>4
+
+    @property
+    def draw_tile(self):    # <<<4
+        return self._draw_tile.get()
+    # >>>4
+
+    @draw_tile.setter
+    def draw_tile(self, b):    # <<<4
+        self._draw_tile.set(b)
+    # >>>4
+
+    @property
+    def draw_orbifold(self):    # <<<4
+        return self._draw_orbifold.get()
+    # >>>4
+
+    @draw_orbifold.setter
+    def draw_orbifold(self, b):    # <<<4
+        self._draw_orbifold.set(b)
+    # >>>4
+
+    @property
+    def draw_mirrors(self):    # <<<4
+        return self._draw_mirrors.get()
+    # >>>4
+
+    @draw_mirrors.setter
+    def draw_mirrors(self, b):    # <<<4
+        self._draw_mirrors.set(b)
+    # >>>4
     # >>>3
 
     def __init__(self, root):       # <<<3
@@ -2141,14 +2177,48 @@ class World(LabelFrame):     # <<<2
         self.configure(text="World")
 
         # the preview image     <<<4
-        self._canvas = Canvas(self, width=PREVIEW_SIZE, height=PREVIEW_SIZE,
+        canvas_frame = Frame(self)
+        canvas_frame.grid(row=0, column=0, rowspan=4, padx=5, pady=5)
+
+        self._canvas = Canvas(canvas_frame,
+                              width=PREVIEW_SIZE, height=PREVIEW_SIZE,
                               bg="light gray")
         for i in range(5, PREVIEW_SIZE, 10):
             for j in range(5, PREVIEW_SIZE, 10):
                 self._canvas.create_line(i-1, j, i+2, j, fill="gray")
                 self._canvas.create_line(i, j-1, i, j+2, fill="gray")
-        self._canvas.grid(row=0, column=0, rowspan=4, padx=5, pady=5)
+        self._canvas.pack(padx=5, pady=5)
         self._image_id = None
+
+        self._draw_tile = BooleanVar()
+        self._draw_tile_button = Checkbutton(
+                canvas_frame,
+                variable=self._draw_tile,
+                text="show tile",
+                indicatoron=False)
+        self._draw_tile_button.pack(side=LEFT, padx=5, pady=5)
+        self._draw_orbifold = BooleanVar()
+        self._draw_orbifold_button = Checkbutton(
+                canvas_frame,
+                variable=self._draw_orbifold,
+                text="show orbifold",
+                indicatoron=False)
+        self._draw_orbifold_button.pack(side=LEFT, padx=5, pady=5)
+
+        self._draw_mirrors = BooleanVar()
+        self._draw_mirrors_button = Checkbutton(
+                canvas_frame,
+                variable=self._draw_mirrors,
+                text="show mirrors",
+                indicatoron=False)
+        self._draw_mirrors_button.pack(side=LEFT, padx=5, pady=5)
+
+        self._draw_tile.trace("w", self.update)
+        self._draw_tile.set(False)
+        self._draw_orbifold.trace("w", self.update)
+        self._draw_orbifold.set(False)
+        self._draw_mirrors.trace("w", self.update)
+        self._draw_mirrors.set(False)
         # >>>4
 
         # geometry of result    <<<4
@@ -2231,6 +2301,7 @@ class World(LabelFrame):     # <<<2
                                            text="stereographic projection",
                                            variable=self._stereographic,
                                            onvalue=True, offvalue=False,
+                                           indicatoron=False,
                                            )
         stereographic_button.pack(padx=5, pady=10)
 
@@ -2380,6 +2451,13 @@ class World(LabelFrame):     # <<<2
             self.sphere_background = filename
     # >>>3
 
+    def update(self, *args):   # <<<3
+        if self.draw_orbifold:
+            self._draw_mirrors_button.config(state=NORMAL)
+        else:
+            self._draw_mirrors_button.config(state=DISABLED)
+    # >>>3
+
     def adjust_geometry(self, *args):       # <<<3
         ratio = self.width / self.height
         x_min, x_max, y_min, y_max = self.geometry
@@ -2414,6 +2492,9 @@ class World(LabelFrame):     # <<<2
                 "geometry_tab": self.geometry_tab,
                 "size": self.size,
                 "filename": self.filename_template,
+                "draw_tile": self.draw_tile,
+                "draw_orbifold": self.draw_orbifold,
+                "draw_mirrors": self.draw_mirrors,
                 }
     # >>>3
 
@@ -2440,6 +2521,12 @@ class World(LabelFrame):     # <<<2
             self.filename_template = cfg["filename"]
         if "geometry_tab" in cfg:
             self.geometry_tab = cfg["geometry_tab"]
+        if "draw_tile" in cfg:
+            self.change_colorwheel(cfg["draw_tile"])
+        if "draw_orbifold" in cfg:
+            self.change_colorwheel(cfg["draw_orbifold"])
+        if "draw_mirrors" in cfg:
+            self.change_colorwheel(cfg["draw_mirrors"])
     # >>>3
 # >>>2
 
