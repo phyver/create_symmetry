@@ -1416,15 +1416,22 @@ def make_tile(geometry,         # <<<2
             x2, y2 = XY_to_pixel(coord[i], coord[i+1])
             draw.line((x1, y1, x2, y2), fill=color, width=width)
 
-    def mirrors(*coord, color="white", width=1):
-        if draw_mirrors:
-            for i in range(0, len(coord), 4):
-                x1, y1 = XY_to_pixel(coord[i], coord[i+1])
-                x2, y2 = XY_to_pixel(coord[i+2], coord[i+3])
-                draw.line((x1, y1, x2, y2), fill=color, width=width)
+    def mirror(X0, Y0, X1, Y1, order, pixels=30):
+        if not draw_mirrors:
+            return
+
+        x0, y0 = XY_to_pixel(X0, Y0)
+        x1, y1 = XY_to_pixel(X1, Y1)
+        p = complex(x1-x0, y1-y0)
+        p = p / abs(p)
+
+        for i in range(order):
+            q = p * exp(i*pi*1j/order) * pixels
+            x2, y2 = q.real, q.imag
+            x3, y3 = -x2, -y2
+            draw.line((x2+x0, y2+y0, x3+x0, y3+y0), width=3, fill="red")
 
     # tile
-    print("draw_tile:", draw_tile)
     if draw_tile:
         line(0, 0, 0, 1, 1, 1, 1, 0, 0, 0, color="white", width=1)
 
@@ -1442,71 +1449,45 @@ def make_tile(geometry,         # <<<2
         elif pattern == "*2222":
             line(0, 0, 0, 1/2, 1/2, 1/2, 1/2, 0, 0, 0, color="red", width=3)
             disks(0, 0, 0, 1/2, 1/2, 1/2, 1/2, 0, color="red")
-            mirrors(0, -1/2, 0, 1,
-                    -1/2, 0, 1, 0,
-                    -1/2, 1/2, 1/2, 1/2,
-                    0, 1/2, 1, 1/2,
-                    1/2, -1/2, 1/2, 1/2,
-                    1/2, 0, 1/2, 1,
-                    color="red")
+            mirror(0, 0, 1/2, 0, 2)
+            mirror(1/2, 0, 0, 0, 2)
+            mirror(0, 1/2, 0, 0, 2)
+            mirror(1/2, 1/2, 0, 1/2, 2)
         elif pattern == "*442":
             line(0, 0, 1/2, 0, 1/2, 1/2, 0, 0, color="red", width=3)
             disks(0, 0, 1/2, 0, 1/2, 1/2, color="red")
-            mirrors(1/2, 1, 1/2, -1/2,
-                    -1/2, 0, 1, 0,
-                    -1/2, -1/2, 1, 1,
-                    0, -1/2, 0, 1/2,
-                    0, 1/2, 1, 1/2,
-                    0, 1, 1, 0,
-                    -1/2, 1/2, 1/2, -1/2,
-                    color="red")
+            mirror(0, 0, 0, 1, 4)
+            mirror(1/2, 1/2, 0, 1, 4)
+            mirror(1/2, 0, 1/2, 1/2, 2)
         elif pattern == "*333":
-            line(0, 0, 1/3, 2/3, 2/3, 1/3, 0, 0, color="red", width=3)
             disks(0, 0, 1/3, 2/3, 2/3, 1/3, color="red")
-            mirrors(-1/3, -2/3, 2/3, 4/3,
-                    -2/3, -1/3, 4/3, 2/3,
-                    1, 0, 0, 1,
-                    1/3, -1/3, -1/3, 1/3,
-                    1/3, -1/3, 1, 1,
-                    1, 1, -1/3, 1/3,
-                    color="red")
+            line(0, 0, 1/3, 2/3, 2/3, 1/3, 0, 0, color="red", width=3)
+            mirror(0, 0, 1/3, 2/3, 3)
+            mirror(1/3, 2/3, 0, 0, 3)
+            mirror(2/3, 1/3, 0, 0, 3)
         elif pattern == "*632":
             line(0, 0, 1/2, 0, 2/3, 1/3, 0, 0, color="red", width=3)
             disks(0, 0, 1/2, 0, 2/3, 1/3, color="red")
-            mirrors(-2/3, 0, 1, 0,
-                    -1/3, -2/3, 1/3, 2/3,
-                    -2/3, -1/3, 4/3, 2/3,
-                    1, 0, 1/3, 2/3,
-                    1, 1, 1/3, -1/3,
-                    1/3, -1/3, -1/3, 1/3,
-                    0, 2/3, 0, -2/3,
-                    -2/3, -2/3, 2/3, 2/3,
-                    color="red")
+            mirror(0, 0, 1/2, 0, 6)
+            mirror(1/2, 0, 0, 0, 2)
+            mirror(2/3, 1/3, 0, 0, 3)
         elif pattern == "4*2":
             disks(0, 0, color="blue")
             disks(1/2, 0, color="red")
-            mirrors(0, 0, 1, 0,
-                    1/2, 1/2, 1/2, -1/2,
-                    color="red")
+            mirror(1/2, 0, 0, 1/2, 2)
         elif pattern == "2*22":
             disks(0, 1/2, color="blue")
             disks(0, 0, 1/2, 1/2, color="red")
-            mirrors(-1/2, -1/2, 1, 1,
-                    0, 1, 1, 0,
-                    1/2, -1/2, -1/2, 1/2,
-                    color="red")
+            mirror(0, 0, 1/2, 1/2, 2)
+            mirror(1/2, 1/2, 0, 0, 2)
         elif pattern == "3*3":
             disks(2/3, 1/3, color="blue")
             disks(0, 0, color="red")
-            mirrors(-2/3, 0, 2/3, 0,
-                    0, -2/3, 0, 2/3,
-                    -2/3, -2/3, 2/3, 2/3,
-                    color="red")
+            mirror(0, 0, 1/2, 0, 3)
         elif pattern == "**":
             # disks(0, 0, 0, 1/2, color="red")
-            mirrors(0, 0, 1, 0,
-                    0, 1/2, 1, 1/2,
-                    color="red", width=2)
+            mirror(1/2, 0, 0, 0, 1)
+            mirror(1/2, 1/2, 0, 1/2, 1)
         elif pattern == "22×":
             disks(0, 0, 1/2, 0, color="blue")
             disks(0, 1/4, 1/2, 1/4, color="lightgreen")
@@ -2522,11 +2503,11 @@ class World(LabelFrame):     # <<<2
         if "geometry_tab" in cfg:
             self.geometry_tab = cfg["geometry_tab"]
         if "draw_tile" in cfg:
-            self.change_colorwheel(cfg["draw_tile"])
+            self.draw_tile = cfg["draw_tile"]
         if "draw_orbifold" in cfg:
-            self.change_colorwheel(cfg["draw_orbifold"])
+            self.draw_orbifold = cfg["draw_orbifold"]
         if "draw_mirrors" in cfg:
-            self.change_colorwheel(cfg["draw_mirrors"])
+            self.draw_mirrors = cfg["draw_mirrors"]
     # >>>3
 # >>>2
 
@@ -3828,7 +3809,10 @@ def main():     # <<<1
     # color_config["modulus"] = 1.5
 
     # color_config["modulus"] = 2
-    function_config["wallpaper_pattern"] = "××"
+    function_config["wallpaper_pattern"] = "**"
+    world_config["draw_orbifold"] = True
+    world_config["draw_tile"] = True
+    world_config["draw_mirrors"] = True
     # function_config["wallpaper_color_pattern"] = "*442"
     # function_config["matrix"] = { (0,1): 1 }
 
