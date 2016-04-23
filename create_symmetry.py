@@ -1492,6 +1492,7 @@ def make_tile(geometry,         # <<<2
     draw = ImageDraw.Draw(img)
 
     modulus, angle = transformation
+    angle = angle * pi / 180
 
     x_min, x_max, y_min, y_max = geometry
 
@@ -2444,10 +2445,10 @@ class World(LabelFrame):     # <<<2
         self.sphere_background = DEFAULT_SPHERE_BACKGROUND
 
         self._sphere_background_fading = LabelEntry(self._geometry_sphere_tab,
-                                          label="shading",
-                                          value=128,
-                                          width=5,
-                                          convert=int)
+                                                    label="shading",
+                                                    value=128,
+                                                    width=5,
+                                                    convert=int)
         self._sphere_background_fading.pack(padx=5, pady=10)
 
         self._sphere_stars = LabelEntry(self._geometry_sphere_tab,
@@ -3706,7 +3707,7 @@ Keyboard shortcuts:
                                 True
                                 )
 
-                    self.update()
+                    self.update_world_preview()
                 break
 
         self.after(100, self.update_GUI)
