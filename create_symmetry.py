@@ -3400,15 +3400,23 @@ class CreateSymmetry(Tk):      # <<<2
 
         # <<<4
         self.function._tabs.bind("<<NotebookTabChanged>>",
-                                 self.update)
+                                 self.update_world_tab)
         self.function._sphere_mode.trace(
                 "w",
-                callback=self.update)
+                callback=self.update_world_tab)
 
-        self.world._draw_tile_button.config(command=self.update)
-        self.world._draw_orbifold_button.config(command=self.update)
-        self.world._draw_mirrors_button.config(command=self.update)
-        self.world._fade_button.config(command=self.update)
+        self.world._draw_tile_button.config(
+                command=self.update_world_preview
+                )
+        self.world._draw_orbifold_button.config(
+                command=self.update_world_preview
+                )
+        self.world._draw_mirrors_button.config(
+                command=self.update_world_preview
+                )
+        self.world._fade_button.config(
+                command=self.update_world_preview
+                )
         # >>>4
 
         # list of matrices, for UNDO
@@ -3488,7 +3496,7 @@ Keyboard shortcuts:
         self.wait_window(dialog)
     # >>>3
 
-    def update(self, *args):       # <<<3
+    def update_world_tab(self, *args):       # <<<3
         if self.function.current_tab == "sphere":
             self.world.draw_tile = False
             self.world.draw_orbifold = False
@@ -3515,7 +3523,9 @@ Keyboard shortcuts:
             self.world._draw_mirrors_button.config(state=NORMAL)
             self.world._fade_button.config(state=NORMAL)
             self.world.update()
+    # >>>3
 
+    def update_world_preview(self, *args):       # <<<3
         try:
             self.world._canvas.delete(self.world._canvas._image_id)
         except AttributeError:
