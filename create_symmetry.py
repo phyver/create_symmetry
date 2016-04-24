@@ -3253,14 +3253,12 @@ class Function(LabelFrame):     # <<<2
 
         def det_not_null(s):
             xs = str_to_floats(s)
-            print(len(xs))
             assert len(xs) == 4
             assert xs[0]*xs[3] - xs[1]*xs[2] != 0
             return xs
 
         if lattice == "general":
             self._lattice_params.enable()
-            # self._lattice_params.label_widget.config(text="x, y")
             self._lattice_params.label_widget.config(text="x1,y1,x2,y2")
             self._lattice_params.convert = det_not_null
             self.lattice_params = [1, 0, 1, 1]
@@ -3814,14 +3812,44 @@ Keyboard shortcuts:
             self.message_queue.put("* {}".format(e))
     # >>>3
 
+    def full_preview_image(self):       # <<<3
+        """paste the preview, tile, orbifold and mirror images together"""
+        img = self.world._canvas._img
+        width, height = img.size
+        if self.world.fade:
+            img = fade_image(img)
+        if self.world.draw_tile:
+            try:
+                tile = self.world._canvas._tile_img
+                img.paste(tile, mask=tile)
+            except:
+                pass
+        if self.world.draw_orbifold:
+            try:
+                orbifold = self.world._canvas._orbifold_img
+                img.paste(orbifold, mask=orbifold)
+            except:
+                pass
+        if self.world.draw_mirrors:
+            try:
+                mirrors = self.world._canvas._mirrors_img
+                img.paste(mirrors, mask=mirrors)
+            except:
+                pass
+        return img
+    # >>>3
+
     def show_bigger_preview(self, *args, alpha=2):       # <<<3
         try:
-            # TODO: tile, orbifold and fade
-            img = self.world._canvas._img
+            img = self.full_preview_image()
             width, height = img.size
             width = alpha * width
             height = alpha * height
-            big_img = img.resize((width, height), resample=PIL.Image.BICUBIC)
+            big_img = img.resize(
+                    (width, height),
+                    resample=PIL.Image.ANTIALIAS
+                    )
+
             dialog = Toplevel(self)
             dialog.resizable(width=False, height=False)
             dialog.tk_img = PIL.ImageTk.PhotoImage(big_img)
