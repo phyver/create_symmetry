@@ -41,7 +41,7 @@ from threading import Thread
 import queue
 # >>>1
 
-PREVIEW_SIZE = 450
+PREVIEW_SIZE = 500
 OUTPUT_WIDTH = 1280
 OUTPUT_HEIGHT = 960
 COLOR_SIZE = 200
@@ -2490,21 +2490,31 @@ class World(LabelFrame):     # <<<2
         tmp.grid(row=3, column=1, sticky=E+W, padx=5, pady=5)
 
         self._preview_button = Button(tmp, text="preview", command=None)
-        self._preview_button.pack(side=LEFT, padx=10, pady=10)
+        self._preview_button.pack(side=TOP, padx=10, pady=10)
+
+        self._save_preview_button = Button(
+                tmp,
+                text="save preview",
+                command=None
+                )
+        self._save_preview_button.pack(side=LEFT, padx=10, pady=10)
 
         self._save_button = Button(tmp, text="save", command=None)
         self._save_button.pack(side=RIGHT, padx=10, pady=10)
+
         # >>>4
 
         self.adjust_geometry()
     # >>>3
 
-    def disable_geometry_sphere_tab(self):
+    def disable_geometry_sphere_tab(self):  # <<<3
         self.stereographic = True
         self._geometry_tabs.tab(self._geometry_sphere_tab, state=DISABLED)
+    # >>>3
 
-    def enable_geometry_sphere_tab(self):
+    def enable_geometry_sphere_tab(self):   # <<<3
         self._geometry_tabs.tab(self._geometry_sphere_tab, state=NORMAL)
+    # >>>3
 
     def reset_geometry(self, *args):        # <<<3
         self.geometry = WORLD_GEOMETRY
@@ -3370,6 +3380,7 @@ class CreateSymmetry(Tk):      # <<<2
         # attach appropriate actions to buttons     <<<4
         self.world._preview_button.config(command=sequence(self.make_preview))
         self.world._save_button.config(command=sequence(self.make_output))
+        self.world._save_preview_button.config(command=sequence(self.save_preview))
         # >>>4
 
         # keybindings       <<<4
@@ -3381,6 +3392,7 @@ class CreateSymmetry(Tk):      # <<<2
 
         self.bind("<Control-p>", sequence(self.make_preview))
         self.bind("<Control-s>", sequence(self.make_output))
+        self.bind("<Control-S>", sequence(self.save_preview))
 
         self.bind("<Control-n>", sequence(self.function.add_noise))
         self.bind("<Control-N>", sequence(self.function.add_noise,
@@ -3481,6 +3493,7 @@ Keyboard shortcuts:
 
   Control-p     compute and display preview
   Control-s     compute and save result to file
+  Control-s     save current preview to file
 
   Control-n     add noise to matrix
   Control-N     add noise to matrix and display preview
@@ -3862,6 +3875,19 @@ Keyboard shortcuts:
         except AttributeError:
             pass
     # >>>3
+
+    def save_preview(self):     # <<<3
+        img = self.full_preview_image()
+        filename = "preview"
+        nb = 0
+        nb_ext = ""
+        ext = ".jpg"
+        while os.path.exists(filename + nb_ext + ext):
+            nb += 1
+            nb_ext = "~{:03}".format(nb)
+        img.save(filename + nb_ext + ext)
+    # >>>3
+
 
     def translate_rotate(self, dx, dy, dz=0):   # <<<3
         def translate_rotate_tmp(*args):
