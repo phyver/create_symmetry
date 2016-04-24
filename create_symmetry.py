@@ -1331,7 +1331,7 @@ def background_output(     # <<<2
                        stretch_color=color["stretch"],
                        **params)
 
-    if world["fade"]:
+    if world["preview_fade"]:
         image = fade_image(image)
 
     if ((world["draw_tile"] or world["draw_orbifold"]) and
@@ -1616,6 +1616,7 @@ def make_tile(geometry,         # <<<2
 
 def fade_image(image, coeff=100):       # <<<2
     """return a faded version of the image"""
+    # TODO allow fading to black and use in make_sphere_background
     mask = PIL.Image.new("L", image.size, coeff)
     white = PIL.Image.new("RGB", image.size, (255, 255, 255))
     white.paste(image, mask=mask)
@@ -2274,6 +2275,16 @@ class World(LabelFrame):     # <<<2
     def fade(self, b):    # <<<4
         self._fade.set(b)
     # >>>4
+
+    @property
+    def fade_coeff(self):    # <<<4
+        return self._fade_coeff.get()
+    # >>>4
+
+    @fade_coeff.setter
+    def fade_coeff(self, b):    # <<<4
+        self._fade_coeff.set(b)
+    # >>>4
     # >>>3
 
     def __init__(self, root):       # <<<3
@@ -2325,7 +2336,14 @@ class World(LabelFrame):     # <<<2
                 variable=self._fade,
                 text="fade",
                 indicatoron=False)
-        self._fade_button.pack(side=LEFT, padx=5, pady=5)
+        self._fade_button.pack(side=LEFT, padx=(5,0), pady=5)
+
+        self._fade_coeff = LabelEntry(
+                canvas_frame,
+                convert=int,
+                width=3,
+                label="")
+        self._fade_coeff.pack(side=LEFT, padx=(0,5), pady=5)
 
         self._draw_tile.trace("w", self.update)
         self._draw_tile.set(False)
@@ -2335,6 +2353,7 @@ class World(LabelFrame):     # <<<2
         self._draw_mirrors.set(False)
         self._fade.trace("w", self.update)
         self._fade.set(False)
+        self._fade_coeff.set(100)
         # >>>4
 
         # geometry of result    <<<4
@@ -2446,8 +2465,8 @@ class World(LabelFrame):     # <<<2
         self.sphere_background = DEFAULT_SPHERE_BACKGROUND
 
         self._sphere_background_fading = LabelEntry(self._geometry_sphere_tab,
-                                                    label="shading",
-                                                    value=128,
+                                                    label="fade background",
+                                                    value=100,
                                                     width=5,
                                                     convert=int)
         self._sphere_background_fading.pack(padx=5, pady=10)
@@ -2582,6 +2601,11 @@ class World(LabelFrame):     # <<<2
             self._draw_mirrors_button.config(state=NORMAL)
         else:
             self._draw_mirrors_button.config(state=DISABLED)
+
+        if self.fade:
+            self._fade_coeff.enable()
+        else:
+            self._fade_coeff.disable()
     # >>>3
 
     def adjust_geometry(self, *args):       # <<<3
@@ -2621,7 +2645,8 @@ class World(LabelFrame):     # <<<2
                 "draw_tile": self.draw_tile,
                 "draw_orbifold": self.draw_orbifold,
                 "draw_mirrors": self.draw_mirrors,
-                "fade": self.fade,
+                "preview_fade": self.fade,
+                "preview_fade_coeff": self.fade_coeff,
                 }
     # >>>3
 
@@ -2654,8 +2679,10 @@ class World(LabelFrame):     # <<<2
             self.draw_orbifold = cfg["draw_orbifold"]
         if "draw_mirrors" in cfg:
             self.draw_mirrors = cfg["draw_mirrors"]
-        if "fade" in cfg:
-            self.fade = cfg["fade"]
+        if "preview_fade" in cfg:
+            self.fade = cfg["preview_fade"]
+        if "preview_fade_coeff" in cfg:
+            self.fade_coeff = cfg["preview_fade_coeff"]
     # >>>3
 # >>>2
 
@@ -3448,6 +3475,8 @@ class CreateSymmetry(Tk):      # <<<2
         self.world._fade_button.config(
                 command=self.update_world_preview
                 )
+        self.world._fade_coeff.bind("<Return>", self.update_world_preview)
+        self.world._fade_coeff.bind("<FocusOut>", self.update_world_preview)
         # >>>4
 
         # list of matrices, for UNDO
@@ -3533,11 +3562,12 @@ Keyboard shortcuts:
             self.world.draw_tile = False
             self.world.draw_orbifold = False
             self.world.draw_mirrors = False
-            self.world.shade = False
+            self.world.fade = False
             self.world._draw_tile_button.config(state=DISABLED)
             self.world._draw_orbifold_button.config(state=DISABLED)
             self.world._draw_mirrors_button.config(state=DISABLED)
             self.world._fade_button.config(state=DISABLED)
+            self.world._fade_coeff.disable()
             if self.function.sphere_mode in ["rosette", "frieze"]:
                 self.world.stereographic = True
                 self.world.disable_geometry_sphere_tab()
@@ -3554,6 +3584,7 @@ Keyboard shortcuts:
             self.world._draw_orbifold_button.config(state=NORMAL)
             self.world._draw_mirrors_button.config(state=NORMAL)
             self.world._fade_button.config(state=NORMAL)
+            self.world._fade_coeff.enable()
             self.world.update()
     # >>>3
 
@@ -3564,7 +3595,10 @@ Keyboard shortcuts:
             pass
         try:
             if self.world.fade:
-                fade = fade_image(self.world._canvas._img)
+                fade = fade_image(
+                        self.world._canvas._img,
+                        255-self.world.fade_coeff
+                        )
                 self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(fade)
             else:
                 self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(self.world._canvas._img)
@@ -4106,7 +4140,7 @@ def main():     # <<<1
     # world_config["draw_orbifold"] = True
     # world_config["draw_tile"] = True
     # world_config["draw_mirrors"] = True
-    # world_config["fade"] = True
+    # world_config["preview_fade"] = True
     # function_config["wallpaper_color_pattern"] = "*442"
     # function_config["matrix"] = { (0,1): 1 }
 
