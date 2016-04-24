@@ -1022,7 +1022,8 @@ def basis(pattern, *params):        # <<<2
         pattern = pattern[0]
     lattice = PATTERN[pattern]["description"].split()[0]
     if lattice == "general":
-        return [[1, 0], [params[0], params[1]]]
+        # return [[1, 0], [params[0], params[1]]]
+        return [[params[0], params[1]], [params[2], params[3]]]
     elif lattice == "rhombic":
         return [[1/2, params[0]/2], [1/2, -params[0]/2]]
     elif lattice == "rectangular":
@@ -2902,7 +2903,7 @@ class Function(LabelFrame):     # <<<2
                                           label="lattice parameters",
                                           value="1,1",
                                           convert=str_to_floats,
-                                          width=7)
+                                          width=10)
         self._lattice_params.pack(padx=5, pady=5)
 
         self._wallpaper_N = LabelEntry(self._wallpaper_tab,
@@ -3244,23 +3245,42 @@ class Function(LabelFrame):     # <<<2
         # wallpaper tab     <<<4
         pattern = self.wallpaper_pattern
         lattice = PATTERN[pattern]["description"].split()[0]
+
+        def not_zero(s):
+            x = float(s)
+            assert x != 0
+            return [x]
+
+        def det_not_null(s):
+            xs = str_to_floats(s)
+            print(len(xs))
+            assert len(xs) == 4
+            assert xs[0]*xs[3] - xs[1]*xs[2] != 0
+            return xs
+
         if lattice == "general":
             self._lattice_params.enable()
-            self._lattice_params.label_widget.config(text="x, y")
-            self.lattice_params = [1, 1]
+            # self._lattice_params.label_widget.config(text="x, y")
+            self._lattice_params.label_widget.config(text="x1,y1,x2,y2")
+            self._lattice_params.convert = det_not_null
+            self.lattice_params = [1, 0, 1, 1]
         elif lattice == "rhombic":
             self._lattice_params.enable()
             self._lattice_params.label_widget.config(text="b")
+            self._lattice_params.convert = not_zero
             self.lattice_params = [.5]
         elif lattice == "rectangular":
             self._lattice_params.enable()
+            self._lattice_params.convert = not_zero
             self.lattice_params = [.5]
             self._lattice_params.label_widget.config(text="H")
         elif lattice == "square":
+            self._lattice_params.convert = None
             self.lattice_params = []
             self._lattice_params.label_widget.config(text="lattice parameters")
             self._lattice_params.disable()
         elif lattice == "hexagonal":
+            self._lattice_params.convert = None
             self.lattice_params = []
             self._lattice_params.label_widget.config(text="lattice parameters")
             self._lattice_params.disable()
