@@ -1309,12 +1309,11 @@ def make_sphere_background(zs, img, background="back.jpg", fade=128, stars=0):
 # >>>2
 
 
-def background_output(     # <<<2
+def save_image(
         message_queue=None,
-        output_message_queue=None, **config):
-    """compute an image from the configuration in config, and save it to a file
-    used by the GUI for output jobs"""
-
+        image=None,
+        **config
+        ):
     filename_template = config["world"]["filename"]
 
     color = config["color"]
@@ -1322,17 +1321,6 @@ def background_output(     # <<<2
     params = config["params"]
     pattern = config["pattern"]
     matrix = config["matrix"]
-    image = make_image(color=color,
-                       world=world,
-                       pattern=pattern,
-                       matrix=matrix,
-                       message_queue=output_message_queue,
-                       tile=True,
-                       stretch_color=color["stretch"],
-                       **params)
-
-    if world["preview_fade"]:
-        image = fade_image(image)
 
     if ((world["draw_tile"] or world["draw_orbifold"]) and
             PATTERN[pattern]["type"] in ["plane group",
@@ -1405,6 +1393,40 @@ $CREATE_SYM --color-config='{color_config:}' \\
     cs = open(filename + ".sh", mode="w")
     cs.write(cmd)
     cs.close()
+
+
+def background_output(     # <<<2
+        message_queue=None,
+        output_message_queue=None, **config):
+    """compute an image from the configuration in config, and save it to a file
+    used by the GUI for output jobs"""
+
+    filename_template = config["world"]["filename"]
+
+    color = config["color"]
+    world = config["world"]
+    params = config["params"]
+    pattern = config["pattern"]
+    matrix = config["matrix"]
+    image = make_image(color=color,
+                       world=world,
+                       pattern=pattern,
+                       matrix=matrix,
+                       message_queue=output_message_queue,
+                       tile=True,
+                       stretch_color=color["stretch"],
+                       **params)
+
+    if world["preview_fade"]:
+        image = fade_image(image)
+
+    save_image(
+            message_queue=message_queue,
+            image=image,
+            **config
+            )
+
+
 # >>>2
 
 
@@ -3848,6 +3870,14 @@ Keyboard shortcuts:
             pass
 
         try:
+            self.preview_config = {
+                    "color": self.colorwheel.get_config(),
+                    "world": self.world.get_config(),
+                    "function": self.function.get_config(),
+                    "params": self.function.get_pattern_params(),
+                    "pattern": self.function.current_pattern,
+                    "matrix": self.function.matrix,
+                    }
             self.preview_process = Process(target=make_preview_job)
             self.preview_process.start()
             self.undo_list = self.undo_list[-UNDO_SIZE:]
@@ -3912,16 +3942,13 @@ Keyboard shortcuts:
 
     def save_preview(self):     # <<<3
         img = self.full_preview_image()
-        filename = "preview"
-        nb = 0
-        nb_ext = ""
-        ext = ".jpg"
-        while os.path.exists(filename + nb_ext + ext):
-            nb += 1
-            nb_ext = "~{:03}".format(nb)
-        img.save(filename + nb_ext + ext)
-    # >>>3
 
+        save_image(
+                message_queue=self.message_queue,
+                image=img,
+                **self.preview_config
+                )
+    # >>>3
 
     def translate_rotate(self, dx, dy, dz=0):   # <<<3
         def translate_rotate_tmp(*args):
