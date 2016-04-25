@@ -1035,6 +1035,16 @@ def basis(pattern, *params):        # <<<2
     else:
         assert False
 # >>>2
+
+
+def bezout(a, b):
+    """Calcule (u, v, p) tels que a*u + b*v = p et p = pgcd(a, b)"""
+    if a == 0 and b == 0:
+        return (0, 0, 0)
+    if b == 0:
+        return (a/abs(a), 0, abs(a))
+    (u, v, p) = bezout(b, a % b)
+    return (v, (u - v*(a//b)), p)
 # >>>1
 
 
@@ -1125,6 +1135,7 @@ def apply_color(        # <<<2
                              color=color)
     color_im.paste(tmp, box=(1, 1))
 
+    # TODO when hyperbolic pattern, ComplexWarning: Casting complex values to real discards the imaginary part ???
     np.divide(res, rho, out=res)
 
     # convert the ``res`` array into pixel coordinates
@@ -1208,6 +1219,48 @@ def make_wallpaper_image(zs,     # <<<2
     return res
 # >>>2
 
+
+def make_hyperbolic_image(     # <<<2
+        zs,
+        color_pattern="",
+        message_queue=None):
+
+    N = 50
+    B = 50
+    done = set([])
+
+    s = 2
+    n = 1
+
+    res = np.zeros(zs.shape)
+
+    while len(done) < N:
+        a = randrange(-B, B+1)
+        b = randrange(-B, B+1)
+        d, c, p = bezout(a, b)
+        c = -c
+        if p != 1 or (a, b) in done:
+            continue
+        assert a*d - b*c == 1
+        done.add((a, b))
+
+        ZS1 = np.copy(zs)
+        np.multiply(ZS1, a, out=ZS1)
+        np.add(ZS1, b, out=ZS1)
+        ZS2 = np.copy(zs)
+        np.multiply(ZS2, c, out=ZS2)
+        np.add(ZS2, d, out=ZS2)
+        np.divide(ZS1, ZS2, out=ZS2)
+
+        np.add(res, ZS2.imag**s * np.cos(2*pi*n*ZS2.real), out=res)
+
+        if message_queue is not None:
+            message_queue.put(len(done)/N)
+
+    np.divide(res, N, out=res)
+
+    return res
+# >>>2
 
 def make_sphere_image(zs,      # <<<2
                       matrix,
@@ -1309,7 +1362,7 @@ def make_sphere_background(zs, img, background="back.jpg", fade=128, stars=0):
 # >>>2
 
 
-def save_image(
+def save_image(         # <<<2
         message_queue=None,
         image=None,
         **config
@@ -1393,6 +1446,7 @@ $CREATE_SYM --color-config='{color_config:}' \\
     cs = open(filename + ".sh", mode="w")
     cs.write(cmd)
     cs.close()
+# >>>2
 
 
 def background_output(     # <<<2
@@ -1449,13 +1503,8 @@ def make_image(color=None,     # <<<2
         _zs = np.copy(zs)
         zs = plane_coordinates_to_sphere(zs, world["sphere_rotations"])
 
-    if pattern == "":
-        res = make_wallpaper_image(zs,
-                                   matrix,
-                                   "",
-                                   basis=params["basis"],
-                                   N=params["N"],
-                                   message_queue=message_queue)
+    if pattern == "hyperbolic":
+        res = make_hyperbolic_image(zs, message_queue=message_queue)
     elif PATTERN[pattern]["type"] in ["plane group",
                                       "color reversing plane group"]:
         res = make_wallpaper_image(zs,
@@ -2718,6 +2767,8 @@ class Function(LabelFrame):     # <<<2
             return "wallpaper"
         elif ("sphere" in self._tabs.tab(self._tabs.select(), "text")):
             return "sphere"
+        elif ("hyper" in self._tabs.tab(self._tabs.select(), "text")):
+            return "hyperbolic"
         else:
             assert False
     # >>>4
@@ -2729,6 +2780,8 @@ class Function(LabelFrame):     # <<<2
             self._tabs.select(self._wallpaper_tab)
         elif tab == "sphere":
             self._tabs.select(self._sphere_tab)
+        elif tab == "hyperbolic":
+            self._tabs.select(self._hyper_tab)
     # >>>4
 
     @property
@@ -2893,6 +2946,8 @@ class Function(LabelFrame):     # <<<2
             return self.wallpaper_pattern
         elif self.current_tab == "sphere":
             return self.sphere_pattern
+        elif self.current_tab == "hyperbolic":
+            return "hyperbolic"
         else:
             return ""
     # >>>4
@@ -2928,6 +2983,9 @@ class Function(LabelFrame):     # <<<2
 
         self._sphere_tab = Frame(self._tabs)
         self._tabs.add(self._sphere_tab, text="sphere")
+
+        self._hyper_tab = Frame(self._tabs)
+        self._tabs.add(self._hyper_tab, text="hyperbolic")
         # >>>4
 
         # wallpaper tab      <<<4
@@ -3220,6 +3278,8 @@ class Function(LabelFrame):     # <<<2
                                PATTERN[self.sphere_pattern]["recipe"],
                                PATTERN[self.sphere_pattern]["parity"]
                                .replace("N", str(self.sphere_N)))
+        elif self.current_tab == "hyperbolic":
+            pass
         else:
             assert False
         return M
@@ -3360,6 +3420,8 @@ class Function(LabelFrame):     # <<<2
         elif self.current_tab == "sphere":
             return {"N": self.sphere_N,
                     "sphere_mode": self.sphere_mode}
+        elif self.current_tab == "hyperbolic":
+            return {}
         else:
             assert False
     # >>>3
