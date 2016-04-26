@@ -1042,7 +1042,7 @@ def bezout(a, b):
     if a == 0 and b == 0:
         return (0, 0, 0)
     if b == 0:
-        return (a/abs(a), 0, abs(a))
+        return (a//abs(a), 0, abs(a))
     (u, v, p) = bezout(b, a % b)
     return (v, (u - v*(a//b)), p)
 # >>>1
@@ -1222,42 +1222,69 @@ def make_wallpaper_image(zs,     # <<<2
 
 def make_hyperbolic_image(     # <<<2
         zs,
+        matrix=None,
+        nb_steps=200,
         color_pattern="",
+        disk_model=True,
         message_queue=None):
 
-    N = 50
-    B = 50
+    for n, m in matrix:
+        while matrix[n, m].real <= 1:
+            x, y = matrix[n, m].real, matrix[n, m].imag
+            matrix[n, m] = complex(10*abs(x), y)
+
     done = set([])
+    res = np.zeros(zs.shape, dtype=complex)
+    c, d = 0, 0
+    w1, w2 = 0, nb_steps*len(matrix)
 
-    s = 2
-    n = 1
+    if disk_model:
+        zs = 1j * (1-zs) / (1+zs)
 
-    res = np.zeros(zs.shape)
+    def pairs():
+        """generator for pairs of integers"""
+        counter = 0
+        sign = 0
+        while True:
+            w = int((sqrt(8*counter+1) - 1) // 2)
+            t = w*(w+1) // 2
+            x = counter - t
+            y = w - x
+            if sign == 0:
+                sign += 1
+            elif sign == 1:
+                x = -x
+                sign += 1
+                if x == 0:
+                    continue
+            elif sign == 2:
+                y = -y
+                sign = 0
+                counter += 1
+                if y == 0:
+                    continue
+            else:
+                assert False
+            yield x, y
 
-    while len(done) < N:
-        a = randrange(-B, B+1)
-        b = randrange(-B, B+1)
-        d, c, p = bezout(a, b)
-        c = -c
-        if p != 1 or (a, b) in done:
+    for c, d in pairs():
+        if len(done) >= nb_steps:
+            break
+        b, a, p = bezout(c, d)
+        b = -b
+        if p != 1 or (c, d) in done:
             continue
         assert a*d - b*c == 1
-        done.add((a, b))
+        done.add((c, d))
+        ZS = (a*zs + b) / (c*zs + d)
 
-        ZS1 = np.copy(zs)
-        np.multiply(ZS1, a, out=ZS1)
-        np.add(ZS1, b, out=ZS1)
-        ZS2 = np.copy(zs)
-        np.multiply(ZS2, c, out=ZS2)
-        np.add(ZS2, d, out=ZS2)
-        np.divide(ZS1, ZS2, out=ZS2)
+        for n, m in matrix:
+            res += ZS.imag**matrix[n, m] * np.exp(2j*pi*(n*ZS.real + m*ZS.imag))
+            w1 += 1
+            if message_queue is not None:
+                message_queue.put(w1/w2)
 
-        np.add(res, ZS2.imag**s * np.cos(2*pi*n*ZS2.real), out=res)
-
-        if message_queue is not None:
-            message_queue.put(len(done)/N)
-
-    np.divide(res, N, out=res)
+    res = res / nb_steps
 
     return res
 # >>>2
@@ -1409,6 +1436,10 @@ def save_image(         # <<<2
         info["name"] = p.replace("N", str(N))
         info["alt_name"] = PATTERN[p]["alt_name"]
         info["alt_name"] = info["alt_name"].replace("N", str(N))
+    elif function["tab"] == "hyperbolic":
+        info["type"] = "hyperbolic"
+        info["name"] = "--"
+        info["alt_name"] = "--"
     else:
         assert False
     info["nb"] = 1
@@ -1504,7 +1535,12 @@ def make_image(color=None,     # <<<2
         zs = plane_coordinates_to_sphere(zs, world["sphere_rotations"])
 
     if pattern == "hyperbolic":
-        res = make_hyperbolic_image(zs, message_queue=message_queue)
+        res = make_hyperbolic_image(
+                zs,
+                matrix,
+                nb_steps=params["nb_steps"],
+                disk_model=params["disk_model"],
+                message_queue=message_queue)
     elif PATTERN[pattern]["type"] in ["plane group",
                                       "color reversing plane group"]:
         res = make_wallpaper_image(zs,
@@ -1534,12 +1570,18 @@ def make_image(color=None,     # <<<2
                       color["angle"],
                       color["color"])
 
-    if world["sphere_background"] and not world["sphere_projection"]:
+    if (world["sphere_background"] and not world["sphere_projection"]):
         return make_sphere_background(_zs,
                                       img,
                                       background=world["sphere_background"],
                                       fade=world["sphere_background_fading"],
                                       stars=world["sphere_stars"])
+    elif (pattern == "hyperbolic" and params["disk_model"]):
+        return make_sphere_background(_zs,
+                                      img,
+                                      background=world["sphere_background"],
+                                      fade=0,
+                                      stars=0)
     else:
         return img
 # >>>2
@@ -1965,6 +2007,8 @@ class ColorWheel(LabelFrame):   # <<<2
                                    convert=float,
                                    width=4)
         self._modulus.pack(padx=5, pady=5)
+        self._modulus.bind("<Return>", self.draw_unit_circle, add="+")
+        self._modulus.bind("<FocusOut>", self.draw_unit_circle, add="+")
 
         self._angle = LabelEntry(transformation_frame, label="angle (°)",
                                  value=0,
@@ -2050,7 +2094,7 @@ class ColorWheel(LabelFrame):   # <<<2
                   .format(filename, e))
     # >>>3
 
-    def draw_unit_circle(self):
+    def draw_unit_circle(self, *args):
         try:
             self._canvas.delete(self._unit_circle1)
             self._canvas.delete(self._unit_circle2)
@@ -2061,13 +2105,13 @@ class ColorWheel(LabelFrame):   # <<<2
         delta_y = COLOR_SIZE / (y_max - y_min)
         x0 = - delta_x * x_min
         y0 = delta_y * y_max
-        r = delta_x
+        r = delta_x / self.modulus
         self._unit_circle1 = self._canvas.create_oval(x0-r, y0-r, x0+r, y0+r,
-                                                      width=2,
+                                                      width=1,
                                                       outline="white",
                                                       dash=[10, 10])
         self._unit_circle2 = self._canvas.create_oval(x0-r, y0-r, x0+r, y0+r,
-                                                      width=2,
+                                                      width=1,
                                                       outline="black",
                                                       dash=[10, 10],
                                                       dashoff=10)
@@ -2967,6 +3011,25 @@ class Function(LabelFrame):     # <<<2
         return basis(self.wallpaper_pattern, *self.lattice_params)
     # >>>4
 
+    @property
+    def hyper_nb_steps(self):       # <<<4
+        return self._hyper_nb_steps.get()
+    # >>>4
+
+    @hyper_nb_steps.setter          # <<<4
+    def hyper_nb_steps(self, n):
+        self._hyper_nb_steps.set(n)
+    # >>>4
+
+    @property
+    def hyper_disk_model(self):       # <<<4
+        return self._hyper_disk_model.get()
+    # >>>4
+
+    @hyper_disk_model.setter          # <<<4
+    def hyper_disk_model(self, b):
+        self._hyper_disk_model.set(b)
+    # >>>4
     # >>>3
 
     def __init__(self, root):      # <<<3
@@ -3082,6 +3145,26 @@ class Function(LabelFrame):     # <<<2
                     value="frieze",
                     command=self.update
                     ).grid(row=0, column=2, padx=5, pady=5)
+        # >>>4
+
+        # hyperbolic tab        <<<4
+        self._hyper_nb_steps = LabelEntry(
+                self._hyper_tab,
+                label="averaging steps",
+                width=5,
+                convert=int,
+                value=25)
+        self._hyper_nb_steps.pack(padx=5, pady=(20, 5))
+
+        self._hyper_disk_model = BooleanVar()
+        self._hyper_disk_model_button = Checkbutton(
+                self._hyper_tab,
+                variable=self._hyper_disk_model,
+                text="disk model",
+                onvalue=True, offvalue=False,
+                indicatoron=False)
+        self._hyper_disk_model_button.pack(padx=5, pady=(20, 5))
+        self._hyper_disk_model.set(True)
         # >>>4
 
         # display matrix    <<<4
@@ -3304,6 +3387,9 @@ class Function(LabelFrame):     # <<<2
                 "sphere_pattern": self.sphere_pattern,
                 "sphere_N": self.sphere_N,
                 "sphere_mode": self.sphere_mode,
+                # hyperbolic tab
+                "hyper_nb_steps": self.hyper_nb_steps,
+                "hyper_disk_model": self.hyper_disk_model,
                 }
     # >>>3
 
@@ -3338,6 +3424,10 @@ class Function(LabelFrame):     # <<<2
             self.sphere_N = cfg["sphere_N"]
         if "sphere_mode" in cfg:
             self.sphere_mode = cfg["sphere_mode"]
+        if "hyper_nb_steps" in cfg:
+            self.hyper_nb_steps = cfg["hyper_nb_steps"]
+        if "hyper_disk_model" in cfg:
+            self.hyper_disk_model = cfg["hyper_disk_model"]
         self.update()
     # >>>3
 
@@ -3421,7 +3511,8 @@ class Function(LabelFrame):     # <<<2
             return {"N": self.sphere_N,
                     "sphere_mode": self.sphere_mode}
         elif self.current_tab == "hyperbolic":
-            return {}
+            return {"nb_steps": self.hyper_nb_steps,
+                    "disk_model": self.hyper_disk_model}
         else:
             assert False
     # >>>3
@@ -4233,7 +4324,10 @@ def main():     # <<<1
     # function_config["wallpaper_color_pattern"] = "*442"
     # function_config["matrix"] = { (0,1): 1 }
 
-    # function_config["tab"] = "sphere"
+    # function_config["tab"] = "hyperbolic"
+    # world_config["geometry"] = (0,1/2, 0, 1/2)
+    # world_config["modulus"] = 4
+    # function_config["random_nb_coeffs"] = 1
     # function_config["sphere_pattern"] = "532"
 
     gui = CreateSymmetry()
