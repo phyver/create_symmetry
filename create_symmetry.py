@@ -1240,39 +1240,29 @@ def make_hyperbolic_image(     # <<<2
 
     if disk_model:
         zs = 1j * (1-zs) / (1+zs)
+        # y = 1-np.abs(zs)
+        # x = np.angle(zs)*4/(2*pi)
+        # zs = x + 1j*y
 
-    def pairs():
-        """generator for pairs of integers"""
-        counter = 0
-        sign = 0
+    def PSL2():
+        """generator for elements of the PSL2(Z)"""
+        total = 0
+        c = 0
         while True:
-            w = int((sqrt(8*counter+1) - 1) // 2)
-            t = w*(w+1) // 2
-            x = counter - t
-            y = w - x
-            if sign == 0:
-                sign += 1
-            elif sign == 1:
-                x = -x
-                sign += 1
-                if x == 0:
-                    continue
-            elif sign == 2:
-                y = -y
-                sign = 0
-                counter += 1
-                if y == 0:
-                    continue
+            if c == total:
+                c = 0
+                total += 1
             else:
-                assert False
-            yield x, y
+                c = c + 1
+            for d in [total-c, c-total]:
+                b, a, p = bezout(c, d)
+                if p == 1:
+                    yield a, -b, c, d
 
-    for c, d in pairs():
+    for a, b, c, d in PSL2():
         if len(done) >= nb_steps:
             break
-        b, a, p = bezout(c, d)
-        b = -b
-        if p != 1 or (c, d) in done:
+        if (c, d) in done:
             continue
         assert a*d - b*c == 1
         done.add((c, d))
@@ -1284,7 +1274,7 @@ def make_hyperbolic_image(     # <<<2
             if message_queue is not None:
                 message_queue.put(w1/w2)
 
-    res = res / nb_steps
+    # res = res / nb_steps
 
     return res
 # >>>2
@@ -3629,6 +3619,11 @@ class CreateSymmetry(Tk):      # <<<2
                                           self.make_preview))
 
         self.world._canvas.bind("<Double-Button-1>", self.show_bigger_preview)
+
+        self.world._canvas.bind("<ButtonPress-1>", self.start_zoom_rectangle)
+        self.world._canvas.bind("<B1-Motion>", self.update_zoom_rectangle)
+        self.world._canvas.bind("<ButtonRelease-1>", self.apply_zoom_rectangle)
+
         # >>>4
 
         # <<<4
@@ -3761,6 +3756,51 @@ Keyboard shortcuts:
             self.world._fade_button.config(state=NORMAL)
             self.world._fade_coeff.enable()
             self.world.update()
+    # >>>3
+
+    def start_zoom_rectangle(self, event):   # <<<3
+        self.start_x = event.x
+        self.start_y = event.y
+        self.rect = self.world._canvas.create_rectangle(
+                self.start_x,
+                self.start_y,
+                self.start_x,
+                self.start_y,
+                width=3,
+                outline="white")
+    # >>>3
+
+    def update_zoom_rectangle(self, event):     # <<<3
+        curX, curY = (event.x, event.y)
+        self.world._canvas.coords(
+                self.rect,
+                self.start_x,
+                self.start_y,
+                curX,
+                curY)
+    # >>>3
+
+    def apply_zoom_rectangle(self, event):     # <<<3
+        new_x = min(max(0, event.x), PREVIEW_SIZE)
+        new_y = min(max(0, event.y), PREVIEW_SIZE)
+        self.world._canvas.delete(self.rect)
+        x_min, x_max, y_min, y_max = self.world.geometry
+        try:
+            delta_x = self.world._canvas._img.width / (x_max - x_min)
+            delta_y = self.world._canvas._img.height / (y_max - y_min)
+            px_center, py_center = self.world._canvas.coords(self.world._canvas._image_id)
+            x_center = (x_max - x_min) / 2
+            y_center = (y_max - y_min) / 2
+        except AttributeError:
+            return
+        x1 = (self.start_x - px_center) / delta_x
+        x2 = (new_x - px_center) / delta_x
+        y1 = (self.start_y - py_center) / delta_y
+        y2 = (new_y - py_center) / delta_y
+        x_min, x_max = min(x1, x2), max(x1, x2)
+        y_min, y_max = min(y1, y2), max(y1, y2)
+        self.world.geometry = x_min, x_max, y_min, y_max
+        self.make_preview()
     # >>>3
 
     def update_world_preview(self, *args):       # <<<3
@@ -4327,7 +4367,7 @@ def main():     # <<<1
     # function_config["tab"] = "hyperbolic"
     # world_config["geometry"] = (0,1/2, 0, 1/2)
     # world_config["modulus"] = 4
-    # function_config["random_nb_coeffs"] = 1
+    function_config["random_nb_coeffs"] = 1
     # function_config["sphere_pattern"] = "532"
 
     gui = CreateSymmetry()
