@@ -1135,7 +1135,8 @@ def apply_color(        # <<<2
                              color=color)
     color_im.paste(tmp, box=(1, 1))
 
-    # TODO when hyperbolic pattern, ComplexWarning: Casting complex values to real discards the imaginary part ???
+    # TODO when hyperbolic pattern, ComplexWarning: Casting complex values to
+    # real discards the imaginary part ???
     np.divide(res, rho, out=res)
 
     # convert the ``res`` array into pixel coordinates
@@ -1278,6 +1279,7 @@ def make_hyperbolic_image(     # <<<2
 
     return res
 # >>>2
+
 
 def make_sphere_image(zs,      # <<<2
                       matrix,
@@ -2441,14 +2443,14 @@ class World(LabelFrame):     # <<<2
                 variable=self._fade,
                 text="fade",
                 indicatoron=False)
-        self._fade_button.pack(side=LEFT, padx=(5,0), pady=5)
+        self._fade_button.pack(side=LEFT, padx=(5, 0), pady=5)
 
         self._fade_coeff = LabelEntry(
                 canvas_frame,
                 convert=int,
                 width=3,
                 label="")
-        self._fade_coeff.pack(side=LEFT, padx=(0,5), pady=5)
+        self._fade_coeff.pack(side=LEFT, padx=(0, 5), pady=5)
 
         self._draw_tile.trace("w", self.update)
         self._draw_tile.set(False)
@@ -2716,7 +2718,9 @@ class World(LabelFrame):     # <<<2
     def adjust_geometry(self, *args):       # <<<3
         ratio = self.width / self.height
         x_min, x_max, y_min, y_max = self.geometry
-        if ratio > 1:
+        delta_x = x_max - x_min
+        delta_y = y_max - y_min
+        if ratio > delta_x/delta_y:
             delta_y = y_max - y_min
             delta_x = delta_y * ratio
             middle_x = (x_min+x_max) / 2
@@ -3572,7 +3576,9 @@ class CreateSymmetry(Tk):      # <<<2
         # attach appropriate actions to buttons     <<<4
         self.world._preview_button.config(command=sequence(self.make_preview))
         self.world._save_button.config(command=sequence(self.make_output))
-        self.world._save_preview_button.config(command=sequence(self.save_preview))
+        self.world._save_preview_button.config(
+                command=sequence(self.save_preview)
+                )
         # >>>4
 
         # keybindings       <<<4
@@ -3772,6 +3778,14 @@ Keyboard shortcuts:
 
     def update_zoom_rectangle(self, event):     # <<<3
         curX, curY = (event.x, event.y)
+        ratio = self.world.width / self.world.height
+        if curX <= self.start_x or curY <= self.start_y:
+            curX = self.start_x
+            curY = self.start_y
+        elif ratio > (curX-self.start_x) / (curY-self.start_y):
+            curX = self.start_x + (curY-self.start_y) * ratio
+        else:
+            curY = self.start_y + (curX-self.start_x) / ratio
         self.world._canvas.coords(
                 self.rect,
                 self.start_x,
@@ -3781,22 +3795,31 @@ Keyboard shortcuts:
     # >>>3
 
     def apply_zoom_rectangle(self, event):     # <<<3
-        new_x = min(max(0, event.x), PREVIEW_SIZE)
-        new_y = min(max(0, event.y), PREVIEW_SIZE)
         self.world._canvas.delete(self.rect)
+        curX, curY = (event.x, event.y)
+        ratio = self.world.width / self.world.height
+        if curX <= self.start_x or curY <= self.start_y:
+            return
+        elif ratio > (curX-self.start_x) / (curY-self.start_y):
+            curX = self.start_x + (curY-self.start_y) * ratio
+        else:
+            curY = self.start_y + (curX-self.start_x) / ratio
+
         x_min, x_max, y_min, y_max = self.world.geometry
         try:
             delta_x = self.world._canvas._img.width / (x_max - x_min)
             delta_y = self.world._canvas._img.height / (y_max - y_min)
-            px_center, py_center = self.world._canvas.coords(self.world._canvas._image_id)
+            px_center, py_center = self.world._canvas.coords(
+                    self.world._canvas._image_id
+                    )
             x_center = (x_max - x_min) / 2
             y_center = (y_max - y_min) / 2
         except AttributeError:
             return
         x1 = (self.start_x - px_center) / delta_x
-        x2 = (new_x - px_center) / delta_x
-        y1 = (self.start_y - py_center) / delta_y
-        y2 = (new_y - py_center) / delta_y
+        x2 = (curX - px_center) / delta_x
+        y1 = -(self.start_y - py_center) / delta_y
+        y2 = -(curY - py_center) / delta_y
         x_min, x_max = min(x1, x2), max(x1, x2)
         y_min, y_max = min(y1, y2), max(y1, y2)
         self.world.geometry = x_min, x_max, y_min, y_max
@@ -3816,7 +3839,9 @@ Keyboard shortcuts:
                         )
                 self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(fade)
             else:
-                self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(self.world._canvas._img)
+                self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(
+                        self.world._canvas._img
+                        )
 
             self.world._canvas._image_id = self.world._canvas.create_image(
                         (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
@@ -3833,7 +3858,9 @@ Keyboard shortcuts:
                 if isinstance(
                         self.world._canvas._tile_img,
                         tuple):
-                    self.world._canvas._tile_img = make_tile(*self.world._canvas._tile_img)
+                    self.world._canvas._tile_img = make_tile(
+                            *self.world._canvas._tile_img
+                            )
                     self.world._canvas.tk_tile_img = PIL.ImageTk.PhotoImage(
                             self.world._canvas._tile_img
                             )
@@ -3852,7 +3879,9 @@ Keyboard shortcuts:
                 if isinstance(
                         self.world._canvas._orbifold_img,
                         tuple):
-                    self.world._canvas._orbifold_img = make_tile(*self.world._canvas._orbifold_img)
+                    self.world._canvas._orbifold_img = make_tile(
+                            *self.world._canvas._orbifold_img
+                            )
                     self.world._canvas.tk_orbifold_img = PIL.ImageTk.PhotoImage(
                             self.world._canvas._orbifold_img
                             )
@@ -3871,7 +3900,9 @@ Keyboard shortcuts:
                 if isinstance(
                         self.world._canvas._mirrors_img,
                         tuple):
-                    self.world._canvas._mirrors_img = make_tile(*self.world._canvas._mirrors_img)
+                    self.world._canvas._mirrors_img = make_tile(
+                            *self.world._canvas._mirrors_img
+                            )
                     self.world._canvas.tk_mirrors_img = PIL.ImageTk.PhotoImage(
                             self.world._canvas._mirrors_img
                             )
