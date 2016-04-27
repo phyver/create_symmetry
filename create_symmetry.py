@@ -4107,8 +4107,8 @@ Keyboard shortcuts:
             self.undo_list = self.undo_list[-UNDO_SIZE:]
             if self.undo_index == -1:
                 if (len(self.undo_list) == 0 or
-                        self.function.matrix != self.undo_list[-1]):
-                    self.undo_list.append(self.function.matrix)
+                        self.preview_config != self.undo_list[-1]):
+                    self.undo_list.append(self.preview_config)
         except Error as e:
             self.message_queue.put("* {}".format(e))
     # >>>3
@@ -4198,17 +4198,23 @@ Keyboard shortcuts:
     # >>>3
 
     def undo(self):     # <<<3
-        if self.undo_index > -len(self.undo_list):
-            self.undo_index -= 1
-            self.function.change_matrix(self.undo_list[self.undo_index])
         # print(self.undo_index, len(self.undo_list))
+        if abs(self.undo_index) < len(self.undo_list):
+            self.undo_index -= 1
+            config = self.undo_list[self.undo_index]
+            self.world.set_config(config["world"])
+            self.function.set_config(config["function"])
+            self.colorwheel.set_config(config["color"])
     # >>>3
 
     def redo(self):     # <<<3
+        # print(self.undo_index, len(self.undo_list))
         if self.undo_index < -1:
             self.undo_index += 1
-            self.function.change_matrix(self.undo_list[self.undo_index])
-        # print(self.undo_index, len(self.undo_list))
+            config = self.undo_list[self.undo_index]
+            self.world.set_config(config["world"])
+            self.function.set_config(config["function"])
+            self.colorwheel.set_config(config["color"])
     # >>>3
 # >>>2
 # >>>1
