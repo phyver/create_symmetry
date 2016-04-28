@@ -303,14 +303,14 @@ PATTERN = {     # <<<1
     },
     ('*×', '**'): {
         "alt_name": "",
-        "recipe": "n,m = -n,m",
+        "recipe": "n,m = n,-m",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
     },
     ('*×', '××'): {
         "alt_name": "",
-        "recipe": "n,m = -{m}(-n,m)",
+        "recipe": "n,m = -{n}(n,-m)",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
@@ -328,17 +328,18 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
+        # TODO
     },
     ('2*22', '*2222'): {
         "alt_name": "",
-        "recipe": "n,m = -n,m ; n,m j -n,-m",
+        "recipe": "n,m = -n,m ; n,m = -n,-m",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
     },
     ('2*22', '22*'): {
         "alt_name": "",
-        "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
+        "recipe": "n,m = -{n}(n,-m) ; n,m = -n,-m",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
@@ -366,14 +367,14 @@ PATTERN = {     # <<<1
     },
     ('**', '**'): {
         "alt_name": "",
-        "recipe": "n,m = -n,m",
+        "recipe": "n,m = n,-m",
         "parity": "m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
     },
     ('**', '××'): {
         "alt_name": "",
-        "recipe": "n,m = -{m}(-n,m)",
+        "recipe": "n,m = -{n}(n,-m)",
         "parity": "m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
@@ -387,7 +388,7 @@ PATTERN = {     # <<<1
     },
     ('××', '××'): {
         "alt_name": "",
-        "recipe": "n,m = -{m}(-n,m)",
+        "recipe": "n,m = -{n}(n,-m)",
         "parity": "n = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
@@ -408,7 +409,7 @@ PATTERN = {     # <<<1
     },
     ('*2222', '**'): {
         "alt_name": "",
-        "recipe": "n,m = -n,m ; n,m = -(-n,-m)",
+        "recipe": "n,m = n,-m ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
@@ -422,7 +423,7 @@ PATTERN = {     # <<<1
     },
     ('*2222', '22*'): {
         "alt_name": "",
-        "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
+        "recipe": "n,m = -{n}(n,-m) ; n,m = -n,-m",
         "parity": "m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
@@ -440,17 +441,18 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
+        # TODO
     },
     ('22*', '××'): {
         "alt_name": "",
-        "recipe": "n,m = -{m}(-n,m) ; n,m = -(-n,-m)",
+        "recipe": "n,m = -{n}(n,-m) ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
     },
     ('22*', '22*'): {
         "alt_name": "",
-        "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
+        "recipe": "n,m = -{n}(n,-m) ; n,m = -n,-m",
         "parity": "n = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
@@ -475,6 +477,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
+        # TODO
     },
     ('442', '2222'): {
         "alt_name": "",
@@ -531,6 +534,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
+        # TODO
     },
     ('4*2', '22×'): {
         "alt_name": "",
