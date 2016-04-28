@@ -2392,6 +2392,17 @@ class World(LabelFrame):     # <<<2
     def fade_coeff(self, b):    # <<<4
         self._fade_coeff.set(b)
     # >>>4
+
+    @property
+    def preview_size(self):     # <<<4
+        return min(PREVIEW_SIZE, self._preview_size.get())
+    # >>>4
+
+    @preview_size.setter
+    def preview_size(self, n):      # <<<4
+        self._preview_size.set(min(PREVIEW_SIZE, n))
+    # >>>4
+
     # >>>3
 
     def __init__(self, root):       # <<<3
@@ -2451,6 +2462,14 @@ class World(LabelFrame):     # <<<2
                 width=3,
                 label="")
         self._fade_coeff.pack(side=LEFT, padx=(0, 5), pady=5)
+
+        self._preview_size = LabelEntry(
+                canvas_frame,
+                convert=int,
+                width=3,
+                label="preview size")
+        self._preview_size.pack(side=RIGHT, padx=5, pady=5)
+        self._preview_size.set(PREVIEW_SIZE)
 
         self._draw_tile.trace("w", self.update)
         self._draw_tile.set(False)
@@ -2756,6 +2775,7 @@ class World(LabelFrame):     # <<<2
                 "draw_mirrors": self.draw_mirrors,
                 "preview_fade": self.fade,
                 "preview_fade_coeff": self.fade_coeff,
+                "preview_size": self.preview_size,
                 }
     # >>>3
 
@@ -2792,6 +2812,8 @@ class World(LabelFrame):     # <<<2
             self.fade = cfg["preview_fade"]
         if "preview_fade_coeff" in cfg:
             self.fade_coeff = cfg["preview_fade_coeff"]
+        if "preview_size" in cfg:
+            self.preview_size = cfg["preview_size"]
     # >>>3
 # >>>2
 
@@ -4061,16 +4083,16 @@ Keyboard shortcuts:
 
         self.world.adjust_geometry()
         ratio = self.world.width / self.world.height
-        if (self.world.width < PREVIEW_SIZE and
-                self.world.height < PREVIEW_SIZE):
+        if (self.world.width < self.world.preview_size and
+                self.world.height < self.world.preview_size):
             width = self.world.width
             height = self.world.height
         elif ratio > 1:
-            width = PREVIEW_SIZE
-            height = round(PREVIEW_SIZE / ratio)
+            width = self.world.preview_size
+            height = round(self.world.preview_size / ratio)
         else:
-            width = round(PREVIEW_SIZE * ratio)
-            height = PREVIEW_SIZE
+            width = round(self.world.preview_size * ratio)
+            height = self.world.preview_size
 
         def make_preview_job():
             color = self.colorwheel.get_config()
