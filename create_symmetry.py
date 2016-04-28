@@ -864,6 +864,19 @@ def is_rgb(s):  # <<<2
 # >>>2
 
 
+def random_matrix(nb_coeffs, min_degre, max_degre, modulus):
+        coeffs = list(product(range(min_degre, max_degre+1),
+                              range(min_degre, max_degre+1)))
+        shuffle(coeffs)
+        coeffs = coeffs[:nb_coeffs]
+        M = {}
+        for (n, m) in coeffs:
+            mod = uniform(0, modulus) / nb_coeffs
+            angle = uniform(0, 2*pi)
+            M[(n, m)] = mod * complex(cos(angle), sin(angle))
+        return M
+
+
 def eqn_indices(eq, n, m):        # <<<2
     """return a list of (s, (j, k))
         - eq is a string representing a list of equations involving "n" and "m"
@@ -954,10 +967,10 @@ def check_matrix_recipe(M, recipe):     # <<<2
                     coeff = s * M[(j, k)]
                 else:
                     if M.get((j, k)) != coeff / s:
-                        print("PROBLEM: matrix doesn't obey recipe '{}'"
-                              .format(recipe))
-                        print("         got {} for ({},{}), expected {}"
-                              .format(M.get((j, k)), j, k, coeff/s))
+                        # print("PROBLEM: matrix doesn't obey recipe '{}'"
+                        #       .format(recipe))
+                        # print("         got {} for ({},{}), expected {}"
+                        #       .format(M.get((j, k)), j, k, coeff/s))
                         return False
     return True
 # >>>2
@@ -3331,17 +3344,12 @@ class Function(LabelFrame):     # <<<2
     # >>>3
 
     def new_random_matrix(self, *args):     # <<<3
-        a = self.random_min_degre
-        b = self.random_max_degre
-        coeffs = list(product(range(a, b+1), range(a, b+1)))
-        shuffle(coeffs)
-        n = self.random_nb_coeffs
-        coeffs = coeffs[:n]
-        M = {}
-        for (n, m) in coeffs:
-            modulus = uniform(0, self.random_modulus) / self.random_nb_coeffs
-            angle = uniform(0, 2*pi)
-            M[(n, m)] = modulus * complex(cos(angle), sin(angle))
+        M = random_matrix(
+            self.random_nb_coeffs,
+            self.random_min_degre,
+            self.random_max_degre,
+            self.random_modulus
+        )
         self.change_matrix(M)
     # >>>3
 
