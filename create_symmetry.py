@@ -62,532 +62,532 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "general lattice",
-        },
+    },
     '2222': {
         "alt_name": "p2",
         "recipe": "n,m = -n, -m",
         "parity": "",
         "type": "plane group",
         "description": "general lattice",
-        },
+    },
     '*×': {
         "alt_name": "cm",
         "recipe": "n,m = m,n",
         "parity": "",
         "type": "plane group",
         "description": "rhombic lattice",
-        },
+    },
     '2*22': {
         "alt_name": "cmm",
         "recipe": "n,m = m,n = -n,-m = -m,-n",
         "parity": "",
         "type": "plane group",
         "description": "rhombic lattice",
-        },
+    },
     '**': {
         "alt_name": "pm",
         "recipe": "n,m = n,-m",
         "parity": "",
         "type": "plane group",
         "description": "rectangular lattice",
-        },
+    },
     '××': {
         "alt_name": "pg",
         "recipe": "n,m = -{n}(n,-m)",
         "parity": "",
         "type": "plane group",
         "description": "rectangular lattice",
-        },
+    },
     '*2222': {
         "alt_name": "pmm",
         "recipe": "n,m = -n,-m = -n,m = n,-m",
         "parity": "",
         "type": "plane group",
         "description": "rectangular lattice",
-        },
+    },
     '22*': {
         "alt_name": "pmg",
         "recipe": "n,m = -n,-m = -{n}(n,-m) = -{n}(-n,m)",
         "parity": "",
         "type": "plane group",
         "description": "rectangular lattice",
-        },
+    },
     '22×': {
         "alt_name": "pgg",
         "recipe": "n,m = -n,-m = -{n+m}(n,-m) = -{n+m}(-n,m)",
         "parity": "",
         "type": "plane group",
         "description": "rectangular lattice",
-        },
+    },
     '442': {
         "alt_name": "p4",
         "recipe": "n,m = m,-n = -n,-m = -m,n",
         "parity": "",
         "type": "plane group",
         "description": "square lattice",
-        },
+    },
     '*442': {
         "alt_name": "p4m",
         "recipe": "n,m = m,-n = -n,-m = -m,n ; n,m = m,n",
         "parity": "",
         "type": "plane group",
         "description": "square lattice",
-        },
+    },
     '4*2': {
         "alt_name": "p4g",
         "recipe": "n,m = m,-n = -n,-m = -m,n ; n,m = -{n+m}(m,n)",
         "parity": "",
         "type": "plane group",
         "description": "square lattice",
-        },
+    },
     '333': {
         "alt_name": "p3",
         "recipe": "n,m = m,-n-m = -n-m,n",
         "parity": "",
         "type": "plane group",
         "description": "hexagonal lattice",
-        },
+    },
     '3*3': {
         "alt_name": "p31m",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n",
         "parity": "",
         "type": "plane group",
         "description": "hexagonal lattice",
-        },
+    },
     '*333': {
         "alt_name": "p3m1",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -m,-n",
         "parity": "",
         "type": "plane group",
         "description": "hexagonal lattice",
-        },
+    },
     '632': {
         "alt_name": "p6",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -n,-m",
         "parity": "",
         "type": "plane group",
         "description": "hexagonal lattice",
-        },
+    },
     '*632': {
         "alt_name": "p6m",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n = -n,-m = -m,-n",
         "parity": "",
         "type": "plane group",
         "description": "hexagonal lattice",
-        },
+    },
     '332': {
         "alt_name": "T",
         "recipe": "n,m = -n,-m",
         "parity": "n-m = 0 mod 2",
         "type": "sphere group",
         "description": "tetrahedral symmetry",
-        },
+    },
     '432': {
         "alt_name": "O",
         "recipe": "n,m = -n,-m",
         "parity": "n-m = 0 mod 4",
         "type": "sphere group",
         "description": "octahedral symmetry",
-        },
+    },
     '532': {
         "alt_name": "I",
         "recipe": "n,m = -n,-m",
         "parity": "n-m = 0 mod 2",
         "type": "sphere group",
         "description": "icosahedral symmetry",
-        },
+    },
     '3*2': {
         "alt_name": "Th",
         "recipe": "n,m = -n,-m ; n,m = -m,-n",
         "parity": "n-m = 0 mod 2",
         "type": "sphere group",
         "description": "tetrahedral symmetry",
-        },
+    },
     '*332': {
         "alt_name": "Td",
         "recipe": "n,m = -n,-m ; n,m = i{n-m}(m,n)",
         "parity": "n-m = 0 mod 2",
         "type": "sphere group",
         "description": "tetrahedral symmetry",
-        },
+    },
     '*432': {
         "alt_name": "Oh",
         "recipe": "n,m = -n,-m ; n,m = -m,-n",
         "parity": "n-m = 0 mod 4",
         "type": "sphere group",
         "description": "octahedral symmetry",
-        },
+    },
     '*532': {
         "alt_name": "Ih",
         "recipe": "n,m = -n,-m ; n,m = -m,-n",
         "parity": "n-m = 0 mod 2",
         "type": "sphere group",
         "description": "icosahedral symmetry",
-        },
+    },
     'NN': {
         "alt_name": "CN p111",
         "recipe": "",
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
         "description": "cyclic symmetry",
-        },
+    },
     '22N': {
         "alt_name": "DN p211",
         "recipe": "n,m = -n,-m",
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
         "description": "dihedral symmetry",
-        },
+    },
     '*NN': {
         "alt_name": "CNv p1m1",
         "recipe": "n,m = m,n",
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
         "description": "cyclic symmetry",
-        },
+    },
     'N*': {
         "alt_name": "CNh p11m",
         "recipe": "n,m = -m,-n",
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
         "description": "cyclic symmetry",
-        },
+    },
     '*22N': {
         "alt_name": "DNh p2mm",
         "recipe": "n,m = m,n = -n,-m = -m,-n",
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
         "description": "dihedral symmetry",
-        },
+    },
     'N×': {
         "alt_name": "S2N p11g",
         "recipe": "n,m = -{n+m}(-m,-n)",
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
         "description": "cyclic symmetry",
-        },
+    },
     '2*N': {
         "alt_name": "DNd p2mg",
         "recipe": "n,m = -n,-m = -{n+m}(-m,-n) = -{n+m}(m,n)",
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
         "description": "dihedral symmetry",
-        },
+    },
     ('o', 'o'): {
         "alt_name": "",
         "recipe": "",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('2222', 'o'): {
         "alt_name": "",
         "recipe": "n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('2222', '2222'): {
         "alt_name": "",
         "recipe": "n,m = -n,-m",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*×', 'o'): {
         "alt_name": "",
         "recipe": "n,m = -(m,n)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*×', '**'): {
         "alt_name": "",
         "recipe": "n,m = -n,m",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*×', '××'): {
         "alt_name": "",
         "recipe": "n,m = -{m}(-n,m)",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('2*22', '2222'): {
         "alt_name": "",
         "recipe": "n,m = -(m,n) ; n,m = -n,-m",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('2*22', '*×'): {
         "alt_name": "",
         "recipe": "n,m = -(m,n) ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('2*22', '*2222'): {
         "alt_name": "",
         "recipe": "n,m = -n,m ; n,m j -n,-m",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('2*22', '22*'): {
         "alt_name": "",
         "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('2*22', '22×'): {
         "alt_name": "",
         "recipe": "n,m = -{n+m}(-n,m) ; n,m = -n,-m",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('**', 'o'): {
         "alt_name": "",
         "recipe": "n,m = -(-n,m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('**', '*×'): {
         "alt_name": "",
         "recipe": "n,m = m,n",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('**', '**'): {
         "alt_name": "",
         "recipe": "n,m = -n,m",
         "parity": "m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('**', '××'): {
         "alt_name": "",
         "recipe": "n,m = -{m}(-n,m)",
         "parity": "m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('××', 'o'): {
         "alt_name": "",
         "recipe": "n,m = -{m+1}(-n,m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('××', '××'): {
         "alt_name": "",
         "recipe": "n,m = -{m}(-n,m)",
         "parity": "n = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*2222', '2222'): {
         "alt_name": "",
         "recipe": "n,m = -(-n,m) ; n,m = -n,-m",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*2222', '2*22'): {
         "alt_name": "",
         "recipe": "n,m = m,n ; n,m = -n,-m",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*2222', '**'): {
         "alt_name": "",
         "recipe": "n,m = -n,m ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*2222', '*2222'): {
         "alt_name": "",
         "recipe": "n,m = -n,m ; n,m = -n,-m",
         "parity": "n = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*2222', '22*'): {
         "alt_name": "",
         "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
         "parity": "m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('22*', '2222'): {
         "alt_name": "",
         "recipe": "n,m = -{m+1}(m,n) ; n,m = -n,-m",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('22*', '**'): {
         "alt_name": "",
         "recipe": "n,m = -{m+1}(-n,m) ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('22*', '××'): {
         "alt_name": "",
         "recipe": "n,m = -{m}(-n,m) ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('22*', '22*'): {
         "alt_name": "",
         "recipe": "n,m = -{m}(-n,m) ; n,m = -n,-m",
         "parity": "n = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('22*', '22×'): {
         "alt_name": "",
         "recipe": "n,m = -{n+m}(-n,m) ; n,m = -n,-m",
         "parity": "n = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('22×', '2222'): {
         "alt_name": "",
         "recipe": "n,m = -{1+n+m}(m,n) ; n,m = -n,-m",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('22×', '××'): {
         "alt_name": "",
         "recipe": "n,m = -{n+m}(-n,m) ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('442', '2222'): {
         "alt_name": "",
         "recipe": "n,m = -(-m,n)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('442', '442'): {
         "alt_name": "",
         "recipe": "n,m = -m,n",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*442', '2*22'): {
         "alt_name": "",
         "recipe": "n,m = -(-m,n) ; n,m = m,n",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*442', '*2222'): {
         "alt_name": "",
         "recipe": "n,m = -(-m,n) ; n,m = -(m,n)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*442', '442'): {
         "alt_name": "",
         "recipe": "n,m = -m,n ; n,m = -(m,n)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*442', '*442'): {
         "alt_name": "",
         "recipe": "n,m = -m,n ; n,m = m,n",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*442', '4*2'): {
         "alt_name": "",
         "recipe": "n,m = -m,n ; n,m = -{n+m}(m,n)",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('4*2', '2*22'): {
         "alt_name": "",
         "recipe": "n,m = -(-m,n) ; n,m = -{n+m}(m,n)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('4*2', '22×'): {
         "alt_name": "",
         "recipe": "n,m = -(-m,n) ; n,m = -{1+n+m}(m,n)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('4*2', '442'): {
         "alt_name": "",
         "recipe": "n,m = -m,n ; n,m = -{n+m+1}(m,n)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('3*3', '333'): {
         "alt_name": "",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(m,n)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*333', '333'): {
         "alt_name": "",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-m,-n)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('632', '333'): {
         "alt_name": "",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*632', '3*3'): {
         "alt_name": "",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*632', '*333'): {
         "alt_name": "",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -m,-n ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     ('*632', '632'): {
         "alt_name": "",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -n,-m ; n,m = -(m,n)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "",
-        },
+    },
     }
 
 # transform all the cyclic sphere groups into frieze groups
@@ -606,41 +606,41 @@ del _F
 # >>>1
 
 NAMES = [    # <<<1
-        # order of the groups in menus
-        # plane groups
-        "o",       # general
-        "2222",
-        "*×",      # rhombic
-        "2*22",
-        "**",      # rectangular
-        "××",
-        "*2222",
-        "22*",
-        "22×",
-        "442",     # square
-        "*442",
-        "4*2",
-        "333",     # hexagonal
-        "3*3",
-        "*333",
-        "632",
-        "*632",
-        # sphere groups
-        "332",
-        "*332",
-        "3*2",
-        "432",
-        "*432",
-        "532",
-        "*532",
-        "NN",
-        "*NN",
-        "N*",
-        "N×",
-        "22N",
-        "*22N",
-        "2*N",
-        ]
+    # order of the groups in menus
+    # plane groups
+    "o",       # general
+    "2222",
+    "*×",      # rhombic
+    "2*22",
+    "**",      # rectangular
+    "××",
+    "*2222",
+    "22*",
+    "22×",
+    "442",     # square
+    "*442",
+    "4*2",
+    "333",     # hexagonal
+    "3*3",
+    "*333",
+    "632",
+    "*632",
+    # sphere groups
+    "332",
+    "*332",
+    "3*2",
+    "432",
+    "*432",
+    "532",
+    "*532",
+    "NN",
+    "*NN",
+    "N*",
+    "N×",
+    "22N",
+    "*22N",
+    "2*N",
+]
 
 # add names for frieze patterns
 NAMES = NAMES + [p.replace("N", "∞") for p in NAMES if "N" in p]
@@ -3619,9 +3619,11 @@ class CreateSymmetry(Tk):      # <<<2
         self.bind("<Control-0>", sequence(self.world.reset_geometry,
                                           self.make_preview))
 
-        self.bind("<Control-u>", sequence(self.undo,
+        self.bind("<Control-u>", sequence(self.undo))
+        self.bind("<Control-r>", sequence(self.redo))
+        self.bind("<Control-U>", sequence(self.undo,
                                           self.make_preview))
-        self.bind("<Control-r>", sequence(self.redo,
+        self.bind("<Control-R>", sequence(self.redo,
                                           self.make_preview))
 
         self.world._canvas.bind("<Double-Button-1>", self.show_bigger_preview)
@@ -3719,8 +3721,10 @@ Keyboard shortcuts:
   Control-z
   Control-Z     for spherical pattern, rotate around z-axis
 
-  Control-u     undo: go back to previous matrix
+  Control-u     undo: go back to previous state
   Control-r     redo
+  Control-U     undo: go back to previous state and compute preview
+  Control-R     redo
 """)
         text.config(state=DISABLED)
 
@@ -4104,11 +4108,13 @@ Keyboard shortcuts:
                     }
             self.preview_process = Process(target=make_preview_job)
             self.preview_process.start()
+
+            if (len(self.undo_list) == 0 or
+                    self.preview_config != self.undo_list[self.undo_index]):
+                self.undo_list = self.undo_list[:len(self.undo_list) + self.undo_index + 1]
+                self.undo_list.append(self.preview_config)
+                self.undo_index = -1
             self.undo_list = self.undo_list[-UNDO_SIZE:]
-            if self.undo_index == -1:
-                if (len(self.undo_list) == 0 or
-                        self.preview_config != self.undo_list[-1]):
-                    self.undo_list.append(self.preview_config)
         except Error as e:
             self.message_queue.put("* {}".format(e))
     # >>>3
@@ -4198,7 +4204,7 @@ Keyboard shortcuts:
     # >>>3
 
     def undo(self):     # <<<3
-        # print(self.undo_index, len(self.undo_list))
+        # print(">>", self.undo_index, len(self.undo_list))
         if abs(self.undo_index) < len(self.undo_list):
             self.undo_index -= 1
             config = self.undo_list[self.undo_index]
@@ -4208,7 +4214,7 @@ Keyboard shortcuts:
     # >>>3
 
     def redo(self):     # <<<3
-        # print(self.undo_index, len(self.undo_list))
+        # print(">>>", self.undo_index, len(self.undo_list))
         if self.undo_index < -1:
             self.undo_index += 1
             config = self.undo_list[self.undo_index]
