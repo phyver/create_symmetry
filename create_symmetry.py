@@ -1405,6 +1405,7 @@ def save_image(         # <<<2
                 image.size,
                 draw_tile=world["draw_tile"],
                 draw_orbifold=world["draw_orbifold"],
+                color_orbifold=world["draw_color_orbifold"],
                 draw_mirrors=world["draw_mirrors"]
                 )
         image.paste(tile, mask=tile)
@@ -1579,6 +1580,7 @@ def make_image(color=None,     # <<<2
 # >>>2
 
 
+# TODO: name all arguments
 def make_tile(geometry,         # <<<2
               transformation,
               pattern,
@@ -1586,9 +1588,16 @@ def make_tile(geometry,         # <<<2
               size,
               draw_tile=True,
               draw_orbifold=True,
+              color_orbifold=True,
               draw_mirrors=False):
     """compute a transparent image with a tile and orbifold information
     this image can be added on top of a wallpaper image"""
+
+    if isinstance(pattern, tuple):
+        if color_orbifold:
+            pattern = pattern[0]
+        else:
+            pattern = pattern[1]
 
     coeff = 2       # draw bigger tile and resize with antialiasing
     width = size[0]*coeff
@@ -1624,15 +1633,20 @@ def make_tile(geometry,         # <<<2
             x, y = XY_to_pixel(coord[i], coord[i+1])
             draw.ellipse((x-R, y-R, x+R, y+R), fill=color)
 
-    def line(*coord, color="white", width=1):
+    def line(*coord, color="white", width=1, caps=False):
+        R = 5*coeff
         for i in range(2, len(coord), 2):
             x1, y1 = XY_to_pixel(coord[i-2], coord[i-1])
             x2, y2 = XY_to_pixel(coord[i], coord[i+1])
             draw.line((x1, y1, x2, y2), fill=color, width=width*coeff)
+            if caps:
+                draw.rectangle([x1-R, y1-R, x1+R, y1+R], fill=color)
+                draw.rectangle([x2-R, y2-R, x2+R, y2+R], fill=color)
 
     def mirror(X0, Y0, X1, Y1, order, pixels=50):
 
-        disks(X0, Y0, color="red")
+        if order > 1:
+            disks(X0, Y0, color="red")
 
         if not draw_mirrors:
             return
@@ -1699,19 +1713,16 @@ def make_tile(geometry,         # <<<2
             mirror(1/2, 1/2, 0, 1/2, 1)
         elif pattern == "22×":
             disks(0, 0, 1/2, 0, color="blue")
-            disks(0, 1/4, 1/2, 1/4, color="lightgreen")
-            line(0, 1/4, 1/2, 1/4, color="lightgreen", width=3)
+            line(0, 1/4, 1/2, 1/4, color="lightgreen", width=3, caps=True)
         elif pattern == "22*":
             disks(0, 1/2, 1/2, 0, color="blue")
             mirror(1/4, 0, 1/4, 1/2, 1)
-
         elif pattern == "*×":
-            # TODO
-            mirror(0, 0, 1, 1, 1)
-            pass
+            mirror(1/2, 1/2, 0, 0, 1)
+            line(1/2, 0, 1, 1/2, color="lightgreen", width=3, caps=True)
         elif pattern == "××":
-            # TODO
-            pass
+            line(1/4, 0, 3/4, 0, color="lightgreen", width=3, caps=True)
+            line(1/4, 1/2, 3/4, 1/2, color="lightgreen", width=3, caps=True)
 
     img = img.resize(size, PIL.Image.ANTIALIAS)
 
@@ -2364,6 +2375,16 @@ class World(LabelFrame):     # <<<2
     # >>>4
 
     @property
+    def draw_color_orbifold(self):    # <<<4
+        return self._draw_color_orbifold.get()
+    # >>>4
+
+    @draw_color_orbifold.setter
+    def draw_color_orbifold(self, b):    # <<<4
+        self._draw_color_orbifold.set(b)
+    # >>>4
+
+    @property
     def draw_mirrors(self):    # <<<4
         return self._draw_mirrors.get()
     # >>>4
@@ -2429,22 +2450,30 @@ class World(LabelFrame):     # <<<2
         self._draw_tile_button = Checkbutton(
                 canvas_frame,
                 variable=self._draw_tile,
-                text="show tile",
+                text="tile",
                 indicatoron=False)
         self._draw_tile_button.pack(side=LEFT, padx=5, pady=5)
+
         self._draw_orbifold = BooleanVar()
         self._draw_orbifold_button = Checkbutton(
                 canvas_frame,
                 variable=self._draw_orbifold,
-                text="show orbifold",
+                text="orbifold",
                 indicatoron=False)
         self._draw_orbifold_button.pack(side=LEFT, padx=5, pady=5)
+
+        self._draw_color_orbifold = BooleanVar()
+        self._draw_color_orbifold_button = Checkbutton(
+                canvas_frame,
+                variable=self._draw_color_orbifold,
+                text="")
+        # self._draw_color_orbifold_button.pack(side=LEFT, padx=0, pady=0)
 
         self._draw_mirrors = BooleanVar()
         self._draw_mirrors_button = Checkbutton(
                 canvas_frame,
                 variable=self._draw_mirrors,
-                text="show mirrors",
+                text="mirrors",
                 indicatoron=False)
         self._draw_mirrors_button.pack(side=LEFT, padx=5, pady=5)
 
@@ -2475,11 +2504,13 @@ class World(LabelFrame):     # <<<2
         self._draw_tile.set(False)
         self._draw_orbifold.trace("w", self.update)
         self._draw_orbifold.set(False)
+        self._draw_color_orbifold.trace("w", self.update)
+        self._draw_color_orbifold.set(False)
         self._draw_mirrors.trace("w", self.update)
         self._draw_mirrors.set(False)
         self._fade.trace("w", self.update)
         self._fade.set(False)
-        self._fade_coeff.set(100)
+        self._fade_coeff.set(200)
         # >>>4
 
         # geometry of result    <<<4
@@ -2725,8 +2756,10 @@ class World(LabelFrame):     # <<<2
     def update(self, *args):   # <<<3
         if self.draw_orbifold:
             self._draw_mirrors_button.config(state=NORMAL)
+            self._draw_color_orbifold_button.config(state=NORMAL)
         else:
             self._draw_mirrors_button.config(state=DISABLED)
+            self._draw_color_orbifold_button.config(state=DISABLED)
 
         if self.fade:
             self._fade_coeff.enable()
@@ -2772,6 +2805,7 @@ class World(LabelFrame):     # <<<2
                 "filename": self.filename_template,
                 "draw_tile": self.draw_tile,
                 "draw_orbifold": self.draw_orbifold,
+                "draw_color_orbifold": self.draw_color_orbifold,
                 "draw_mirrors": self.draw_mirrors,
                 "preview_fade": self.fade,
                 "preview_fade_coeff": self.fade_coeff,
@@ -2806,6 +2840,8 @@ class World(LabelFrame):     # <<<2
             self.draw_tile = cfg["draw_tile"]
         if "draw_orbifold" in cfg:
             self.draw_orbifold = cfg["draw_orbifold"]
+        if "draw_color_orbifold" in cfg:
+            self.draw_color_orbifold = cfg["draw_color_orbifold"]
         if "draw_mirrors" in cfg:
             self.draw_mirrors = cfg["draw_mirrors"]
         if "preview_fade" in cfg:
@@ -3425,8 +3461,6 @@ class Function(LabelFrame):     # <<<2
             self.current_tab = cfg["tab"]
         if "wallpaper_pattern" in cfg:
             self.wallpaper_pattern = cfg["wallpaper_pattern"]
-        if "wallpaper_color_pattern" in cfg:
-            self.wallpaper_color_pattern = cfg["wallpaper_color_pattern"]
         if "lattice_parameters" in cfg:
             self.lattice_params = floats_to_str(cfg["lattice_parameters"])
         if "sphere_pattern" in cfg:
@@ -3445,6 +3479,10 @@ class Function(LabelFrame):     # <<<2
         if "hyper_disk_model" in cfg:
             self.hyper_disk_model = cfg["hyper_disk_model"]
         self.update()
+        # NOTE: this needs to be done at the end because the self.update
+        # function does reinitializes the color pattern
+        if "wallpaper_color_pattern" in cfg:
+            self.wallpaper_color_pattern = cfg["wallpaper_color_pattern"]
     # >>>3
 
     def update(self, *args):     # <<<3
@@ -3663,10 +3701,25 @@ class CreateSymmetry(Tk):      # <<<2
                 "w",
                 callback=self.update_world_tab)
 
+        # update settings (checkbutton for showing orbifold for color pattern)
+        self.function._wallpaper_combo.bind(
+                "<<ComboboxSelected>>",
+                self.update_world_tab,
+                add="+"
+                )
+        self.function._wallpaper_color_combo.bind(
+                "<<ComboboxSelected>>",
+                self.update_world_tab,
+                add="+"
+                )
+
         self.world._draw_tile_button.config(
                 command=self.update_world_preview
                 )
         self.world._draw_orbifold_button.config(
+                command=self.update_world_preview
+                )
+        self.world._draw_color_orbifold_button.config(
                 command=self.update_world_preview
                 )
         self.world._draw_mirrors_button.config(
@@ -3760,16 +3813,8 @@ Keyboard shortcuts:
     # >>>3
 
     def update_world_tab(self, *args):       # <<<3
-        if self.function.current_tab == "sphere":
-            self.world.draw_tile = False
-            self.world.draw_orbifold = False
-            self.world.draw_mirrors = False
-            self.world.fade = False
-            self.world._draw_tile_button.config(state=DISABLED)
-            self.world._draw_orbifold_button.config(state=DISABLED)
-            self.world._draw_mirrors_button.config(state=DISABLED)
-            self.world._fade_button.config(state=DISABLED)
-            self.world._fade_coeff.disable()
+        # enable / disable sphere geometry tab
+        if self.function.current_tab in ["sphere"]:
             if self.function.sphere_mode in ["rosette", "frieze"]:
                 self.world.stereographic = True
                 self.world.disable_geometry_sphere_tab()
@@ -3782,12 +3827,36 @@ Keyboard shortcuts:
                 assert False
         else:
             self.world.disable_geometry_sphere_tab()
-            self.world._draw_tile_button.config(state=NORMAL)
-            self.world._draw_orbifold_button.config(state=NORMAL)
-            self.world._draw_mirrors_button.config(state=NORMAL)
-            self.world._fade_button.config(state=NORMAL)
-            self.world._fade_coeff.enable()
-            self.world.update()
+
+        # enable / disable tiling / orbifold drawing buttons
+        if self.function.current_tab in ["sphere", "hyperbolic"]:
+            self.world.draw_tile = False
+            self.world.draw_orbifold = False
+            self.world.draw_mirrors = False
+            self.world.fade = False
+            self.world._draw_tile_button.config(state=DISABLED)
+            self.world._draw_orbifold_button.config(state=DISABLED)
+            self.world._draw_color_orbifold_button.config(state=DISABLED)
+            self.world._draw_mirrors_button.config(state=DISABLED)
+            self.world._fade_button.config(state=DISABLED)
+            self.world._fade_coeff.disable()
+        else:
+            if self.function.wallpaper_color_pattern == "":
+                self.world._draw_tile_button.config(state=NORMAL)
+                self.world._draw_orbifold_button.config(state=NORMAL)
+                self.world._draw_color_orbifold_button.config(state=NORMAL)
+                self.world._draw_mirrors_button.config(state=NORMAL)
+                self.world._fade_button.config(state=NORMAL)
+                self.world._fade_coeff.enable()
+                self.world.update()
+            else:
+                self.world._draw_tile_button.config(state=DISABLED)
+                self.world._draw_orbifold_button.config(state=DISABLED)
+                self.world._draw_color_orbifold_button.config(state=DISABLED)
+                self.world._draw_mirrors_button.config(state=DISABLED)
+                self.world._fade_button.config(state=DISABLED)
+                self.world._fade_coeff.disable()
+
     # >>>3
 
     def start_zoom_rectangle(self, event):   # <<<3
@@ -3880,7 +3949,8 @@ Keyboard shortcuts:
         except AttributeError:
             pass
         try:
-            if self.world.draw_tile:
+            if (self.function.wallpaper_color_pattern == "" and
+                    self.world.draw_tile):
                 if isinstance(
                         self.world._canvas._tile_img,
                         tuple):
@@ -3901,7 +3971,8 @@ Keyboard shortcuts:
         except AttributeError:
             pass
         try:
-            if self.world.draw_orbifold:
+            if (self.function.wallpaper_color_pattern == "" and
+                    self.world.draw_orbifold):
                 if isinstance(
                         self.world._canvas._orbifold_img,
                         tuple):
@@ -3922,7 +3993,8 @@ Keyboard shortcuts:
         except AttributeError:
             pass
         try:
-            if self.world.draw_orbifold and self.world.draw_mirrors:
+            if (self.function.wallpaper_color_pattern == "" and
+                    self.world.draw_orbifold and self.world.draw_mirrors):
                 if isinstance(
                         self.world._canvas._mirrors_img,
                         tuple):
@@ -4011,6 +4083,7 @@ Keyboard shortcuts:
                                     (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
                                     image=self.world._canvas.tk_img)
 
+                    # name all argument of make tile and use dictionary here
                     self.world._canvas._tile_img = (
                                 self.world.geometry,
                                 (self.world.modulus, self.world.angle),
@@ -4018,6 +4091,7 @@ Keyboard shortcuts:
                                 self.function.wallpaper_basis,
                                 image.size,
                                 True,
+                                False,
                                 False,
                                 False
                                 )
@@ -4030,6 +4104,7 @@ Keyboard shortcuts:
                                 image.size,
                                 False,
                                 True,
+                                self.world.draw_color_orbifold,
                                 False
                                 )
 
@@ -4041,6 +4116,7 @@ Keyboard shortcuts:
                                 image.size,
                                 False,
                                 True,
+                                self.world.draw_color_orbifold,
                                 True
                                 )
 
@@ -4421,18 +4497,18 @@ def main():     # <<<1
     # color_config["modulus"] = 1.5
 
     # color_config["modulus"] = 3
-    # function_config["wallpaper_pattern"] = "*632"
-    # world_config["draw_orbifold"] = True
-    # world_config["draw_tile"] = True
-    # world_config["draw_mirrors"] = True
-    # world_config["preview_fade"] = True
-    # function_config["wallpaper_color_pattern"] = "*442"
+    function_config["wallpaper_pattern"] = "××"
+    world_config["draw_orbifold"] = True
+    world_config["draw_tile"] = True
+    world_config["draw_mirrors"] = True
+    world_config["preview_fade"] = True
+    function_config["wallpaper_color_pattern"] = "**"
     # function_config["matrix"] = { (0,1): 1 }
 
     # function_config["tab"] = "hyperbolic"
     # world_config["geometry"] = (0,1/2, 0, 1/2)
-    # world_config["modulus"] = 4
-    function_config["random_nb_coeffs"] = 1
+    world_config["modulus"] = 2
+    # function_config["random_nb_coeffs"] = 1
     # function_config["sphere_pattern"] = "532"
 
     gui = CreateSymmetry()
