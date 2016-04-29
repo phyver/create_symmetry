@@ -1131,7 +1131,7 @@ def basis(pattern, *params):        # <<<2
     elif lattice == "hexagonal":
         return [[1, 0], [-1/2, sqrt(3)/2]]
     else:
-        assert False
+        return None
 # >>>2
 
 
