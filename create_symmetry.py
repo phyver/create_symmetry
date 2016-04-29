@@ -296,7 +296,7 @@ PATTERN = {     # <<<1
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "general lattice",
-        # TO CHECK
+        # OK
     },
     ('2222', 'o'): {
         "alt_name": "",
@@ -312,7 +312,7 @@ PATTERN = {     # <<<1
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "general lattice",
-        # TO CHECK
+        # OK
     },
     ('*×', 'o'): {
         "alt_name": "",
@@ -329,15 +329,15 @@ PATTERN = {     # <<<1
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "rectangular lattice without positive half turn",
-        # TO CHECK
+        # OK
     },
     ('*×', '××'): {
         "alt_name": "",
         "recipe": "n,m = -{n}(n,-m)",
-        "parity": "n+m = 1 mod 2",
+        "parity": "n = 1 mod 2",
         "type": "color reversing plane group",
         "description": "rectangular lattice without positive half turn",
-        # TO CHECK
+        # OK
     },
     ('2*22', '2222'): {
         "alt_name": "",
@@ -363,7 +363,7 @@ PATTERN = {     # <<<1
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "rectangular lattice with positive half turn",
-        # TO CHECK
+        # OK
     },
     ('2*22', '22*'): {
         "alt_name": "",
@@ -371,7 +371,7 @@ PATTERN = {     # <<<1
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "rectangular lattice with positive half turn",
-        # TO CHECK
+        # OK
     },
     ('2*22', '22×'): {
         "alt_name": "",
@@ -379,7 +379,7 @@ PATTERN = {     # <<<1
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "rectangular lattice with positive half turn",
-        # TO CHECK
+        # OK
     },
     ('**', 'o'): {
         "alt_name": "",
@@ -387,7 +387,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "color reversing plane group",
         "description": "rectangular lattice without positive half turn",
-        # TO CHECK
+        # OK
     },
     ('**', '*×'): {
         "alt_name": "",
@@ -395,7 +395,7 @@ PATTERN = {     # <<<1
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "rhombic lattice",
-        # TO CHECK
+        # OK
     },
     ('**₁', '**'): {
         "alt_name": "",
@@ -1284,11 +1284,10 @@ def make_wallpaper_image(zs,     # <<<2
     ``message_queue`` is used to keep track of progress
     """
 
-    if pattern and color_pattern:
-        cp = PATTERN[color_pattern, pattern]
-        matrix = add_symmetries(matrix, cp["recipe"], cp["parity"])
-    elif pattern:
-        matrix = add_symmetries(matrix, PATTERN[pattern]["recipe"])
+    matrix = add_symmetries(
+            matrix,
+            PATTERN[pattern]["recipe"],
+            parity=PATTERN[pattern]["parity"])
 
     B = invert22(basis)
 
@@ -2211,6 +2210,7 @@ class ColorWheel(LabelFrame):   # <<<2
         try:
             self._canvas.delete(self._unit_circle1)
             self._canvas.delete(self._unit_circle2)
+            self._canvas.delete(self._center)
         except:
             pass
         if self.stretch:
@@ -2223,7 +2223,7 @@ class ColorWheel(LabelFrame):   # <<<2
         y0 = delta_y * y_max
         r = delta_x / self.modulus
         self._unit_circle1 = self._canvas.create_oval(x0-r, y0-r, x0+r, y0+r,
-                                                      width=1,
+                                                      width=10,
                                                       outline="white",
                                                       dash=[10, 10])
         self._unit_circle2 = self._canvas.create_oval(x0-r, y0-r, x0+r, y0+r,
@@ -2231,6 +2231,9 @@ class ColorWheel(LabelFrame):   # <<<2
                                                       outline="black",
                                                       dash=[10, 10],
                                                       dashoff=10)
+        self._center = self._canvas.create_oval(x0-5, y0-5, x0+5, y0+5,
+                                                width=1,
+                                                outline="red")
     # >>>3
 
     def choose_colorwheel(self, *args):    # <<<3
@@ -3122,18 +3125,18 @@ class Function(LabelFrame):     # <<<2
     # >>>4
 
     @property
-    def lattice_params(self):
-        return self._lattice_params.get()
+    def lattice_parameters(self):
+        return self._lattice_parameters.get()
     # >>>4
 
-    @lattice_params.setter
-    def lattice_params(self, l):
-        self._lattice_params.set(floats_to_str(l))
+    @lattice_parameters.setter
+    def lattice_parameters(self, l):
+        self._lattice_parameters.set(floats_to_str(l))
     # >>>4
 
     @property
     def wallpaper_basis(self):      # <<<4
-        return basis(self.current_pattern, *self.lattice_params)
+        return basis(self.current_pattern, *self.lattice_parameters)
     # >>>4
 
     @property
@@ -3207,13 +3210,13 @@ class Function(LabelFrame):     # <<<2
         self._wallpaper_color_combo.bind("<<ComboboxSelected>>",
                                          self.update)
 
-        self._lattice_params = LabelEntry(self._wallpaper_tab,
+        self._lattice_parameters = LabelEntry(self._wallpaper_tab,
                                           orientation="V",
                                           label="lattice parameters",
                                           value="",
                                           convert=str_to_floats,
                                           width=10)
-        self._lattice_params.pack(padx=5, pady=5)
+        self._lattice_parameters.pack(padx=5, pady=5)
 
         self._wallpaper_N = LabelEntry(self._wallpaper_tab,
                                        orientation="V",
@@ -3410,6 +3413,7 @@ class Function(LabelFrame):     # <<<2
             self.random_max_degre,
             self.random_modulus
         )
+        # M = self.add_symmetries(M)
         self.change_matrix(M)
     # >>>3
 
@@ -3555,9 +3559,9 @@ class Function(LabelFrame):     # <<<2
         # wallpaper tab     <<<4
         color_pattern = self.wallpaper_color_pattern
         try:
-            lattice_params = self.lattice_params
+            lattice_parameters = self.lattice_parameters
         except:
-            lattice_params = None
+            lattice_parameters = None
 
         # color reversing combo
         self._wallpaper_color_combo.configure(
@@ -3565,10 +3569,10 @@ class Function(LabelFrame):     # <<<2
                 )
         self.wallpaper_color_pattern = color_pattern
 
-        if lattice_params is not None:
+        if lattice_parameters is not None:
             try:
-                self._lattice_params.convert(lattice_params)
-                self.lattice_params = lattice_params
+                self._lattice_parameters.convert(lattice_parameters)
+                self.lattice_parameters = lattice_parameters
             except:
                 pass
 
@@ -3587,30 +3591,30 @@ class Function(LabelFrame):     # <<<2
             return xs
 
         if lattice0 == "general":
-            self._lattice_params.enable()
-            self._lattice_params.label_widget.config(text=lattice + ": x1,y1,x2,y2")
-            self._lattice_params.convert = det_not_null
-            self.lattice_params = [1, 0, 1, 1]
+            self._lattice_parameters.enable()
+            self._lattice_parameters.label_widget.config(text=lattice + ": x1,y1,x2,y2")
+            self._lattice_parameters.convert = det_not_null
+            self.lattice_parameters = [1, 0, 1, 1]
         elif lattice0 == "rhombic":
-            self._lattice_params.enable()
-            self._lattice_params.label_widget.config(text=lattice + ": b")
-            self._lattice_params.convert = not_zero
-            self.lattice_params = [.5]
+            self._lattice_parameters.enable()
+            self._lattice_parameters.label_widget.config(text=lattice + ": b")
+            self._lattice_parameters.convert = not_zero
+            self.lattice_parameters = [.5]
         elif lattice0 == "rectangular":
-            self._lattice_params.enable()
-            self._lattice_params.convert = not_zero
-            self.lattice_params = [.5]
-            self._lattice_params.label_widget.config(text=lattice + ": H")
+            self._lattice_parameters.enable()
+            self._lattice_parameters.convert = not_zero
+            self.lattice_parameters = [.5]
+            self._lattice_parameters.label_widget.config(text=lattice + ": H")
         elif lattice0 == "square":
-            self._lattice_params.convert = None
-            self.lattice_params = []
-            self._lattice_params.label_widget.config(text=lattice)
-            self._lattice_params.disable()
+            self._lattice_parameters.convert = None
+            self.lattice_parameters = []
+            self._lattice_parameters.label_widget.config(text=lattice)
+            self._lattice_parameters.disable()
         elif lattice0 == "hexagonal":
-            self._lattice_params.convert = None
-            self.lattice_params = []
-            self._lattice_params.label_widget.config(text=lattice)
-            self._lattice_params.disable()
+            self._lattice_parameters.convert = None
+            self.lattice_parameters = []
+            self._lattice_parameters.label_widget.config(text=lattice)
+            self._lattice_parameters.disable()
         else:
             assert False
 
@@ -4562,20 +4566,22 @@ def main():     # <<<1
     # function_config["matrix"] = M
     # color_config["modulus"] = 1.5
 
-    # color_config["modulus"] = 3
-    function_config["wallpaper_pattern"] = "2222"
-    function_config["wallpaper_color_pattern"] = "442"
+    color_config["filename"] = "Images/flame2.jpg"
     color_config["modulus"] = .5
-    color_config["filename"] = "Images/flame2-gray.jpg"
+
+    function_config["wallpaper_pattern"] = "o"
+    function_config["wallpaper_color_pattern"] = "o"
+    function_config["random_nb_coeffs"] = 10
+
     world_config["draw_orbifold"] = True
     world_config["draw_tile"] = True
     world_config["draw_mirrors"] = True
     world_config["preview_fade"] = False
-    function_config["lattice_parameters"] = [1]
+    world_config["modulus"] = 2
+    # function_config["lattice_parameters"] = [1]
 
     # function_config["current_tab"] = "hyperbolic"
     # world_config["geometry"] = (0,1/2, 0, 1/2)
-    # function_config["random_nb_coeffs"] = 1
     # function_config["sphere_pattern"] = "532"
 
     gui = CreateSymmetry()
