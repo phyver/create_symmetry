@@ -306,14 +306,6 @@ PATTERN = {     # <<<1
         "description": "general lattice",
         # OK
     },
-    ('2222', '2222'): {
-        "alt_name": "",
-        "recipe": "n,m = -n,-m",
-        "parity": "n+m = 1 mod 2",
-        "type": "color reversing plane group",
-        "description": "general lattice",
-        # OK
-    },
     ('*×', 'o'): {
         "alt_name": "",
         "recipe": "n,m = -(m,n)",
@@ -323,20 +315,28 @@ PATTERN = {     # <<<1
         # OK with rhombic parameters
         # TODO
     },
-    ('*×', '**'): {
+    ('**', 'o'): {
         "alt_name": "",
-        "recipe": "n,m = n,-m",
-        "parity": "n+m = 1 mod 2",
+        "recipe": "n,m = -(-n,m)",
+        "parity": "",
         "type": "color reversing plane group",
         "description": "rectangular lattice without positive half turn",
         # OK
     },
-    ('*×', '××'): {
+    ('××', 'o'): {
         "alt_name": "",
-        "recipe": "n,m = -{n}(n,-m)",
-        "parity": "n = 1 mod 2",
+        "recipe": "n,m = -{m+1}(-n,m)",
+        "parity": "",
         "type": "color reversing plane group",
         "description": "rectangular lattice without positive half turn",
+        # OK
+    },
+    ('2222', '2222'): {
+        "alt_name": "",
+        "recipe": "n,m = -n,-m",
+        "parity": "n+m = 1 mod 2",
+        "type": "color reversing plane group",
+        "description": "general lattice",
         # OK
     },
     ('2*22', '2222'): {
@@ -348,12 +348,160 @@ PATTERN = {     # <<<1
         # OK with parameters forming a rhombic lattice
         # TODO
     },
+    ('*2222', '2222'): {
+        "alt_name": "",
+        "recipe": "n,m = -(-n,m) ; n,m = -n,-m",
+        "parity": "",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice with positive half turn",
+        # OK
+    },
+    ('22*', '2222'): {
+        "alt_name": "",
+        "recipe": "n,m = -{m+1}(m,n) ; n,m = -n,-m",
+        "parity": "",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice with positive half turn",
+        # TO CHECK
+    },
+    ('22×', '2222'): {
+        "alt_name": "",
+        "recipe": "n,m = -{1+n+m}(m,n) ; n,m = -n,-m",
+        "parity": "",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice with positive half turn",
+        # TO CHECK
+    },
+    ('442', '2222'): {
+        "alt_name": "",
+        "recipe": "n,m = -(-m,n)",
+        "parity": "",
+        "type": "color reversing plane group",
+        "description": "square lattice with negating center",
+        # OK with parameter x1,y1,x2,y2 = 1,0,0,1
+        # TODO
+    },
     ('2*22', '*×'): {
         "alt_name": "",
         "recipe": "n,m = -(m,n) ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "rhombic lattice",
+        # OK, but tile and orbifold not OK
+        # TODO
+    },
+    ('**', '*×'): {
+        "alt_name": "",
+        "recipe": "n,m = m,n",
+        "parity": "n+m = 1 mod 2",
+        "type": "color reversing plane group",
+        "description": "rhombic lattice",
+        # OK
+    },
+    ('*2222', '2*22'): {
+        "alt_name": "",
+        "recipe": "n,m = m,n ; n,m = -n,-m",
+        "parity": "n+m = 1 mod 2",
+        "type": "color reversing plane group",
+        "description": "rhombic lattice",
+        # OK
+    },
+    ('*442', '2*22'): {
+        "alt_name": "",
+        "recipe": "n,m = -(-m,n) ; n,m = m,n",
+        "parity": "",
+        "type": "color reversing plane group",
+        "description": "square lattice with negating center",
+        # OK, with parameter b = 1
+        # TODO
+    },
+    ('4*2', '2*22'): {
+        "alt_name": "",
+        "recipe": "n,m = -(-m,n) ; n,m = -{n+m}(m,n)",
+        "parity": "",
+        "type": "color reversing plane group",
+        "description": "square lattice with negative center",
+        # OK, but tile and orbifold not OK
+        # TODO
+    },
+    ('*×', '**'): {
+        "alt_name": "",
+        "recipe": "n,m = n,-m",
+        "parity": "n+m = 1 mod 2",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice without positive half turn",
+        # OK
+    },
+    ('**₁', '**'): {
+        "alt_name": "",
+        "recipe": "n,m = n,-m",
+        "parity": "m = 1 mod 2",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice without positive half turn",
+        # OK
+    },
+    ('**₂', '**'): {
+        "alt_name": "",
+        "recipe": "n,m = n,-m",
+        "parity": "n = 1 mod 2",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice without positive half turn",
+        # TO CHECK
+    },
+    ('*2222', '**'): {
+        "alt_name": "",
+        "recipe": "n,m = n,-m ; n,m = -(-n,-m)",
+        "parity": "",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice without positive half turn",
+        # OK
+    },
+    ('22*', '**'): {
+        "alt_name": "",
+        "recipe": "n,m = -{m+1}(-n,m) ; n,m = -(-n,-m)",
+        "parity": "",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice without positive half turn",
+        # TODO
+    },
+    ('*×', '××'): {
+        "alt_name": "",
+        "recipe": "n,m = -{n}(n,-m)",
+        "parity": "n = 1 mod 2",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice without positive half turn",
+        # OK
+    },
+    ('**', '××'): {
+        "alt_name": "",
+        "recipe": "n,m = -{n}(n,-m)",
+        "parity": "n = 1 mod 2",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice without positive half turn",
+        # OK
+    },
+    ('××', '××'): {
+        "alt_name": "",
+        "recipe": "n,m = -{n}(n,-m)",
+        "parity": "n = 1 mod 2",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice without positive half turn",
+        # TO CHECK
+    },
+    ('22*', '××'): {
+        "alt_name": "",
+        "recipe": "n,m = -{n}(n,-m) ; n,m = -(-n,-m)",
+        "parity": "",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice without positive half turn",
+        # OK
+    },
+    ('22×', '××'): {
+        "alt_name": "",
+        "recipe": "n,m = -{n+m}(-n,m) ; n,m = -(-n,-m)",
+        "parity": "",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice without positive half turn",
         # OK, but tile and orbifold not OK
         # TODO
     },
@@ -365,6 +513,22 @@ PATTERN = {     # <<<1
         "description": "rectangular lattice with positive half turn",
         # OK
     },
+    ('*2222', '*2222'): {
+        "alt_name": "",
+        "recipe": "n,m = -n,m ; n,m = -n,-m",
+        "parity": "n = 1 mod 2",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice with positive half turn",
+        # OK
+    },
+    ('*442', '*2222'): {
+        "alt_name": "",
+        "recipe": "n,m = -(-m,n) ; n,m = -(m,n)",
+        "parity": "",
+        "type": "color reversing plane group",
+        "description": "square lattice with negating center",
+        # OK
+    },
     ('2*22', '22*'): {
         "alt_name": "",
         "recipe": "n,m = -{n}(n,-m) ; n,m = -n,-m",
@@ -373,132 +537,12 @@ PATTERN = {     # <<<1
         "description": "rectangular lattice with positive half turn",
         # OK
     },
-    ('2*22', '22×'): {
-        "alt_name": "",
-        "recipe": "n,m = -{n+m}(-n,m) ; n,m = -n,-m",
-        "parity": "n+m = 1 mod 2",
-        "type": "color reversing plane group",
-        "description": "rectangular lattice with positive half turn",
-        # OK
-    },
-    ('**', 'o'): {
-        "alt_name": "",
-        "recipe": "n,m = -(-n,m)",
-        "parity": "",
-        "type": "color reversing plane group",
-        "description": "rectangular lattice without positive half turn",
-        # OK
-    },
-    ('**', '*×'): {
-        "alt_name": "",
-        "recipe": "n,m = m,n",
-        "parity": "n+m = 1 mod 2",
-        "type": "color reversing plane group",
-        "description": "rhombic lattice",
-        # OK
-    },
-    ('**₁', '**'): {
-        "alt_name": "",
-        "recipe": "n,m = n,-m",
-        "parity": "m = 1 mod 2",
-        "type": "color reversing plane group",
-        "description": "rectangular lattice without positive half turn",
-        # TO CHECK
-    },
-    ('**₂', '**'): {
-        "alt_name": "",
-        "recipe": "n,m = n,-m",
-        "parity": "n = 1 mod 2",
-        "type": "color reversing plane group",
-        "description": "rectangular lattice without positive half turn",
-        # TO CHECK
-    },
-    ('**', '××'): {
-        "alt_name": "",
-        "recipe": "n,m = -{n}(n,-m)",
-        "parity": "m = 1 mod 2",
-        "type": "color reversing plane group",
-        "description": "rectangular lattice without positive half turn",
-        # TO CHECK
-    },
-    ('××', 'o'): {
-        "alt_name": "",
-        "recipe": "n,m = -{m+1}(-n,m)",
-        "parity": "",
-        "type": "color reversing plane group",
-        "description": "rectangular lattice without positive half turn",
-        # TO CHECK
-    },
-    ('××', '××'): {
-        "alt_name": "",
-        "recipe": "n,m = -{n}(n,-m)",
-        "parity": "n = 1 mod 2",
-        "type": "color reversing plane group",
-        "description": "rectangular lattice without positive half turn",
-        # TO CHECK
-    },
-    ('*2222', '2222'): {
-        "alt_name": "",
-        "recipe": "n,m = -(-n,m) ; n,m = -n,-m",
-        "parity": "",
-        "type": "color reversing plane group",
-        "description": "rectangular lattice with positive half turn",
-        # TO CHECK
-    },
-    ('*2222', '2*22'): {
-        "alt_name": "",
-        "recipe": "n,m = m,n ; n,m = -n,-m",
-        "parity": "n+m = 1 mod 2",
-        "type": "color reversing plane group",
-        "description": "rhombic lattice",
-        # TO CHECK
-    },
-    ('*2222', '**'): {
-        "alt_name": "",
-        "recipe": "n,m = n,-m ; n,m = -(-n,-m)",
-        "parity": "",
-        "type": "color reversing plane group",
-        "description": "rectangular lattice without positive half turn",
-        # OK
-    },
-    ('*2222', '*2222'): {
-        "alt_name": "",
-        "recipe": "n,m = -n,m ; n,m = -n,-m",
-        "parity": "n = 1 mod 2",
-        "type": "color reversing plane group",
-        "description": "rectangular lattice with positive half turn",
-        # TO CHECK
-    },
     ('*2222', '22*'): {
         "alt_name": "",
         "recipe": "n,m = -{n}(n,-m) ; n,m = -n,-m",
-        "parity": "m = 1 mod 2",
+        "parity": "n = 1 mod 2",
         "type": "color reversing plane group",
         "description": "rectangular lattice with positive half turn",
-        # TO CHECK
-    },
-    ('22*', '2222'): {
-        "alt_name": "",
-        "recipe": "n,m = -{m+1}(m,n) ; n,m = -n,-m",
-        "parity": "",
-        "type": "color reversing plane group",
-        "description": "rectangular lattice with positive half turn",
-        # TO CHECK
-    },
-    ('22*', '**'): {
-        "alt_name": "",
-        "recipe": "n,m = -{m+1}(-n,m) ; n,m = -(-n,-m)",
-        "parity": "",
-        "type": "color reversing plane group",
-        "description": "rectangular lattice without positive half turn",
-        # TODO
-    },
-    ('22*', '××'): {
-        "alt_name": "",
-        "recipe": "n,m = -{n}(n,-m) ; n,m = -(-n,-m)",
-        "parity": "",
-        "type": "color reversing plane group",
-        "description": "rectangular lattice without positive half turn",
         # OK
     },
     ('22*', '22*'): {
@@ -509,6 +553,14 @@ PATTERN = {     # <<<1
         "description": "rectangular lattice with positive half turn",
         # TO CHECK
     },
+    ('2*22', '22×'): {
+        "alt_name": "",
+        "recipe": "n,m = -{n+m}(-n,m) ; n,m = -n,-m",
+        "parity": "n+m = 1 mod 2",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice with positive half turn",
+        # OK
+    },
     ('22*', '22×'): {
         "alt_name": "",
         "recipe": "n,m = -{n+m}(-n,m) ; n,m = -n,-m",
@@ -516,30 +568,13 @@ PATTERN = {     # <<<1
         "type": "color reversing plane group",
         "description": "rectangular lattice with positive half turn",
     },
-    ('22×', '2222'): {
+    ('4*2', '22×'): {
         "alt_name": "",
-        "recipe": "n,m = -{1+n+m}(m,n) ; n,m = -n,-m",
+        "recipe": "n,m = -(-m,n) ; n,m = -{1+n+m}(m,n)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "rectangular lattice with positive half turn",
-        # TO CHECK
-    },
-    ('22×', '××'): {
-        "alt_name": "",
-        "recipe": "n,m = -{n+m}(-n,m) ; n,m = -(-n,-m)",
-        "parity": "",
-        "type": "color reversing plane group",
-        "description": "rectangular lattice without positive half turn",
-        # OK, but tile and orbifold not OK
-        # TODO
-    },
-    ('442', '2222'): {
-        "alt_name": "",
-        "recipe": "n,m = -(-m,n)",
-        "parity": "",
-        "type": "color reversing plane group",
-        "description": "square lattice with negating center",
-        # OK with parameter x1,y1,x2,y2 = 1,0,0,1
+        "description": "square lattice with negative center",
+        # OK, with parameter H=1
         # TODO
     },
     ('442', '442'): {
@@ -550,26 +585,17 @@ PATTERN = {     # <<<1
         "description": "square lattice with positive center",
         # TO CHECK
     },
-    ('*442', '2*22'): {
-        "alt_name": "",
-        "recipe": "n,m = -(-m,n) ; n,m = m,n",
-        "parity": "",
-        "type": "color reversing plane group",
-        "description": "square lattice with negating center",
-        # OK, with parameter b = 1
-        # TODO
-    },
-    ('*442', '*2222'): {
-        "alt_name": "",
-        "recipe": "n,m = -(-m,n) ; n,m = -(m,n)",
-        "parity": "",
-        "type": "color reversing plane group",
-        "description": "square lattice with negating center",
-        # OK
-    },
     ('*442', '442'): {
         "alt_name": "",
         "recipe": "n,m = -m,n ; n,m = -(m,n)",
+        "parity": "",
+        "type": "color reversing plane group",
+        "description": "square lattice with positive center",
+        # OK
+    },
+    ('4*2', '442'): {
+        "alt_name": "",
+        "recipe": "n,m = -m,n ; n,m = -{n+m+1}(m,n)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "square lattice with positive center",
@@ -590,32 +616,6 @@ PATTERN = {     # <<<1
         "type": "color reversing plane group",
         "description": "square lattice with positive center",
         # TO CHECK
-    },
-    ('4*2', '2*22'): {
-        "alt_name": "",
-        "recipe": "n,m = -(-m,n) ; n,m = -{n+m}(m,n)",
-        "parity": "",
-        "type": "color reversing plane group",
-        "description": "square lattice with negative center",
-        # OK, but tile and orbifold not OK
-        # TODO
-    },
-    ('4*2', '22×'): {
-        "alt_name": "",
-        "recipe": "n,m = -(-m,n) ; n,m = -{1+n+m}(m,n)",
-        "parity": "",
-        "type": "color reversing plane group",
-        "description": "square lattice with negative center",
-        # OK, with parameter H=1
-        # TODO
-    },
-    ('4*2', '442'): {
-        "alt_name": "",
-        "recipe": "n,m = -m,n ; n,m = -{n+m+1}(m,n)",
-        "parity": "",
-        "type": "color reversing plane group",
-        "description": "square lattice with positive center",
-        # OK
     },
     ('3*3', '333'): {
         "alt_name": "",
@@ -1502,7 +1502,7 @@ def save_image(         # <<<2
                 image.size,
                 draw_tile=world["draw_tile"],
                 draw_orbifold=world["draw_orbifold"],
-                color_orbifold=world["draw_color_orbifold"],
+                color_tile=world["draw_color_tile"],
                 draw_mirrors=world["draw_mirrors"]
                 )
         image.paste(tile, mask=tile)
@@ -1685,13 +1685,13 @@ def make_tile(geometry,         # <<<2
               size,
               draw_tile=True,
               draw_orbifold=True,
-              color_orbifold=True,
+              color_tile=False,
               draw_mirrors=False):
     """compute a transparent image with a tile and orbifold information
     this image can be added on top of a wallpaper image"""
 
     if isinstance(pattern, tuple):
-        if color_orbifold:
+        if color_tile:
             pattern = pattern[0]
         else:
             pattern = pattern[1]
@@ -2478,13 +2478,13 @@ class World(LabelFrame):     # <<<2
     # >>>4
 
     @property
-    def draw_color_orbifold(self):    # <<<4
-        return self._draw_color_orbifold.get()
+    def draw_color_tile(self):    # <<<4
+        return self._draw_color_tile.get()
     # >>>4
 
-    @draw_color_orbifold.setter
-    def draw_color_orbifold(self, b):    # <<<4
-        self._draw_color_orbifold.set(b)
+    @draw_color_tile.setter
+    def draw_color_tile(self, b):    # <<<4
+        self._draw_color_tile.set(b)
     # >>>4
 
     @property
@@ -2565,12 +2565,12 @@ class World(LabelFrame):     # <<<2
                 indicatoron=False)
         self._draw_orbifold_button.pack(side=LEFT, padx=5, pady=5)
 
-        self._draw_color_orbifold = BooleanVar()
-        self._draw_color_orbifold_button = Checkbutton(
+        self._draw_color_tile = BooleanVar()
+        self._draw_color_tile_button = Checkbutton(
                 canvas_frame,
-                variable=self._draw_color_orbifold,
+                variable=self._draw_color_tile,
                 text="")
-        self._draw_color_orbifold_button.pack(side=LEFT, padx=0, pady=0)
+        self._draw_color_tile_button.pack(side=LEFT, padx=0, pady=0)
 
         self._draw_mirrors = BooleanVar()
         self._draw_mirrors_button = Checkbutton(
@@ -2607,8 +2607,8 @@ class World(LabelFrame):     # <<<2
         self._draw_tile.set(False)
         self._draw_orbifold.trace("w", self.update)
         self._draw_orbifold.set(False)
-        self._draw_color_orbifold.trace("w", self.update)
-        self._draw_color_orbifold.set(False)
+        self._draw_color_tile.trace("w", self.update)
+        self._draw_color_tile.set(False)
         self._draw_mirrors.trace("w", self.update)
         self._draw_mirrors.set(False)
         self._fade.trace("w", self.update)
@@ -2859,10 +2859,10 @@ class World(LabelFrame):     # <<<2
     def update(self, *args):   # <<<3
         if self.draw_orbifold:
             self._draw_mirrors_button.config(state=NORMAL)
-            self._draw_color_orbifold_button.config(state=NORMAL)
+            self._draw_color_tile_button.config(state=NORMAL)
         else:
             self._draw_mirrors_button.config(state=DISABLED)
-            self._draw_color_orbifold_button.config(state=DISABLED)
+            self._draw_color_tile_button.config(state=DISABLED)
 
         if self.fade:
             self._preview_fade_coeff.enable()
@@ -2900,7 +2900,7 @@ class World(LabelFrame):     # <<<2
                   "geometry", "modulus", "angle",
                   "size", "filename_template",
                   "preview_size",
-                  "draw_tile", "draw_orbifold", "draw_color_orbifold",
+                  "draw_tile", "draw_orbifold", "draw_color_tile",
                   "draw_mirrors", "preview_fade", "preview_fade_coeff",
                   "sphere_projection", "sphere_rotations",
                   "sphere_background", "sphere_background_fading",
@@ -2915,7 +2915,7 @@ class World(LabelFrame):     # <<<2
                   "geometry", "modulus", "angle",
                   "size", "filename_template",
                   "preview_size",
-                  "draw_tile", "draw_orbifold", "draw_color_orbifold",
+                  "draw_tile", "draw_orbifold", "draw_color_tile",
                   "draw_mirrors", "preview_fade", "preview_fade_coeff",
                   "sphere_projection", "sphere_rotations",
                   "sphere_background", "sphere_background_fading",
@@ -3792,7 +3792,7 @@ class CreateSymmetry(Tk):      # <<<2
         self.world._draw_orbifold_button.config(
                 command=self.update_world_preview
                 )
-        self.world._draw_color_orbifold_button.config(
+        self.world._draw_color_tile_button.config(
                 command=self.update_world_preview
                 )
         self.world._draw_mirrors_button.config(
@@ -3909,7 +3909,7 @@ Keyboard shortcuts:
             self.world.fade = False
             self.world._draw_tile_button.config(state=DISABLED)
             self.world._draw_orbifold_button.config(state=DISABLED)
-            self.world._draw_color_orbifold_button.config(state=DISABLED)
+            self.world._draw_color_tile_button.config(state=DISABLED)
             self.world._draw_mirrors_button.config(state=DISABLED)
             self.world._fade_button.config(state=DISABLED)
             self.world._preview_fade_coeff.disable()
@@ -3917,7 +3917,7 @@ Keyboard shortcuts:
             # if self.function.wallpaper_color_pattern == "":
                 self.world._draw_tile_button.config(state=NORMAL)
                 self.world._draw_orbifold_button.config(state=NORMAL)
-                self.world._draw_color_orbifold_button.config(state=NORMAL)
+                self.world._draw_color_tile_button.config(state=NORMAL)
                 self.world._draw_mirrors_button.config(state=NORMAL)
                 self.world._fade_button.config(state=NORMAL)
                 self.world._preview_fade_coeff.enable()
@@ -3925,7 +3925,7 @@ Keyboard shortcuts:
             # else:
             #     self.world._draw_tile_button.config(state=DISABLED)
             #     self.world._draw_orbifold_button.config(state=DISABLED)
-            #     self.world._draw_color_orbifold_button.config(state=DISABLED)
+            #     self.world._draw_color_tile_button.config(state=DISABLED)
             #     self.world._draw_mirrors_button.config(state=DISABLED)
             #     self.world._fade_button.config(state=DISABLED)
             #     self.world._preview_fade_coeff.disable()
@@ -4017,68 +4017,50 @@ Keyboard shortcuts:
         except AttributeError:
             pass
 
-        try:
-            self.world._canvas.delete(self.world._canvas._tile_image_id)
-        except AttributeError:
-            pass
-        try:
-            if self.world.draw_tile:
-                if isinstance(
-                        self.world._canvas._tile_img,
-                        tuple):
-                    self.world._canvas._tile_img = make_tile(
-                            *self.world._canvas._tile_img
-                            )
-                    self.world._canvas.tk_tile_img = PIL.ImageTk.PhotoImage(
-                            self.world._canvas._tile_img
-                            )
-                self.world._canvas._tile_image_id = self.world._canvas.create_image(
-                            (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
-                            image=self.world._canvas.tk_tile_img)
-        except AttributeError:
-            pass
+        def rm_tile(name):
+            try:
+                img_id = getattr(self.world._canvas, name + "_id")
+                self.world._canvas.delete(img_id)
+            except AttributeError:
+                pass
 
-        try:
-            self.world._canvas.delete(self.world._canvas._orbifold_image_id)
-        except AttributeError:
-            pass
-        try:
-            if self.world.draw_orbifold:
-                if isinstance(
-                        self.world._canvas._orbifold_img,
-                        tuple):
-                    self.world._canvas._orbifold_img = make_tile(
-                            *self.world._canvas._orbifold_img
-                            )
-                    self.world._canvas.tk_orbifold_img = PIL.ImageTk.PhotoImage(
-                            self.world._canvas._orbifold_img
-                            )
-                self.world._canvas._orbifold_image_id = self.world._canvas.create_image(
-                            (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
-                            image=self.world._canvas.tk_orbifold_img)
-        except AttributeError:
-            pass
+        def put_tile(name):
+            try:
+                if isinstance(getattr(self.world._canvas, name), tuple):
+                    img = make_tile(*getattr(self.world._canvas, name))
+                    tk_img = PIL.ImageTk.PhotoImage(img)
+                    setattr(self.world._canvas, name, img)
+                    setattr(self.world._canvas, "tk" + name, tk_img)
+                img_id = self.world._canvas.create_image(
+                    (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
+                    image=getattr(self.world._canvas, "tk" + name)
+                )
+                setattr(self.world._canvas, name + "_id", img_id)
+            except AttributeError:
+                pass
 
-        try:
-            self.world._canvas.delete(self.world._canvas._mirrors_image_id)
-        except AttributeError:
-            pass
-        try:
-            if self.world.draw_orbifold and self.world.draw_mirrors:
-                if isinstance(
-                        self.world._canvas._mirrors_img,
-                        tuple):
-                    self.world._canvas._mirrors_img = make_tile(
-                            *self.world._canvas._mirrors_img
-                            )
-                    self.world._canvas.tk_mirrors_img = PIL.ImageTk.PhotoImage(
-                            self.world._canvas._mirrors_img
-                            )
-                self.world._canvas._mirrors_image_id = self.world._canvas.create_image(
-                            (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
-                            image=self.world._canvas.tk_mirrors_img)
-        except AttributeError:
-            pass
+        rm_tile("_tile_img")
+        rm_tile("_color_tile_img")
+        if self.world.draw_tile:
+            if self.world.draw_color_tile:
+                put_tile("_color_tile_img")
+            else:
+                put_tile("_tile_img")
+
+        rm_tile("_orbifold_img")
+        if self.world.draw_orbifold:
+            if self.world.draw_color_tile:
+                put_tile("_color_orbifold_img")
+            else:
+                put_tile("_orbifold_img")
+
+        rm_tile("_mirrors_img")
+        if self.world.draw_orbifold and self.world.draw_mirrors:
+            if self.world.draw_color_tile:
+                put_tile("_color_mirrors_img")
+            else:
+                put_tile("_mirrors_img")
+
     # >>>3
 
     def update_GUI(self):        # <<<3
@@ -4174,7 +4156,7 @@ Keyboard shortcuts:
                                 image.size,
                                 False,
                                 True,
-                                self.world.draw_color_orbifold,
+                                False,
                                 False
                                 )
 
@@ -4186,7 +4168,43 @@ Keyboard shortcuts:
                                 image.size,
                                 False,
                                 True,
-                                self.world.draw_color_orbifold,
+                                False,
+                                True
+                                )
+
+                    self.world._canvas._color_tile_img = (
+                                self.world.geometry,
+                                (self.world.modulus, self.world.angle),
+                                self.function.current_pattern,
+                                self.function.wallpaper_basis,
+                                image.size,
+                                True,
+                                False,
+                                True,
+                                False
+                                )
+
+                    self.world._canvas._color_orbifold_img = (
+                                self.world.geometry,
+                                (self.world.modulus, self.world.angle),
+                                self.function.current_pattern,
+                                self.function.wallpaper_basis,
+                                image.size,
+                                False,
+                                True,
+                                True,
+                                False
+                                )
+
+                    self.world._canvas._color_mirrors_img = (
+                                self.world.geometry,
+                                (self.world.modulus, self.world.angle),
+                                self.function.current_pattern,
+                                self.function.wallpaper_basis,
+                                image.size,
+                                False,
+                                True,
+                                True,
                                 True
                                 )
 
