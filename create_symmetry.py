@@ -42,6 +42,7 @@ import queue
 # >>>1
 
 PREVIEW_SIZE = 500
+STRETCH_DISPLAY_RADIUS = 5
 OUTPUT_WIDTH = 1280
 OUTPUT_HEIGHT = 960
 COLOR_SIZE = 200
@@ -2153,7 +2154,10 @@ class ColorWheel(LabelFrame):   # <<<2
                 self._reset_button.configure(state=DISABLED)
                 zs = make_coordinates_array(
                         size=(PREVIEW_SIZE, PREVIEW_SIZE),
-                        geometry=(-7, 7, -7, 7))
+                        geometry=(-STRETCH_DISPLAY_RADIUS,
+                                  STRETCH_DISPLAY_RADIUS,
+                                  -STRETCH_DISPLAY_RADIUS,
+                                  STRETCH_DISPLAY_RADIUS))
                 np.divide(zs, np.sqrt(1 + zs.real**2 + zs.imag**2), out=zs)
                 img = apply_color(zs,
                                   filename,
@@ -2212,10 +2216,16 @@ class ColorWheel(LabelFrame):   # <<<2
             self._canvas.delete(self._center)
         except:
             pass
-        if self.stretch:
-            return
 
-        x_min, x_max, y_min, y_max = self.geometry
+
+        if self.stretch:
+            x_min = -STRETCH_DISPLAY_RADIUS
+            x_max = STRETCH_DISPLAY_RADIUS
+            y_min = -STRETCH_DISPLAY_RADIUS
+            y_max = STRETCH_DISPLAY_RADIUS
+        else:
+            x_min, x_max, y_min, y_max = self.geometry
+
         delta_x = COLOR_SIZE / (x_max - x_min)
         delta_y = COLOR_SIZE / (y_max - y_min)
         x0 = - delta_x * x_min
