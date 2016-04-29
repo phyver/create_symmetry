@@ -2132,6 +2132,9 @@ class ColorWheel(LabelFrame):   # <<<2
             self._canvas.delete(self._unit_circle2)
         except:
             pass
+        if self.stretch:
+            return
+
         x_min, x_max, y_min, y_max = self.geometry
         delta_x = COLOR_SIZE / (x_max - x_min)
         delta_y = COLOR_SIZE / (y_max - y_min)
