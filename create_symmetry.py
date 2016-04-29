@@ -1942,13 +1942,18 @@ class ColorWheel(LabelFrame):   # <<<2
     def filename(self):     # <<<4
         try:
             return self._filename
-        except:
+        except AttributeError:
             return None
     # >>>4
 
     @filename.setter
     def filename(self, filename):   # <<<4
-        self._filename = filename
+        try:
+            if self._filename != filename:
+                self._alt_filename = self._filename
+                self._filename = filename
+        except AttributeError:
+            self._filename = filename
     # >>>4
     # >>>3
 
@@ -1985,7 +1990,7 @@ class ColorWheel(LabelFrame):   # <<<2
                 self._canvas.create_line(i, j-1, i, j+2, fill="gray")
         self._colorwheel_id = None
         self._canvas.bind("<Button-3>", self.set_origin)
-        self._canvas.bind("<Double-Button-1>", self.choose_colorwheel)
+        self._canvas.bind("<Double-Button-1>", self.switch_colorwheel)
 
         self._filename_button = Button(self, text="choose file",
                                        command=self.choose_colorwheel)
@@ -2114,7 +2119,14 @@ class ColorWheel(LabelFrame):   # <<<2
                   .format(filename, e))
     # >>>3
 
-    def draw_unit_circle(self, *args):
+    def switch_colorwheel(self, *args):     # <<<3
+        try:
+            self.change_colorwheel(self._alt_filename)
+        except AttributeError:
+            pass
+    # >>>3
+
+    def draw_unit_circle(self, *args):      # <<<3
         try:
             self._canvas.delete(self._unit_circle1)
             self._canvas.delete(self._unit_circle2)
@@ -2135,6 +2147,7 @@ class ColorWheel(LabelFrame):   # <<<2
                                                       outline="black",
                                                       dash=[10, 10],
                                                       dashoff=10)
+    # >>>3
 
     def choose_colorwheel(self, *args):    # <<<3
         filename = filedialog.askopenfilename(
