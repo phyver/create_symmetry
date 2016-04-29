@@ -1403,7 +1403,7 @@ def save_image(         # <<<2
         image=None,
         **config
         ):
-    filename_template = config["world"]["filename"]
+    filename_template = config["world"]["filename_template"]
 
     color = config["color"]
     world = config["world"]
@@ -1429,7 +1429,7 @@ def save_image(         # <<<2
 
     function = config["function"]
     info = {"type": "", "name": "", "alt_name": ""}
-    if function["tab"] == "wallpaper":
+    if function["current_tab"] == "wallpaper":
         info["type"] = "planar"
         info["name"] = function["wallpaper_pattern"]
         info["alt_name"] = PATTERN[info["name"]]["alt_name"]
@@ -1439,14 +1439,14 @@ def save_image(         # <<<2
             info["alt_name"] = (PATTERN[cp]["alt_name"] +
                                 "_" +
                                 info["alt_name"])
-    elif function["tab"] == "sphere":
+    elif function["current_tab"] == "sphere":
         info["type"] = "spherical"
         p = function["sphere_pattern"]
         N = function["sphere_N"]
         info["name"] = p.replace("N", str(N))
         info["alt_name"] = PATTERN[p]["alt_name"]
         info["alt_name"] = info["alt_name"].replace("N", str(N))
-    elif function["tab"] == "hyperbolic":
+    elif function["current_tab"] == "hyperbolic":
         info["type"] = "hyperbolic"
         info["name"] = "--"
         info["alt_name"] = "--"
@@ -1496,7 +1496,7 @@ def background_output(     # <<<2
     """compute an image from the configuration in config, and save it to a file
     used by the GUI for output jobs"""
 
-    filename_template = config["world"]["filename"]
+    filename_template = config["world"]["filename_template"]
 
     color = config["color"]
     world = config["world"]
@@ -1908,23 +1908,23 @@ class ColorWheel(LabelFrame):   # <<<2
     # >>>4
 
     @property
-    def color(self):    # <<<4
+    def rgb_color(self):    # <<<4
         return self._color.get()
     # >>>4
 
-    @color.setter
-    def color(self, color):    # <<<4
+    @rgb_color.setter
+    def rgb_color(self, color):    # <<<4
         self._color.set("#{:02x}{:02x}{:02x}"
                         .format(color[0], color[1], color[2]))
     # >>>4
 
     @property
-    def color_string(self):    # <<<4
+    def color(self):    # <<<4
         return self._color.entry_widget.get()
     # >>>4
 
-    @color_string.setter
-    def color_string(self, color):    # <<<4
+    @color.setter
+    def color(self, color):    # <<<4
         self._color.set(color)
     # >>>4
 
@@ -2056,7 +2056,7 @@ class ColorWheel(LabelFrame):   # <<<2
 
     def update_defaultcolor(self, *args):     # <<<3
         if self._color.validate():
-            self._canvas.config(bg="#{:02x}{:02x}{:02x}".format(*self.color))
+            self._canvas.config(bg="#{:02x}{:02x}{:02x}".format(*self.rgb_color))
     # >>>3
 
     def change_colorwheel(self, filename):  # <<<3
@@ -2080,7 +2080,7 @@ class ColorWheel(LabelFrame):   # <<<2
                                   self.geometry,
                                   self.modulus,
                                   self.angle,
-                                  self.color)
+                                  self.rgb_color)
             else:
                 self._x_min.enable()
                 self._x_max.enable()
@@ -2190,29 +2190,21 @@ class ColorWheel(LabelFrame):   # <<<2
             self.geometry = COLOR_GEOMETRY
     # >>>3
 
-    def get_config(self):           # <<<3
-        return {
-                "filename": self.filename,
-                "color": self.color_string,
-                "geometry": self.geometry,
-                "modulus": self.modulus,
-                "angle": self.angle,
-                "stretch": self.stretch,
-                }
+    @property
+    def config(self):           # <<<3
+        cfg = {}
+        for k in ["filename", "color", "geometry", "modulus",
+                  "angle", "stretch"]:
+            cfg[k] = getattr(self, k)
+        return cfg
     # >>>3
 
-    def set_config(self, cfg):      # <<<3
-        if "geometry" in cfg:
-            self.geometry = cfg["geometry"]
-        if "modulus" in cfg:
-            self.modulus = cfg["modulus"]
-        if "angle" in cfg:
-            self.angle = cfg["angle"]
-        if "stretch" in cfg:
-            self.stretch = cfg["stretch"]
-        if "color" in cfg:
-            self.color_string = cfg["color"]
-            self.update_defaultcolor()
+    @config.setter
+    def config(self, cfg):      # <<<3
+        for k in ["color", "geometry", "modulus",
+                  "angle", "stretch"]:
+            if k in cfg:
+                setattr(self, k, cfg[k])
         if "filename" in cfg:
             self.change_colorwheel(cfg["filename"])
     # >>>3
@@ -2303,13 +2295,13 @@ class World(LabelFrame):     # <<<2
     # >>>4
 
     @property
-    def stereographic(self):    # <<<4
-        return self._stereographic.get()
+    def sphere_projection(self):    # <<<4
+        return self._sphere_projection.get()
     # >>>4
 
-    @stereographic.setter
-    def stereographic(self, b):    # <<<4
-        self._stereographic.set(b)
+    @sphere_projection.setter
+    def sphere_projection(self, b):    # <<<4
+        self._sphere_projection.set(b)
     # >>>4
 
     @property
@@ -2438,13 +2430,13 @@ class World(LabelFrame):     # <<<2
     # >>>4
 
     @property
-    def fade_coeff(self):    # <<<4
-        return self._fade_coeff.get()
+    def preview_fade_coeff(self):    # <<<4
+        return self._preview_fade_coeff.get()
     # >>>4
 
-    @fade_coeff.setter
-    def fade_coeff(self, b):    # <<<4
-        self._fade_coeff.set(b)
+    @preview_fade_coeff.setter
+    def preview_fade_coeff(self, b):    # <<<4
+        self._preview_fade_coeff.set(b)
     # >>>4
 
     @property
@@ -2518,12 +2510,12 @@ class World(LabelFrame):     # <<<2
                 indicatoron=False)
         self._fade_button.pack(side=LEFT, padx=(5, 0), pady=5)
 
-        self._fade_coeff = LabelEntry(
+        self._preview_fade_coeff = LabelEntry(
                 canvas_frame,
                 convert=int,
                 width=3,
                 label="")
-        self._fade_coeff.pack(side=LEFT, padx=(0, 5), pady=5)
+        self._preview_fade_coeff.pack(side=LEFT, padx=(0, 5), pady=5)
 
         self._preview_size = LabelEntry(
                 canvas_frame,
@@ -2543,7 +2535,7 @@ class World(LabelFrame):     # <<<2
         self._draw_mirrors.set(False)
         self._fade.trace("w", self.update)
         self._fade.set(False)
-        self._fade_coeff.set(200)
+        self._preview_fade_coeff.set(200)
         # >>>4
 
         # geometry of result    <<<4
@@ -2619,16 +2611,16 @@ class World(LabelFrame):     # <<<2
                 lambda _: self._geometry_tabs.tab(self._geometry_sphere_tab,
                                                   state=NORMAL))
 
-        self._stereographic = BooleanVar()
-        self._stereographic.set(True)
+        self._sphere_projection = BooleanVar()
+        self._sphere_projection.set(True)
 
-        stereographic_button = Checkbutton(self._geometry_sphere_tab,
+        sphere_projection = Checkbutton(self._geometry_sphere_tab,
                                            text="stereographic projection",
-                                           variable=self._stereographic,
+                                           variable=self._sphere_projection,
                                            onvalue=True, offvalue=False,
                                            indicatoron=False,
                                            )
-        stereographic_button.pack(padx=5, pady=10)
+        sphere_projection.pack(padx=5, pady=10)
 
         self._rotations = LabelEntry(self._geometry_sphere_tab,
                                      label="rotations x, y, z (°)",
@@ -2717,7 +2709,7 @@ class World(LabelFrame):     # <<<2
     # >>>3
 
     def disable_geometry_sphere_tab(self):  # <<<3
-        self.stereographic = True
+        self.sphere_projection = True
         self._geometry_tabs.tab(self._geometry_sphere_tab, state=DISABLED)
     # >>>3
 
@@ -2795,9 +2787,9 @@ class World(LabelFrame):     # <<<2
             self._draw_color_orbifold_button.config(state=DISABLED)
 
         if self.fade:
-            self._fade_coeff.enable()
+            self._preview_fade_coeff.enable()
         else:
-            self._fade_coeff.disable()
+            self._preview_fade_coeff.disable()
     # >>>3
 
     def adjust_geometry(self, *args):       # <<<3
@@ -2823,66 +2815,35 @@ class World(LabelFrame):     # <<<2
                              middle_y + delta_y/2)
     # >>>3
 
-    def get_config(self):           # <<<3
-        return {
-                "geometry": self.geometry,
-                "modulus": self.modulus,
-                "angle": self.angle,
-                "sphere_projection": self.stereographic,
-                "sphere_rotations": self.sphere_rotations,
-                "sphere_background": self.sphere_background,
-                "sphere_background_fading": self.sphere_background_fading,
-                "sphere_stars": self.sphere_stars,
-                "geometry_tab": self.geometry_tab,
-                "size": self.size,
-                "filename": self.filename_template,
-                "draw_tile": self.draw_tile,
-                "draw_orbifold": self.draw_orbifold,
-                "draw_color_orbifold": self.draw_color_orbifold,
-                "draw_mirrors": self.draw_mirrors,
-                "preview_fade": self.fade,
-                "preview_fade_coeff": self.fade_coeff,
-                "preview_size": self.preview_size,
-                }
+    @property
+    def config(self):           # <<<3
+        cfg = {}
+        for k in ["geometry_tab",
+                  "geometry", "modulus", "angle",
+                  "size", "filename_template",
+                  "preview_size",
+                  "draw_tile", "draw_orbifold", "draw_color_orbifold",
+                  "draw_mirrors", "preview_fade", "preview_fade_coeff",
+                  "sphere_projection", "sphere_rotations",
+                  "sphere_background", "sphere_background_fading",
+                  "sphere_stars"]:
+            cfg[k] = getattr(self, k)
+        return cfg
     # >>>3
 
-    def set_config(self, cfg):      # <<<3
-        if "geometry" in cfg:
-            self.geometry = cfg["geometry"]
-        if "modulus" in cfg:
-            self.modulus = cfg["modulus"]
-        if "angle" in cfg:
-            self.angle = cfg["angle"]
-        if "sphere_projection" in cfg:
-            self.stereographic = cfg["sphere_projection"]
-        if "sphere_rotations" in cfg:
-            self.sphere_rotations = cfg["sphere_rotations"]
-        if "sphere_background" in cfg:
-            self.sphere_background = cfg["sphere_background"]
-        if "sphere_background_fading" in cfg:
-            self.sphere_background_fading = cfg["sphere_background_fading"]
-        if "sphere_stars" in cfg:
-            self.sphere_stars = cfg["sphere_stars"]
-        if "size" in cfg:
-            self.size = cfg["size"]
-        if "filename" in cfg:
-            self.filename_template = cfg["filename"]
-        if "geometry_tab" in cfg:
-            self.geometry_tab = cfg["geometry_tab"]
-        if "draw_tile" in cfg:
-            self.draw_tile = cfg["draw_tile"]
-        if "draw_orbifold" in cfg:
-            self.draw_orbifold = cfg["draw_orbifold"]
-        if "draw_color_orbifold" in cfg:
-            self.draw_color_orbifold = cfg["draw_color_orbifold"]
-        if "draw_mirrors" in cfg:
-            self.draw_mirrors = cfg["draw_mirrors"]
-        if "preview_fade" in cfg:
-            self.fade = cfg["preview_fade"]
-        if "preview_fade_coeff" in cfg:
-            self.fade_coeff = cfg["preview_fade_coeff"]
-        if "preview_size" in cfg:
-            self.preview_size = cfg["preview_size"]
+    @config.setter
+    def config(self, cfg):      # <<<3
+        for k in ["geometry_tab",
+                  "geometry", "modulus", "angle",
+                  "size", "filename_template",
+                  "preview_size",
+                  "draw_tile", "draw_orbifold", "draw_color_orbifold",
+                  "draw_mirrors", "preview_fade", "preview_fade_coeff",
+                  "sphere_projection", "sphere_rotations",
+                  "sphere_background", "sphere_background_fading",
+                  "sphere_stars"]:
+            if k in cfg:
+                setattr(self, k, cfg[k])
     # >>>3
 # >>>2
 
@@ -3052,10 +3013,8 @@ class Function(LabelFrame):     # <<<2
 
     @sphere_pattern.setter
     def sphere_pattern(self, p):    # <<<4
-        values = self._sphere_combo["values"]
-        for i in range(len(values)):
-            tmp = values[i]
-            tmp = re.sub("--.*$", "", tmp)
+        for i in range(len(S_NAMES)):
+            tmp = S_NAMES[i]
             tmp = tmp.replace("(", " ").replace(")", " ")
             tmp = tmp.split()
             if p in tmp:
@@ -3448,64 +3407,33 @@ class Function(LabelFrame):     # <<<2
         return M
     # >>>3
 
-    def get_config(self):           # <<<3
-        return {
-                "matrix": self.matrix,
-                #
-                "random_nb_coeffs": self.random_nb_coeffs,
-                "random_degre": (self.random_min_degre,
-                                 self.random_max_degre),
-                "random_modulus": self.random_modulus,
-                "random_noise": self.random_noise,
-                #
-                "tab": self.current_tab,
-                # wallpaper tab
-                "wallpaper_pattern": self.wallpaper_pattern,
-                "lattice_parameters": self.lattice_params,
-                "wallpaper_color_pattern": self.wallpaper_color_pattern,
-                # sphere tab
-                "sphere_pattern": self.sphere_pattern,
-                "sphere_N": self.sphere_N,
-                "sphere_mode": self.sphere_mode,
-                # hyperbolic tab
-                "hyper_nb_steps": self.hyper_nb_steps,
-                "hyper_disk_model": self.hyper_disk_model,
-                }
+    @property
+    def config(self):           # <<<3
+        cfg = {}
+        for k in ["matrix",
+                  "random_nb_coeffs", "random_min_degre",
+                  "random_max_degre", "random_modulus", "random_noise",
+                  "current_tab",
+                  "wallpaper_pattern", "lattice_parameters",
+                  "wallpaper_color_pattern",
+                  "sphere_pattern", "sphere_N", "sphere_mode",
+                  "hyper_nb_steps", "hyper_disk_model"]:
+            cfg[k] = getattr(self, k)
+        return cfg
     # >>>3
 
-    def set_config(self, cfg):      # <<<3
-        if "matrix" in cfg:
-            self.change_matrix(cfg["matrix"])
-        if "random_nb_coeffs" in cfg:
-            self.random_nb_coeffs = cfg["random_nb_coeffs"]
-        if "random_degre" in cfg:
-            self.random_min_degre = cfg["random_degre"][0]
-            self.random_max_degre = cfg["random_degre"][1]
-        if "random_modulus" in cfg:
-            self.random_modulus = cfg["random_modulus"]
-        if "random_noise" in cfg:
-            self.random_noise = cfg["random_noise"]
-        if "tab" in cfg:
-            self.current_tab = cfg["tab"]
-        if "wallpaper_pattern" in cfg:
-            self.wallpaper_pattern = cfg["wallpaper_pattern"]
-        if "lattice_parameters" in cfg:
-            self.lattice_params = floats_to_str(cfg["lattice_parameters"])
-        if "sphere_pattern" in cfg:
-            for i in range(len(S_NAMES)):
-                tmp = S_NAMES[i]
-                tmp = tmp.replace("(", " ").replace(")", " ")
-                tmp = tmp.split()
-                if cfg["sphere_pattern"] in tmp:
-                    self._sphere_combo.current(i)
-        if "sphere_N" in cfg:
-            self.sphere_N = cfg["sphere_N"]
-        if "sphere_mode" in cfg:
-            self.sphere_mode = cfg["sphere_mode"]
-        if "hyper_nb_steps" in cfg:
-            self.hyper_nb_steps = cfg["hyper_nb_steps"]
-        if "hyper_disk_model" in cfg:
-            self.hyper_disk_model = cfg["hyper_disk_model"]
+    @config.setter
+    def config(self, cfg):      # <<<3
+        for k in ["matrix",
+                  "random_nb_coeffs", "random_min_degre",
+                  "random_max_degre", "random_modulus", "random_noise",
+                  "current_tab",
+                  "wallpaper_pattern",  # "lattice_parameters",
+                  # "wallpaper_color_pattern",
+                  "sphere_pattern", "sphere_N", "sphere_mode",
+                  "hyper_nb_steps", "hyper_disk_model"]:
+            if k in cfg:
+                setattr(self, k, cfg[k])
         self.update()
         # NOTE: this needs to be done at the end because the self.update
         # function does reinitializes the color pattern
@@ -3584,7 +3512,8 @@ class Function(LabelFrame):     # <<<2
         # >>>4
     # >>>3
 
-    def get_pattern_params(self):       # <<<3
+    @property
+    def pattern_params(self):       # <<<3
         if self.current_tab == "wallpaper":
             return {"lattice_basis": self.wallpaper_basis,
                     "color_pattern": self.wallpaper_color_pattern,
@@ -3756,8 +3685,8 @@ class CreateSymmetry(Tk):      # <<<2
         self.world._fade_button.config(
                 command=self.update_world_preview
                 )
-        self.world._fade_coeff.bind("<Return>", self.update_world_preview)
-        self.world._fade_coeff.bind("<FocusOut>", self.update_world_preview)
+        self.world._preview_fade_coeff.bind("<Return>", self.update_world_preview)
+        self.world._preview_fade_coeff.bind("<FocusOut>", self.update_world_preview)
         # >>>4
 
         # list of matrices, for UNDO
@@ -3844,12 +3773,12 @@ Keyboard shortcuts:
         # enable / disable sphere geometry tab
         if self.function.current_tab in ["sphere"]:
             if self.function.sphere_mode in ["rosette", "frieze"]:
-                self.world.stereographic = True
+                self.world.sphere_projection = True
                 self.world.disable_geometry_sphere_tab()
                 self.world.geometry_tab = "plane"
             elif self.function.sphere_mode == "sphere":
                 self.world.enable_geometry_sphere_tab()
-                self.world.stereographic = False
+                self.world.sphere_projection = False
                 self.world.geometry_tab = "sphere"
             else:
                 assert False
@@ -3867,23 +3796,23 @@ Keyboard shortcuts:
             self.world._draw_color_orbifold_button.config(state=DISABLED)
             self.world._draw_mirrors_button.config(state=DISABLED)
             self.world._fade_button.config(state=DISABLED)
-            self.world._fade_coeff.disable()
+            self.world._preview_fade_coeff.disable()
         else:
-            if self.function.wallpaper_color_pattern == "":
+            # if self.function.wallpaper_color_pattern == "":
                 self.world._draw_tile_button.config(state=NORMAL)
                 self.world._draw_orbifold_button.config(state=NORMAL)
                 self.world._draw_color_orbifold_button.config(state=NORMAL)
                 self.world._draw_mirrors_button.config(state=NORMAL)
                 self.world._fade_button.config(state=NORMAL)
-                self.world._fade_coeff.enable()
+                self.world._preview_fade_coeff.enable()
                 self.world.update()
-            else:
-                self.world._draw_tile_button.config(state=DISABLED)
-                self.world._draw_orbifold_button.config(state=DISABLED)
-                self.world._draw_color_orbifold_button.config(state=DISABLED)
-                self.world._draw_mirrors_button.config(state=DISABLED)
-                self.world._fade_button.config(state=DISABLED)
-                self.world._fade_coeff.disable()
+            # else:
+            #     self.world._draw_tile_button.config(state=DISABLED)
+            #     self.world._draw_orbifold_button.config(state=DISABLED)
+            #     self.world._draw_color_orbifold_button.config(state=DISABLED)
+            #     self.world._draw_mirrors_button.config(state=DISABLED)
+            #     self.world._fade_button.config(state=DISABLED)
+            #     self.world._preview_fade_coeff.disable()
 
     # >>>3
 
@@ -3958,7 +3887,7 @@ Keyboard shortcuts:
             if self.world.fade:
                 fade = fade_image(
                         self.world._canvas._img,
-                        255-self.world.fade_coeff
+                        255-self.world.preview_fade_coeff
                         )
                 self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(fade)
             else:
@@ -4156,10 +4085,10 @@ Keyboard shortcuts:
 
     def make_output(self, *args):      # <<<3
         config = {
-                "color": self.colorwheel.get_config(),
-                "world": self.world.get_config(),
-                "function": self.function.get_config(),
-                "params": self.function.get_pattern_params(),
+                "color": self.colorwheel.config,
+                "world": self.world.config,
+                "function": self.function.config,
+                "params": self.function.pattern_params,
                 "pattern": self.function.current_pattern,
                 "matrix": self.function.matrix,
                 }
@@ -4199,10 +4128,10 @@ Keyboard shortcuts:
             height = self.world.preview_size
 
         def make_preview_job():
-            color = self.colorwheel.get_config()
-            world = self.world.get_config()
+            color = self.colorwheel.config
+            world = self.world.config
             world["size"] = (width, height)
-            params = self.function.get_pattern_params()
+            params = self.function.pattern_params
 
             image = make_image(color=color,
                                world=world,
@@ -4225,10 +4154,10 @@ Keyboard shortcuts:
 
         try:
             self.preview_config = {
-                    "color": self.colorwheel.get_config(),
-                    "world": self.world.get_config(),
-                    "function": self.function.get_config(),
-                    "params": self.function.get_pattern_params(),
+                    "color": self.colorwheel.config,
+                    "world": self.world.config,
+                    "function": self.function.config,
+                    "params": self.function.pattern_params,
                     "pattern": self.function.current_pattern,
                     "matrix": self.function.matrix,
                     }
@@ -4334,9 +4263,9 @@ Keyboard shortcuts:
         if abs(self.undo_index) < len(self.undo_list):
             self.undo_index -= 1
             config = self.undo_list[self.undo_index]
-            self.world.set_config(config["world"])
-            self.function.set_config(config["function"])
-            self.colorwheel.set_config(config["color"])
+            self.world.config = config["world"]
+            self.function.config = config["function"]
+            self.colorwheel.config = config["color"]
     # >>>3
 
     def redo(self):     # <<<3
@@ -4344,9 +4273,9 @@ Keyboard shortcuts:
         if self.undo_index < -1:
             self.undo_index += 1
             config = self.undo_list[self.undo_index]
-            self.world.set_config(config["world"])
-            self.function.set_config(config["function"])
-            self.colorwheel.set_config(config["color"])
+            self.world.config = config["world"]
+            self.function.config = config["function"]
+            self.colorwheel.config = config["color"]
     # >>>3
 # >>>2
 # >>>1
@@ -4419,7 +4348,7 @@ def main():     # <<<1
         elif o in ["-c", "--color"]:
             color_config["filename"] = a
         elif o in ["-o", "--output"]:
-            world_config["filename"] = a
+            world_config["filename_template"] = a
         elif o in ["-s", "--size"]:
             try:
                 tmp = map(int, a.split(","))
@@ -4475,17 +4404,17 @@ def main():     # <<<1
                 error("problem with angle '{}'".format(a))
                 sys.exit(1)
         elif o in ["--wallpaper"]:
-            function_config["tab"] = "wallpaper"
+            function_config["current_tab"] = "wallpaper"
             function_config["wallpaper_pattern"] = a
         elif o in ["--sphere"]:
-            function_config["tab"] = "sphere"
+            function_config["current_tab"] = "sphere"
             function_config["sphere_pattern"] = a
         elif o in ["--frieze"]:
-            function_config["tab"] = "sphere"
+            function_config["current_tab"] = "sphere"
             function_config["sphere_pattern"] = a
             function_config["sphere_mode"] = "frieze"
         elif o in ["--rosette"]:
-            function_config["tab"] = "sphere"
+            function_config["current_tab"] = "sphere"
             function_config["sphere_pattern"] = a
             function_config["sphere_mode"] = "rosette"
         elif o in ["--params"]:
@@ -4540,9 +4469,9 @@ def main():     # <<<1
     # function_config["sphere_pattern"] = "532"
 
     gui = CreateSymmetry()
-    gui.colorwheel.set_config(color_config)
-    gui.world.set_config(world_config)
-    gui.function.set_config(function_config)
+    gui.colorwheel.config = color_config
+    gui.world.config = world_config
+    gui.function.config = function_config
     if make_preview:
         gui.make_preview()
     gui.mainloop()
