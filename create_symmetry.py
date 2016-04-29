@@ -3649,6 +3649,13 @@ class CreateSymmetry(Tk):      # <<<2
         self.world._canvas.bind("<B1-Motion>", self.update_zoom_rectangle)
         self.world._canvas.bind("<ButtonRelease-1>", self.apply_zoom_rectangle)
 
+        self.colorwheel._canvas.bind(
+                "<Double-Button-1>",
+                sequence(
+                    self.colorwheel.switch_colorwheel,
+                    self.make_preview
+                    )
+                )
         # >>>4
 
         # <<<4
