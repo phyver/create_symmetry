@@ -62,6 +62,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "general lattice",
+        # OK
     },
     '2222': {
         "alt_name": "p2",
@@ -69,6 +70,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "general lattice",
+        # OK
     },
     '*×': {
         "alt_name": "cm",
@@ -76,6 +78,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "rhombic lattice",
+        # OK
     },
     '2*22': {
         "alt_name": "cmm",
@@ -83,6 +86,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "rhombic lattice",
+        # OK
     },
     '**': {
         "alt_name": "pm",
@@ -90,6 +94,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "rectangular lattice",
+        # OK
     },
     '××': {
         "alt_name": "pg",
@@ -97,6 +102,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "rectangular lattice",
+        # OK
     },
     '*2222': {
         "alt_name": "pmm",
@@ -104,6 +110,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "rectangular lattice",
+        # OK
     },
     '22*': {
         "alt_name": "pmg",
@@ -111,6 +118,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "rectangular lattice",
+        # OK
     },
     '22×': {
         "alt_name": "pgg",
@@ -118,6 +126,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "rectangular lattice",
+        # OK
     },
     '442': {
         "alt_name": "p4",
@@ -125,6 +134,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "square lattice",
+        # OK
     },
     '*442': {
         "alt_name": "p4m",
@@ -132,6 +142,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "square lattice",
+        # OK
     },
     '4*2': {
         "alt_name": "p4g",
@@ -139,6 +150,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "square lattice",
+        # OK
     },
     '333': {
         "alt_name": "p3",
@@ -146,6 +158,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "hexagonal lattice",
+        # OK
     },
     '3*3': {
         "alt_name": "p31m",
@@ -153,6 +166,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "hexagonal lattice",
+        # OK
     },
     '*333': {
         "alt_name": "p3m1",
@@ -160,6 +174,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "hexagonal lattice",
+        # OK
     },
     '632': {
         "alt_name": "p6",
@@ -167,6 +182,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "hexagonal lattice",
+        # OK
     },
     '*632': {
         "alt_name": "p6m",
@@ -174,6 +190,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "plane group",
         "description": "hexagonal lattice",
+        # OK
     },
     '332': {
         "alt_name": "T",
@@ -278,56 +295,66 @@ PATTERN = {     # <<<1
         "recipe": "",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "general lattice",
+        # TO CHECK
     },
     ('2222', 'o'): {
         "alt_name": "",
         "recipe": "n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "general lattice",
+        # OK
     },
     ('2222', '2222'): {
         "alt_name": "",
         "recipe": "n,m = -n,-m",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "general lattice",
+        # TO CHECK
     },
     ('*×', 'o'): {
         "alt_name": "",
         "recipe": "n,m = -(m,n)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rhombic lattice",
+        # OK with rhombic parameters
+        # TODO
     },
     ('*×', '**'): {
         "alt_name": "",
         "recipe": "n,m = n,-m",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice without positive half turn",
+        # TO CHECK
     },
     ('*×', '××'): {
         "alt_name": "",
         "recipe": "n,m = -{n}(n,-m)",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice without positive half turn",
+        # TO CHECK
     },
     ('2*22', '2222'): {
         "alt_name": "",
         "recipe": "n,m = -(m,n) ; n,m = -n,-m",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rhombic lattice",
+        # OK with parameters forming a rhombic lattice
+        # TODO
     },
     ('2*22', '*×'): {
         "alt_name": "",
         "recipe": "n,m = -(m,n) ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rhombic lattice",
+        # OK, but tile and orbifold not OK
         # TODO
     },
     ('2*22', '*2222'): {
@@ -335,112 +362,135 @@ PATTERN = {     # <<<1
         "recipe": "n,m = -n,m ; n,m = -n,-m",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice with positive half turn",
+        # TO CHECK
     },
     ('2*22', '22*'): {
         "alt_name": "",
         "recipe": "n,m = -{n}(n,-m) ; n,m = -n,-m",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice with positive half turn",
+        # TO CHECK
     },
     ('2*22', '22×'): {
         "alt_name": "",
         "recipe": "n,m = -{n+m}(-n,m) ; n,m = -n,-m",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice with positive half turn",
+        # TO CHECK
     },
     ('**', 'o'): {
         "alt_name": "",
         "recipe": "n,m = -(-n,m)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice without positive half turn",
+        # TO CHECK
     },
     ('**', '*×'): {
         "alt_name": "",
         "recipe": "n,m = m,n",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rhombic lattice",
+        # TO CHECK
     },
-    ('**', '**'): {
+    ('**₁', '**'): {
         "alt_name": "",
         "recipe": "n,m = n,-m",
         "parity": "m = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice without positive half turn",
+        # TO CHECK
+    },
+    ('**₂', '**'): {
+        "alt_name": "",
+        "recipe": "n,m = n,-m",
+        "parity": "n = 1 mod 2",
+        "type": "color reversing plane group",
+        "description": "rectangular lattice without positive half turn",
+        # TO CHECK
     },
     ('**', '××'): {
         "alt_name": "",
         "recipe": "n,m = -{n}(n,-m)",
         "parity": "m = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice without positive half turn",
+        # TO CHECK
     },
     ('××', 'o'): {
         "alt_name": "",
         "recipe": "n,m = -{m+1}(-n,m)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice without positive half turn",
+        # TO CHECK
     },
     ('××', '××'): {
         "alt_name": "",
         "recipe": "n,m = -{n}(n,-m)",
         "parity": "n = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice without positive half turn",
+        # TO CHECK
     },
     ('*2222', '2222'): {
         "alt_name": "",
         "recipe": "n,m = -(-n,m) ; n,m = -n,-m",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice with positive half turn",
+        # TO CHECK
     },
     ('*2222', '2*22'): {
         "alt_name": "",
         "recipe": "n,m = m,n ; n,m = -n,-m",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rhombic lattice",
+        # TO CHECK
     },
     ('*2222', '**'): {
         "alt_name": "",
         "recipe": "n,m = n,-m ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice without positive half turn",
+        # OK
     },
     ('*2222', '*2222'): {
         "alt_name": "",
         "recipe": "n,m = -n,m ; n,m = -n,-m",
         "parity": "n = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice with positive half turn",
+        # TO CHECK
     },
     ('*2222', '22*'): {
         "alt_name": "",
         "recipe": "n,m = -{n}(n,-m) ; n,m = -n,-m",
         "parity": "m = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice with positive half turn",
+        # TO CHECK
     },
     ('22*', '2222'): {
         "alt_name": "",
         "recipe": "n,m = -{m+1}(m,n) ; n,m = -n,-m",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice with positive half turn",
+        # TO CHECK
     },
     ('22*', '**'): {
         "alt_name": "",
         "recipe": "n,m = -{m+1}(-n,m) ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice without positive half turn",
         # TODO
     },
     ('22*', '××'): {
@@ -448,35 +498,39 @@ PATTERN = {     # <<<1
         "recipe": "n,m = -{n}(n,-m) ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice without positive half turn",
+        # OK
     },
     ('22*', '22*'): {
         "alt_name": "",
         "recipe": "n,m = -{n}(n,-m) ; n,m = -n,-m",
         "parity": "n = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice with positive half turn",
+        # TO CHECK
     },
     ('22*', '22×'): {
         "alt_name": "",
         "recipe": "n,m = -{n+m}(-n,m) ; n,m = -n,-m",
         "parity": "n = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice with positive half turn",
     },
     ('22×', '2222'): {
         "alt_name": "",
         "recipe": "n,m = -{1+n+m}(m,n) ; n,m = -n,-m",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice with positive half turn",
+        # TO CHECK
     },
     ('22×', '××'): {
         "alt_name": "",
         "recipe": "n,m = -{n+m}(-n,m) ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "rectangular lattice without positive half turn",
+        # OK, but tile and orbifold not OK
         # TODO
     },
     ('442', '2222'): {
@@ -484,56 +538,66 @@ PATTERN = {     # <<<1
         "recipe": "n,m = -(-m,n)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "square lattice with negating center",
+        # OK with parameter x1,y1,x2,y2 = 1,0,0,1
+        # TODO
     },
     ('442', '442'): {
         "alt_name": "",
         "recipe": "n,m = -m,n",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "square lattice with positive center",
+        # TO CHECK
     },
     ('*442', '2*22'): {
         "alt_name": "",
         "recipe": "n,m = -(-m,n) ; n,m = m,n",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "square lattice with negating center",
+        # OK, with parameter b = 1
+        # TODO
     },
     ('*442', '*2222'): {
         "alt_name": "",
         "recipe": "n,m = -(-m,n) ; n,m = -(m,n)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "square lattice with negating center",
+        # OK
     },
     ('*442', '442'): {
         "alt_name": "",
         "recipe": "n,m = -m,n ; n,m = -(m,n)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "square lattice with positive center",
+        # OK
     },
     ('*442', '*442'): {
         "alt_name": "",
         "recipe": "n,m = -m,n ; n,m = m,n",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "square lattice with positive center",
+        # TO CHECK
     },
     ('*442', '4*2'): {
         "alt_name": "",
         "recipe": "n,m = -m,n ; n,m = -{n+m}(m,n)",
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "square lattice with positive center",
+        # TO CHECK
     },
     ('4*2', '2*22'): {
         "alt_name": "",
         "recipe": "n,m = -(-m,n) ; n,m = -{n+m}(m,n)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "square lattice with negative center",
+        # OK, but tile and orbifold not OK
         # TODO
     },
     ('4*2', '22×'): {
@@ -541,56 +605,65 @@ PATTERN = {     # <<<1
         "recipe": "n,m = -(-m,n) ; n,m = -{1+n+m}(m,n)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "square lattice with negative center",
+        # OK, with parameter H=1
+        # TODO
     },
     ('4*2', '442'): {
         "alt_name": "",
         "recipe": "n,m = -m,n ; n,m = -{n+m+1}(m,n)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "square lattice with positive center",
+        # OK
     },
     ('3*3', '333'): {
         "alt_name": "",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(m,n)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "hexagonal lattice, 3-fold symmetry",
+        # OK
     },
     ('*333', '333'): {
         "alt_name": "",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-m,-n)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "hexagonal lattice, 3-fold symmetry",
+        # OK
     },
     ('632', '333'): {
         "alt_name": "",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "hexagonal lattice, 3-fold symmetry",
+        # OK
     },
     ('*632', '3*3'): {
         "alt_name": "",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = m,n ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "hexagonal lattice, 6-fold symmetry",
+        # OK
     },
     ('*632', '*333'): {
         "alt_name": "",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -m,-n ; n,m = -(-n,-m)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "hexagonal lattice, 6-fold symmetry",
+        # OK
     },
     ('*632', '632'): {
         "alt_name": "",
         "recipe": "n,m = m,-n-m = -n-m,n ; n,m = -n,-m ; n,m = -(m,n)",
         "parity": "",
         "type": "color reversing plane group",
-        "description": "",
+        "description": "hexagonal lattice, 6-fold symmetry",
+        # OK
     },
     }
 
@@ -658,7 +731,7 @@ for i in range(len(W_NAMES)):
     p = W_NAMES[i].split()[0]
     t = PATTERN[p]["description"].split()[0]
     if _t != t:
-        W_NAMES[i] += "     -- {}".format(t)
+        W_NAMES[i] += "                   -- {}".format(t)
     _t = t
 
 # names, with alternative names, for sphere groups
@@ -683,9 +756,19 @@ del _t
 # names, with alternative names, for color reversing groups
 def C_NAMES(s):
     r = []
-    for p in NAMES:
+    # we need to deal with the two groups for **/**
+    names = copy.deepcopy(NAMES)
+    k = NAMES.index("**")
+    names.insert(k+1, "**₁")
+    names.insert(k+2, "**₂")
+    for p in names:
         if (p, s) in PATTERN:
-            r.append("{} ({})".format(p, PATTERN[p]["alt_name"]))
+            if p in ["**₁", "**₂"]:
+                q = p[2]
+                p = p[:2]
+            else:
+                q = ""
+            r.append("{}{} ({}{})".format(p, q, PATTERN[p]["alt_name"], q))
     return r
 # >>>1
 
@@ -967,10 +1050,10 @@ def check_matrix_recipe(M, recipe):     # <<<2
                     coeff = s * M[(j, k)]
                 else:
                     if M.get((j, k)) != coeff / s:
-                        # print("PROBLEM: matrix doesn't obey recipe '{}'"
-                        #       .format(recipe))
-                        # print("         got {} for ({},{}), expected {}"
-                        #       .format(M.get((j, k)), j, k, coeff/s))
+                        print("PROBLEM: matrix doesn't obey recipe '{}'"
+                              .format(recipe))
+                        print("         got {} for ({},{}), expected {}"
+                              .format(M.get((j, k)), j, k, coeff/s))
                         return False
     return True
 # >>>2
@@ -1035,8 +1118,6 @@ recipe can be of the form "n,m = -n,-m = -(m,n) ; n,m = -{n+m}(n,m)"...
 def basis(pattern, *params):        # <<<2
     """return the matrix for the basis of the wallpaper pattern, using
     arguments from params if necessary (see Farris)"""
-    if isinstance(pattern, tuple):
-        pattern = pattern[0]
     lattice = PATTERN[pattern]["description"].split()[0]
     if lattice == "general":
         # return [[1, 0], [params[0], params[1]]]
@@ -2492,7 +2573,7 @@ class World(LabelFrame):     # <<<2
                 canvas_frame,
                 variable=self._draw_color_orbifold,
                 text="")
-        # self._draw_color_orbifold_button.pack(side=LEFT, padx=0, pady=0)
+        self._draw_color_orbifold_button.pack(side=LEFT, padx=0, pady=0)
 
         self._draw_mirrors = BooleanVar()
         self._draw_mirrors_button = Checkbutton(
@@ -3052,7 +3133,7 @@ class Function(LabelFrame):     # <<<2
 
     @property
     def wallpaper_basis(self):      # <<<4
-        return basis(self.wallpaper_pattern, *self.lattice_params)
+        return basis(self.current_pattern, *self.lattice_params)
     # >>>4
 
     @property
@@ -3100,7 +3181,7 @@ class Function(LabelFrame):     # <<<2
               text="symmetry group").pack(padx=5, pady=(20, 0))
         self._wallpaper_pattern = StringVar()
         self._wallpaper_combo = Combobox(
-                self._wallpaper_tab, width=20, exportselection=0,
+                self._wallpaper_tab, width=38, exportselection=0,
                 textvariable=self._wallpaper_pattern,
                 state="readonly",
                 values=W_NAMES
@@ -3115,7 +3196,7 @@ class Function(LabelFrame):     # <<<2
               text="color symmetry group").pack(padx=5, pady=(5, 0))
         self._wallpaper_color_pattern = StringVar()
         self._wallpaper_color_combo = Combobox(
-                self._wallpaper_tab, width=10, exportselection=0,
+                self._wallpaper_tab, width=20, exportselection=0,
                 textvariable=self._wallpaper_color_pattern,
                 state="readonly",
                 values=["--"]
@@ -3123,9 +3204,13 @@ class Function(LabelFrame):     # <<<2
         self._wallpaper_color_combo.pack(padx=5, pady=5)
         self._wallpaper_color_combo.current(0)
 
+        self._wallpaper_color_combo.bind("<<ComboboxSelected>>",
+                                         self.update)
+
         self._lattice_params = LabelEntry(self._wallpaper_tab,
+                                          orientation="V",
                                           label="lattice parameters",
-                                          value="1,1",
+                                          value="",
                                           convert=str_to_floats,
                                           width=10)
         self._lattice_params.pack(padx=5, pady=5)
@@ -3435,10 +3520,16 @@ class Function(LabelFrame):     # <<<2
             if k in cfg:
                 setattr(self, k, cfg[k])
         self.update()
-        # NOTE: this needs to be done at the end because the self.update
-        # function does reinitializes the color pattern
+        # FIXME: not very nice
+        # we need to set wallpaper_color_pattern after the combobox has been
+        # updated with actual color patterns
         if "wallpaper_color_pattern" in cfg:
             self.wallpaper_color_pattern = cfg["wallpaper_color_pattern"]
+        # we need to update again to configure the lattice parameters correctly
+        self.update()
+        # we can now set the lattice_parameters
+        if "lattice_parameters" in cfg:
+            self.lattice_parameters = cfg["lattice_parameters"]
     # >>>3
 
     def update(self, *args):     # <<<3
@@ -3462,8 +3553,27 @@ class Function(LabelFrame):     # <<<2
         # >>>4
 
         # wallpaper tab     <<<4
-        pattern = self.wallpaper_pattern
-        lattice = PATTERN[pattern]["description"].split()[0]
+        color_pattern = self.wallpaper_color_pattern
+        try:
+            lattice_params = self.lattice_params
+        except:
+            lattice_params = None
+
+        # color reversing combo
+        self._wallpaper_color_combo.configure(
+                values=["--"] + C_NAMES(self.wallpaper_pattern)
+                )
+        self.wallpaper_color_pattern = color_pattern
+
+        if lattice_params is not None:
+            try:
+                self._lattice_params.convert(lattice_params)
+                self.lattice_params = lattice_params
+            except:
+                pass
+
+        lattice = PATTERN[self.current_pattern]["description"]
+        lattice0 = lattice.split()[0]
 
         def not_zero(s):
             x = float(s)
@@ -3476,39 +3586,34 @@ class Function(LabelFrame):     # <<<2
             assert xs[0]*xs[3] - xs[1]*xs[2] != 0
             return xs
 
-        if lattice == "general":
+        if lattice0 == "general":
             self._lattice_params.enable()
-            self._lattice_params.label_widget.config(text="x1,y1,x2,y2")
+            self._lattice_params.label_widget.config(text=lattice + ": x1,y1,x2,y2")
             self._lattice_params.convert = det_not_null
             self.lattice_params = [1, 0, 1, 1]
-        elif lattice == "rhombic":
+        elif lattice0 == "rhombic":
             self._lattice_params.enable()
-            self._lattice_params.label_widget.config(text="b")
+            self._lattice_params.label_widget.config(text=lattice + ": b")
             self._lattice_params.convert = not_zero
             self.lattice_params = [.5]
-        elif lattice == "rectangular":
+        elif lattice0 == "rectangular":
             self._lattice_params.enable()
             self._lattice_params.convert = not_zero
             self.lattice_params = [.5]
-            self._lattice_params.label_widget.config(text="H")
-        elif lattice == "square":
+            self._lattice_params.label_widget.config(text=lattice + ": H")
+        elif lattice0 == "square":
             self._lattice_params.convert = None
             self.lattice_params = []
-            self._lattice_params.label_widget.config(text="lattice parameters")
+            self._lattice_params.label_widget.config(text=lattice)
             self._lattice_params.disable()
-        elif lattice == "hexagonal":
+        elif lattice0 == "hexagonal":
             self._lattice_params.convert = None
             self.lattice_params = []
-            self._lattice_params.label_widget.config(text="lattice parameters")
+            self._lattice_params.label_widget.config(text=lattice)
             self._lattice_params.disable()
         else:
             assert False
 
-        # color reversing combo
-        self._wallpaper_color_combo.configure(
-                values=["--"] + C_NAMES(pattern)
-                )
-        self._wallpaper_color_combo.current(0)
         # >>>4
     # >>>3
 
@@ -3913,8 +4018,7 @@ Keyboard shortcuts:
         except AttributeError:
             pass
         try:
-            if (self.function.wallpaper_color_pattern == "" and
-                    self.world.draw_tile):
+            if self.world.draw_tile:
                 if isinstance(
                         self.world._canvas._tile_img,
                         tuple):
@@ -3935,8 +4039,7 @@ Keyboard shortcuts:
         except AttributeError:
             pass
         try:
-            if (self.function.wallpaper_color_pattern == "" and
-                    self.world.draw_orbifold):
+            if self.world.draw_orbifold:
                 if isinstance(
                         self.world._canvas._orbifold_img,
                         tuple):
@@ -3957,8 +4060,7 @@ Keyboard shortcuts:
         except AttributeError:
             pass
         try:
-            if (self.function.wallpaper_color_pattern == "" and
-                    self.world.draw_orbifold and self.world.draw_mirrors):
+            if self.world.draw_orbifold and self.world.draw_mirrors:
                 if isinstance(
                         self.world._canvas._mirrors_img,
                         tuple):
@@ -4461,17 +4563,18 @@ def main():     # <<<1
     # color_config["modulus"] = 1.5
 
     # color_config["modulus"] = 3
-    function_config["wallpaper_pattern"] = "××"
+    function_config["wallpaper_pattern"] = "2222"
+    function_config["wallpaper_color_pattern"] = "442"
+    color_config["modulus"] = .5
+    color_config["filename"] = "Images/flame2-gray.jpg"
     world_config["draw_orbifold"] = True
     world_config["draw_tile"] = True
     world_config["draw_mirrors"] = True
-    world_config["preview_fade"] = True
-    function_config["wallpaper_color_pattern"] = "**"
-    # function_config["matrix"] = { (0,1): 1 }
+    world_config["preview_fade"] = False
+    function_config["lattice_parameters"] = [1]
 
-    # function_config["tab"] = "hyperbolic"
+    # function_config["current_tab"] = "hyperbolic"
     # world_config["geometry"] = (0,1/2, 0, 1/2)
-    world_config["modulus"] = 2
     # function_config["random_nb_coeffs"] = 1
     # function_config["sphere_pattern"] = "532"
 
