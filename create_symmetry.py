@@ -2208,8 +2208,7 @@ class ColorWheel(LabelFrame):   # <<<2
 
     def draw_unit_circle(self, *args):      # <<<3
         try:
-            self._canvas.delete(self._unit_circle1)
-            self._canvas.delete(self._unit_circle2)
+            self._canvas.delete(self._unit_circle)
             self._canvas.delete(self._center)
         except:
             pass
@@ -2222,17 +2221,12 @@ class ColorWheel(LabelFrame):   # <<<2
         x0 = - delta_x * x_min
         y0 = delta_y * y_max
         r = delta_x / self.modulus
-        self._unit_circle1 = self._canvas.create_oval(x0-r, y0-r, x0+r, y0+r,
-                                                      width=10,
-                                                      outline="white",
-                                                      dash=[10, 10])
-        self._unit_circle2 = self._canvas.create_oval(x0-r, y0-r, x0+r, y0+r,
-                                                      width=1,
-                                                      outline="black",
-                                                      dash=[10, 10],
-                                                      dashoff=10)
+        self._unit_circle = self._canvas.create_oval(x0-r, y0-r, x0+r, y0+r,
+                                                     width=3,
+                                                     outline="gray")
         self._center = self._canvas.create_oval(x0-5, y0-5, x0+5, y0+5,
                                                 width=1,
+                                                fill="gray",
                                                 outline="red")
     # >>>3
 
@@ -3765,6 +3759,12 @@ class CreateSymmetry(Tk):      # <<<2
                     self.make_preview
                     )
                 )
+
+        # def get_focus(event):
+        #     print(event.widget)
+        #     event.widget.focus()
+        # self.bind_all(
+        #         "<Button-1>", get_focus)
         # >>>4
 
         # <<<4
