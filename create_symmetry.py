@@ -1686,7 +1686,7 @@ def make_tile(geometry,         # <<<2
     """compute a transparent image with a tile and orbifold information
     this image can be added on top of a wallpaper image"""
 
-    coeff = 2       # draw bigger tile and resize with antialiasing
+    coeff = 4       # draw bigger tile and resize with antialiasing
     width = size[0]*coeff
     height = size[1]*coeff
 
@@ -1809,8 +1809,8 @@ def make_tile(geometry,         # <<<2
 
     def mirror(X0, Y0, X1, Y1, order, pixels=50):
 
-        if order > 1:
-            disks(X0, Y0, color="red")
+        # if order > 1:
+        disks(X0, Y0, color="red")
 
         if not draw_mirrors:
             return
@@ -4390,24 +4390,29 @@ Keyboard shortcuts:
         width, height = img.size
         if self.world.fade:
             img = fade_image(img)
-        if self.world.draw_tile:
+
+        def paste_tile(name):
             try:
-                tile = self.world._canvas._tile_img
+                tile = getattr(self.world._canvas, name)
                 img.paste(tile, mask=tile)
             except:
                 pass
+
+        if self.world.draw_tile:
+            if self.world.draw_color_tile:
+                paste_tile("_color_tile_img")
+            else:
+                paste_tile("_tile_img")
         if self.world.draw_orbifold:
-            try:
-                orbifold = self.world._canvas._orbifold_img
-                img.paste(orbifold, mask=orbifold)
-            except:
-                pass
+            if self.world.draw_color_tile:
+                paste_tile("_color_orbifold_img")
+            else:
+                paste_tile("_orbifold_img")
         if self.world.draw_mirrors:
-            try:
-                mirrors = self.world._canvas._mirrors_img
-                img.paste(mirrors, mask=mirrors)
-            except:
-                pass
+            if self.world.draw_color_tile:
+                paste_tile("_color_mirrors_img")
+            else:
+                paste_tile("_mirrors_img")
         return img
     # >>>3
 
