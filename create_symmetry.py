@@ -313,12 +313,11 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "color reversing plane group",
         "description": "rhombic lattice",
-        # OK with rhombic parameters
-        # TODO
+        # OK
     },
     ('**', 'o'): {
         "alt_name": "",
-        "recipe": "n,m = -(-n,m)",
+        "recipe": "n,m = -(n,-m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "rectangular lattice without positive half turn",
@@ -326,7 +325,7 @@ PATTERN = {     # <<<1
     },
     ('××', 'o'): {
         "alt_name": "",
-        "recipe": "n,m = -{m+1}(-n,m)",
+        "recipe": "n,m = -{n+1}(n,-m)",
         "parity": "",
         "type": "color reversing plane group",
         "description": "rectangular lattice without positive half turn",
@@ -346,8 +345,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "color reversing plane group",
         "description": "rhombic lattice",
-        # OK with parameters forming a rhombic lattice
-        # TODO
+        # OK
     },
     ('*2222', '2222'): {
         "alt_name": "",
@@ -359,19 +357,19 @@ PATTERN = {     # <<<1
     },
     ('22*', '2222'): {
         "alt_name": "",
-        "recipe": "n,m = -{m+1}(m,n) ; n,m = -n,-m",
+        "recipe": "n,m = -{m+1}(-n,m) ; n,m = -n,-m",
         "parity": "",
         "type": "color reversing plane group",
         "description": "rectangular lattice with positive half turn",
-        # TO CHECK
+        # OK        NOTE: there is a typo in Farris' book
     },
     ('22×', '2222'): {
         "alt_name": "",
-        "recipe": "n,m = -{1+n+m}(m,n) ; n,m = -n,-m",
+        "recipe": "n,m = -{1+n+m}(-n, m) ; n,m = -n,-m",
         "parity": "",
         "type": "color reversing plane group",
         "description": "rectangular lattice with positive half turn",
-        # TO CHECK
+        # OK        NOTE: there is a typo in Farris' book
     },
     ('442', '2222'): {
         "alt_name": "",
@@ -379,8 +377,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "color reversing plane group",
         "description": "square lattice with negating center",
-        # OK with parameter x1,y1,x2,y2 = 1,0,0,1
-        # TODO
+        # OK
     },
     ('2*22', '*×'): {
         "alt_name": "",
@@ -388,8 +385,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "color reversing plane group",
         "description": "rhombic lattice",
-        # OK, but tile and orbifold not OK
-        # TODO
+        # OK
     },
     ('**', '*×'): {
         "alt_name": "",
@@ -413,8 +409,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "color reversing plane group",
         "description": "square lattice with negating center",
-        # OK, with parameter b = 1
-        # TODO
+        # OK
     },
     ('4*2', '2*22'): {
         "alt_name": "",
@@ -422,8 +417,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "color reversing plane group",
         "description": "square lattice with negative center",
-        # OK, but tile and orbifold not OK
-        # TODO
+        # OK
     },
     ('*×', '**'): {
         "alt_name": "",
@@ -443,11 +437,11 @@ PATTERN = {     # <<<1
     },
     ('**₂', '**'): {
         "alt_name": "",
-        "recipe": "n,m = n,-m",
-        "parity": "n = 1 mod 2",
+        "recipe": "n,m = -n,m",
+        "parity": "m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "rectangular lattice without positive half turn",
-        # TO CHECK
+        # OK (the axis of symmetry are the same, only the size of the basic tile changes
     },
     ('*2222', '**'): {
         "alt_name": "",
@@ -463,12 +457,12 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "color reversing plane group",
         "description": "rectangular lattice without positive half turn",
-        # TODO
+        # OK
     },
     ('*×', '××'): {
         "alt_name": "",
         "recipe": "n,m = -{n}(n,-m)",
-        "parity": "n = 1 mod 2",
+        "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "rectangular lattice without positive half turn",
         # OK
@@ -483,11 +477,11 @@ PATTERN = {     # <<<1
     },
     ('××', '××'): {
         "alt_name": "",
-        "recipe": "n,m = -{n}(n,-m)",
+        "recipe": "n,m = -{m}(-n,m)",
         "parity": "n = 1 mod 2",
         "type": "color reversing plane group",
         "description": "rectangular lattice without positive half turn",
-        # TO CHECK
+        # OK
     },
     ('22*', '××'): {
         "alt_name": "",
@@ -503,8 +497,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "color reversing plane group",
         "description": "rectangular lattice without positive half turn",
-        # OK, but tile and orbifold not OK
-        # TODO
+        # OK
     },
     ('2*22', '*2222'): {
         "alt_name": "",
@@ -549,10 +542,10 @@ PATTERN = {     # <<<1
     ('22*', '22*'): {
         "alt_name": "",
         "recipe": "n,m = -{n}(n,-m) ; n,m = -n,-m",
-        "parity": "n = 1 mod 2",
+        "parity": "m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "rectangular lattice with positive half turn",
-        # TO CHECK
+        # OK
     },
     ('2*22', '22×'): {
         "alt_name": "",
@@ -568,6 +561,7 @@ PATTERN = {     # <<<1
         "parity": "n = 1 mod 2",
         "type": "color reversing plane group",
         "description": "rectangular lattice with positive half turn",
+        # OK
     },
     ('4*2', '22×'): {
         "alt_name": "",
@@ -575,8 +569,7 @@ PATTERN = {     # <<<1
         "parity": "",
         "type": "color reversing plane group",
         "description": "square lattice with negative center",
-        # OK, with parameter H=1
-        # TODO
+        # OK
     },
     ('442', '442'): {
         "alt_name": "",
@@ -584,7 +577,7 @@ PATTERN = {     # <<<1
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "square lattice with positive center",
-        # TO CHECK
+        # OK
     },
     ('*442', '442'): {
         "alt_name": "",
@@ -608,7 +601,7 @@ PATTERN = {     # <<<1
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "square lattice with positive center",
-        # TO CHECK
+        # OK
     },
     ('*442', '4*2'): {
         "alt_name": "",
@@ -616,7 +609,7 @@ PATTERN = {     # <<<1
         "parity": "n+m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "square lattice with positive center",
-        # TO CHECK
+        # OK
     },
     ('3*3', '333'): {
         "alt_name": "",
@@ -1119,6 +1112,8 @@ recipe can be of the form "n,m = -n,-m = -(m,n) ; n,m = -{n+m}(n,m)"...
 def basis(pattern, *params):        # <<<2
     """return the matrix for the basis of the wallpaper pattern, using
     arguments from params if necessary (see Farris)"""
+    if pattern == "hyperbolic":
+        return None
     lattice = PATTERN[pattern]["description"].split()[0]
     if lattice == "general":
         # return [[1, 0], [params[0], params[1]]]
@@ -1691,15 +1686,86 @@ def make_tile(geometry,         # <<<2
     """compute a transparent image with a tile and orbifold information
     this image can be added on top of a wallpaper image"""
 
+    coeff = 2       # draw bigger tile and resize with antialiasing
+    width = size[0]*coeff
+    height = size[1]*coeff
+
+    # translation of tile, necessary for some color-reversing tiles that are
+    # not on the origin
+    tile_translation = [0, 0]
+
     if isinstance(pattern, tuple):
+        C = [[1, 0], [0, 1]]        # change of base matrix
+
+        if pattern in [('o', 'o'), ('2222', '2222')]:
+            if color_tile:
+                C = [[1, 0], [1/2, 1/2]]
+        elif pattern in [('2*22', '*×')]:
+            if not color_tile:
+                C = [[1, 0], [0, -1]]
+        elif pattern in [('**', '*×'), ('*2222', '2*22'), ('2*22', '*2222'),
+                         ('*×', '**'), ('2*22', '22×'),
+                         ('442', '442'), ('*442', '*442'),
+                         ('*442', '4*2')]:
+            if color_tile:
+                C = [[1/2, -1/2], [1/2, 1/2]]
+        elif pattern in [('4*2', '2*22')]:
+            if not color_tile:
+                tile_translation = [-1/2, 0]
+        elif pattern in [('**₁', '**')]:
+            pattern = ('**', '**')
+            if color_tile:
+                C = [[1, 0], [0, 1/2]]
+        elif pattern in [('**₂', '**')]:
+            pattern = ('**', '**')
+            if color_tile:
+                C = [[0, 1/2], [1, 0]]
+            else:
+                C = [[0, 1], [1, 0]]
+        elif pattern in [('22*', '**')]:
+            if color_tile:
+                C = [[0, 1], [1, 0]]
+            else:
+                tile_translation = [0, -1/2]
+        elif pattern in [('*×', '××')]:
+            if color_tile:
+                C = [[1/2, 1/2], [1/2, -1/2]]
+                tile_translation = [0, 1/2]
+        elif pattern in [('*2222', '*2222')]:
+            if color_tile:
+                C = [[1/2, 0], [0, 1]]
+        elif pattern in [('2*22', '22*')]:
+            if color_tile:
+                C = [[1/2, 1/2], [1/2, -1/2]]
+                tile_translation = [1/4, 1/2]
+        elif pattern in [('*2222', '22*')]:
+            if color_tile:
+                C = [[1/2, 0], [0, 1]]
+        elif pattern in [('22*', '22×')]:
+            if color_tile:
+                C = [[0, 1], [1/2, 0]]
+        elif pattern in [('22×', '××')]:
+            if not color_tile:
+                C = [[0, 1], [1, 0]]
+                tile_translation = [-1/4, 0]
+        elif pattern in [('××', '××')]:
+            if color_tile:
+                C = [[0, 1], [1/2, 0]]
+            else:
+                C = [[0, 1], [1, 0]]
+        elif pattern in [('22*', '22*')]:
+            if color_tile:
+                C = [[1, 0], [0, 1/2]]
+        elif pattern in [('22*', '2222')]:
+            if color_tile:
+                C = [[0, 1], [1, 0]]
+
+        basis = mult_M(C, basis)
+
         if color_tile:
             pattern = pattern[0]
         else:
             pattern = pattern[1]
-
-    coeff = 2       # draw bigger tile and resize with antialiasing
-    width = size[0]*coeff
-    height = size[1]*coeff
 
     img = PIL.Image.new("RGBA", (width, height), (255, 0, 0, 0))
     draw = ImageDraw.Draw(img)
@@ -1721,8 +1787,8 @@ def make_tile(geometry,         # <<<2
 
     def XY_to_pixel(X, Y):
         [a, b], [c, d] = basis
-        x = a*X + c*Y
-        y = b*X + d*Y
+        x = a*X + c*Y + tile_translation[0]
+        y = b*X + d*Y + tile_translation[1]
         return xy_to_pixel(x, y)
 
     def disks(*coord, color="white"):
@@ -2111,7 +2177,7 @@ class ColorWheel(LabelFrame):   # <<<2
         self._modulus = LabelEntry(transformation_frame, label="modulus",
                                    value=1,
                                    convert=float,
-                                   width=4)
+                                   width=6)
         self._modulus.pack(padx=5, pady=5)
         self._modulus.bind("<Return>", self.draw_unit_circle, add="+")
         self._modulus.bind("<FocusOut>", self.draw_unit_circle, add="+")
@@ -2669,7 +2735,7 @@ class World(LabelFrame):     # <<<2
         self._modulus = LabelEntry(transformation_frame, label="modulus",
                                    value=1,
                                    convert=float,
-                                   width=4)
+                                   width=6)
         self._modulus.pack(padx=5, pady=5)
 
         self._angle = LabelEntry(transformation_frame, label="angle (°)",
@@ -2679,10 +2745,10 @@ class World(LabelFrame):     # <<<2
         self._angle.pack(padx=5, pady=5)
 
         Button(transformation_frame, text="zoom -",
-               command=self.zoom(2**.1)).pack(side=LEFT,
+               command=self.zoom(2**.25)).pack(side=LEFT,
                                               padx=5, pady=5)
         Button(transformation_frame, text="zoom +",
-               command=self.zoom(2**-.1)).pack(side=RIGHT,
+               command=self.zoom(2**-.25)).pack(side=RIGHT,
                                                padx=5, pady=5)
 
         Button(self._geometry_plane_tab, text="reset",
@@ -3729,9 +3795,9 @@ class CreateSymmetry(Tk):      # <<<2
         self.bind("<Control-g>", sequence(self.function.new_random_matrix))
         self.bind("<Control-G>", sequence(self.new_random_preview))
 
-        self.bind("<Control-Key-minus>", sequence(self.world.zoom(2**.1),
+        self.bind("<Control-Key-minus>", sequence(self.world.zoom(2**.25),
                                                   self.make_preview))
-        self.bind("<Control-Key-plus>", sequence(self.world.zoom(2**-.1),
+        self.bind("<Control-Key-plus>", sequence(self.world.zoom(2**-.25),
                                                  self.make_preview))
 
         self.bind("<Control-Key-Left>", sequence(self.translate_rotate(1, 0),
@@ -3973,7 +4039,10 @@ Keyboard shortcuts:
     # >>>3
 
     def apply_zoom_rectangle(self, event):     # <<<3
-        self.world._canvas.delete(self.rect)
+        try:
+            self.world._canvas.delete(self.rect)
+        except AttributeError:
+            pass
         curX, curY = (event.x, event.y)
         ratio = self.world.width / self.world.height
         if curX <= self.start_x or curY <= self.start_y:
@@ -4597,16 +4666,17 @@ def main():     # <<<1
     color_config["filename"] = "Images/flame2.jpg"
     color_config["modulus"] = .5
 
-    function_config["wallpaper_pattern"] = "o"
-    function_config["wallpaper_color_pattern"] = "o"
+    function_config["wallpaper_pattern"] = '2222'
+    function_config["wallpaper_color_pattern"] = '22×'
     function_config["random_nb_coeffs"] = 10
 
     world_config["draw_orbifold"] = True
     world_config["draw_tile"] = True
     world_config["draw_mirrors"] = True
+    world_config["draw_color_tile"] = False
     world_config["preview_fade"] = False
-    world_config["modulus"] = 2
-    # function_config["lattice_parameters"] = [1]
+    world_config["modulus"] = 1.5
+    # function_config["lattice_parameters"] = [2,1,1,-1]
 
     # function_config["current_tab"] = "hyperbolic"
     # world_config["geometry"] = (0,1/2, 0, 1/2)
