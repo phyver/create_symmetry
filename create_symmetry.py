@@ -4052,16 +4052,16 @@ Keyboard shortcuts:
     def apply_zoom_rectangle(self, event):     # <<<3
         try:
             self.world._canvas.delete(self.rect)
+            curX, curY = (event.x, event.y)
+            ratio = self.world.width / self.world.height
+            if curX <= self.start_x or curY <= self.start_y:
+                return
+            elif ratio > (curX-self.start_x) / (curY-self.start_y):
+                curX = self.start_x + (curY-self.start_y) * ratio
+            else:
+                curY = self.start_y + (curX-self.start_x) / ratio
         except AttributeError:
             pass
-        curX, curY = (event.x, event.y)
-        ratio = self.world.width / self.world.height
-        if curX <= self.start_x or curY <= self.start_y:
-            return
-        elif ratio > (curX-self.start_x) / (curY-self.start_y):
-            curX = self.start_x + (curY-self.start_y) * ratio
-        else:
-            curY = self.start_y + (curX-self.start_x) / ratio
 
         x_min, x_max, y_min, y_max = self.world.geometry
         try:
