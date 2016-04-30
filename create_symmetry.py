@@ -1818,7 +1818,7 @@ def make_tile(geometry,         # <<<2
         x0, y0 = XY_to_pixel(X0, Y0)
         x1, y1 = XY_to_pixel(X1, Y1)
         p = complex(x1-x0, y1-y0)
-        p = p / abs(p) * coeff
+        p = p / abs(p) / 2 * coeff
 
         for i in range(order):
             q = p * exp(i*pi*1j/order) * pixels
@@ -2102,6 +2102,20 @@ class ColorWheel(LabelFrame):   # <<<2
         except AttributeError:
             self._filename = filename
     # >>>4
+
+    @property
+    def alt_filename(self):     # <<<4
+        try:
+            return self._alt_filename
+        except AttributeError:
+            return None
+    # >>>4
+
+    @alt_filename.setter
+    def alt_filename(self, filename):   # <<<4
+        if os.path.exists(filename):
+            self._alt_filename = filename
+    # >>>4
     # >>>3
 
     def __init__(self, root):        # <<<3
@@ -2347,7 +2361,7 @@ class ColorWheel(LabelFrame):   # <<<2
     @property
     def config(self):           # <<<3
         cfg = {}
-        for k in ["filename", "color", "geometry", "modulus",
+        for k in ["filename", "alt_filename", "color", "geometry", "modulus",
                   "angle", "stretch"]:
             cfg[k] = getattr(self, k)
         return cfg
@@ -2361,6 +2375,8 @@ class ColorWheel(LabelFrame):   # <<<2
                 setattr(self, k, cfg[k])
         if "filename" in cfg:
             self.change_colorwheel(cfg["filename"])
+        if "alt_filename" in cfg:
+            self.change_colorwheel(cfg["alt_filename"])
     # >>>3
 # >>>2
 
@@ -2574,12 +2590,12 @@ class World(LabelFrame):     # <<<2
     # >>>4
 
     @property
-    def fade(self):    # <<<4
+    def preview_fade(self):    # <<<4
         return self._fade.get()
     # >>>4
 
-    @fade.setter
-    def fade(self, b):    # <<<4
+    @preview_fade.setter
+    def preview_fade(self, b):    # <<<4
         self._fade.set(b)
     # >>>4
 
@@ -2625,6 +2641,13 @@ class World(LabelFrame):     # <<<2
                 self._canvas.create_line(i, j-1, i, j+2, fill="gray")
         self._canvas.pack(padx=5, pady=5)
 
+        self._draw_color_tile = BooleanVar()
+        self._draw_color_tile_button = Checkbutton(
+                canvas_frame,
+                variable=self._draw_color_tile,
+                text="")
+        self._draw_color_tile_button.pack(side=LEFT, padx=0, pady=0)
+
         self._draw_tile = BooleanVar()
         self._draw_tile_button = Checkbutton(
                 canvas_frame,
@@ -2640,13 +2663,6 @@ class World(LabelFrame):     # <<<2
                 text="orbifold",
                 indicatoron=False)
         self._draw_orbifold_button.pack(side=LEFT, padx=5, pady=5)
-
-        self._draw_color_tile = BooleanVar()
-        self._draw_color_tile_button = Checkbutton(
-                canvas_frame,
-                variable=self._draw_color_tile,
-                text="")
-        self._draw_color_tile_button.pack(side=LEFT, padx=0, pady=0)
 
         self._draw_mirrors = BooleanVar()
         self._draw_mirrors_button = Checkbutton(
@@ -2689,7 +2705,7 @@ class World(LabelFrame):     # <<<2
         self._draw_mirrors.set(False)
         self._fade.trace("w", self.update)
         self._fade.set(False)
-        self._preview_fade_coeff.set(200)
+        self._preview_fade_coeff.set(100)
         # >>>4
 
         # geometry of result    <<<4
@@ -2935,12 +2951,10 @@ class World(LabelFrame):     # <<<2
     def update(self, *args):   # <<<3
         if self.draw_orbifold:
             self._draw_mirrors_button.config(state=NORMAL)
-            self._draw_color_tile_button.config(state=NORMAL)
         else:
             self._draw_mirrors_button.config(state=DISABLED)
-            self._draw_color_tile_button.config(state=DISABLED)
 
-        if self.fade:
+        if self.preview_fade:
             self._preview_fade_coeff.enable()
         else:
             self._preview_fade_coeff.disable()
@@ -3982,7 +3996,7 @@ Keyboard shortcuts:
             self.world.draw_tile = False
             self.world.draw_orbifold = False
             self.world.draw_mirrors = False
-            self.world.fade = False
+            self.world.preview_fade = False
             self.world._draw_tile_button.config(state=DISABLED)
             self.world._draw_orbifold_button.config(state=DISABLED)
             self.world._draw_color_tile_button.config(state=DISABLED)
@@ -3990,21 +4004,18 @@ Keyboard shortcuts:
             self.world._fade_button.config(state=DISABLED)
             self.world._preview_fade_coeff.disable()
         else:
-            # if self.function.wallpaper_color_pattern == "":
-                self.world._draw_tile_button.config(state=NORMAL)
-                self.world._draw_orbifold_button.config(state=NORMAL)
+            self.world._draw_tile_button.config(state=NORMAL)
+            self.world._draw_orbifold_button.config(state=NORMAL)
+            self.world._draw_color_tile_button.config(state=NORMAL)
+            self.world._draw_mirrors_button.config(state=NORMAL)
+            self.world._fade_button.config(state=NORMAL)
+            self.world._preview_fade_coeff.enable()
+            if self.function.wallpaper_color_pattern == "":
+                self.world._draw_color_tile_button.config(state=DISABLED)
+            else:
                 self.world._draw_color_tile_button.config(state=NORMAL)
-                self.world._draw_mirrors_button.config(state=NORMAL)
-                self.world._fade_button.config(state=NORMAL)
-                self.world._preview_fade_coeff.enable()
-                self.world.update()
-            # else:
-            #     self.world._draw_tile_button.config(state=DISABLED)
-            #     self.world._draw_orbifold_button.config(state=DISABLED)
-            #     self.world._draw_color_tile_button.config(state=DISABLED)
-            #     self.world._draw_mirrors_button.config(state=DISABLED)
-            #     self.world._fade_button.config(state=DISABLED)
-            #     self.world._preview_fade_coeff.disable()
+
+            self.world.update()
 
     # >>>3
 
@@ -4079,12 +4090,12 @@ Keyboard shortcuts:
         except AttributeError:
             pass
         try:
-            if self.world.fade:
-                fade = fade_image(
+            if self.world.preview_fade:
+                preview_fade = fade_image(
                         self.world._canvas._img,
                         255-self.world.preview_fade_coeff
                         )
-                self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(fade)
+                self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(preview_fade)
             else:
                 self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(
                         self.world._canvas._img
@@ -4388,7 +4399,7 @@ Keyboard shortcuts:
         """paste the preview, tile, orbifold and mirror images together"""
         img = self.world._canvas._img
         width, height = img.size
-        if self.world.fade:
+        if self.world.preview_fade:
             img = fade_image(img)
 
         def paste_tile(name):
@@ -4668,19 +4679,20 @@ def main():     # <<<1
     # function_config["matrix"] = M
     # color_config["modulus"] = 1.5
 
-    color_config["filename"] = "Images/flame2.jpg"
-    color_config["modulus"] = .5
+    # color_config["filename"] = "Images/flame-sym.jpg"
+    # color_config["alt_filename"] = "Images/flame-sym-gray.jpg"
+    # color_config["modulus"] = .5
 
-    function_config["wallpaper_pattern"] = '2222'
-    function_config["wallpaper_color_pattern"] = '22×'
-    function_config["random_nb_coeffs"] = 10
+    # function_config["wallpaper_pattern"] = '2222'
+    # function_config["wallpaper_color_pattern"] = '22×'
+    # function_config["random_nb_coeffs"] = 10
 
-    world_config["draw_orbifold"] = True
-    world_config["draw_tile"] = True
-    world_config["draw_mirrors"] = True
-    world_config["draw_color_tile"] = False
-    world_config["preview_fade"] = False
-    world_config["modulus"] = 1.5
+    # world_config["draw_orbifold"] = True
+    # world_config["draw_tile"] = True
+    # world_config["draw_mirrors"] = True
+    # world_config["draw_color_tile"] = False
+    # world_config["preview_fade"] = False
+    # world_config["modulus"] = 1.5
     # function_config["lattice_parameters"] = [2,1,1,-1]
 
     # function_config["current_tab"] = "hyperbolic"
