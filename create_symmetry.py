@@ -2130,7 +2130,7 @@ class ColorWheel(LabelFrame):   # <<<2
                                  value=DEFAULT_COLOR,
                                  width=10,
                                  convert=getrgb)
-        self._color.grid(row=0, column=0, padx=5, pady=5)
+        self._color.pack(padx=5, pady=5)
         self._color.bind("<Return>", self.update_defaultcolor)
         self._color.bind("<FocusOut>", self.update_defaultcolor)
 
@@ -2141,10 +2141,10 @@ class ColorWheel(LabelFrame):   # <<<2
                     onvalue=True, offvalue=False,
                     command=lambda: self.change_colorwheel(self.filename),
                     indicatoron=False
-                    ).grid(row=1, column=0, padx=5, pady=0)
+                    ).pack(padx=5, pady=0)
 
         self._canvas = Canvas(self, width=200, height=200, bg="white")
-        self._canvas.grid(row=3, column=0, padx=5, pady=5)
+        self._canvas.pack(padx=5, pady=5)
         for i in range(5, COLOR_SIZE, 10):
             for j in range(5, COLOR_SIZE, 10):
                 self._canvas.create_line(i-1, j, i+2, j, fill="gray")
@@ -2155,10 +2155,13 @@ class ColorWheel(LabelFrame):   # <<<2
 
         self._filename_button = Button(self, text="choose file",
                                        command=self.choose_colorwheel)
-        self._filename_button.grid(row=4, column=0, padx=5, pady=5)
+        self._filename_button.pack(padx=5, pady=0)
+
+        self._alt_filename_label = Label(self, text="alt: ", font="TkNormal 8")
+        self._alt_filename_label.pack(padx=5, pady=(0, 5))
 
         coord_frame = LabelFrame(self, text="coordinates")
-        coord_frame.grid(row=5, column=0, sticky=E+W, padx=5, pady=5)
+        coord_frame.pack(fill=X, padx=5, pady=5)
         coord_frame.columnconfigure(0, weight=1)
         coord_frame.columnconfigure(1, weight=1)
 
@@ -2187,7 +2190,7 @@ class ColorWheel(LabelFrame):   # <<<2
         self._y_max.grid(row=1, column=1, padx=5, pady=5)
 
         transformation_frame = LabelFrame(self, text="transformation")
-        transformation_frame.grid(row=6, column=0, sticky=E+W, padx=5, pady=5)
+        transformation_frame.pack(fill=X, padx=5, pady=5)
         self._modulus = LabelEntry(transformation_frame, label="modulus",
                                    value=1,
                                    convert=float,
@@ -2204,8 +2207,7 @@ class ColorWheel(LabelFrame):   # <<<2
 
         self._reset_button = Button(self, text="reset",
                                     command=self.reset_geometry)
-        self._reset_button.grid(row=7, column=0,
-                                padx=5, pady=(5, 10))
+        self._reset_button.pack(padx=5, pady=(5, 10))
 
         self.update_defaultcolor()
 
@@ -2275,6 +2277,13 @@ class ColorWheel(LabelFrame):   # <<<2
             self._canvas.create_image((100, 100), image=tk_img)
             self.filename = filename
             self._filename_button.config(text=os.path.basename(filename))
+            try:
+                alt_filename = self.alt_filename
+                self._alt_filename_label.config(
+                    text="alt:" + os.path.basename(alt_filename)
+                )
+            except:
+                pass
 
             self.draw_unit_circle()
 
@@ -4336,6 +4345,8 @@ Keyboard shortcuts:
     def make_preview(self, *args):      # <<<3
 
         self.world.adjust_geometry()
+        if not self.function.matrix:
+            return
         ratio = self.world.width / self.world.height
         if (self.world.width < self.world.preview_size and
                 self.world.height < self.world.preview_size):
