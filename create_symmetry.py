@@ -2739,6 +2739,9 @@ class World(LabelFrame):     # <<<2
         # geometry of result    <<<4
         self._geometry_tabs = Notebook(self)
         self._geometry_tabs.grid(row=0, column=1, sticky=E+W, padx=5, pady=5)
+        # prevent arrows from changing tab
+        self._geometry_tabs.bind_all("<<NotebookTabChanged>>",
+                                     lambda _: self.focus_set())
 
         self._geometry_plane_tab = Frame(self._geometry_tabs)
         self._geometry_tabs.add(self._geometry_plane_tab, text="plane")
@@ -2790,10 +2793,10 @@ class World(LabelFrame):     # <<<2
 
         Button(transformation_frame, text="zoom -",
                command=self.zoom(2**.25)).pack(side=LEFT,
-                                              padx=5, pady=5)
+                                               padx=5, pady=5)
         Button(transformation_frame, text="zoom +",
                command=self.zoom(2**-.25)).pack(side=RIGHT,
-                                               padx=5, pady=5)
+                                                padx=5, pady=5)
 
         Button(self._geometry_plane_tab, text="reset",
                command=self.reset_geometry).pack(side=TOP,
@@ -2813,11 +2816,11 @@ class World(LabelFrame):     # <<<2
         self._sphere_projection.set(True)
 
         sphere_projection = Checkbutton(self._geometry_sphere_tab,
-                                           text="stereographic projection",
-                                           variable=self._sphere_projection,
-                                           onvalue=True, offvalue=False,
-                                           indicatoron=False,
-                                           )
+                                        text="stereographic projection",
+                                        variable=self._sphere_projection,
+                                        onvalue=True, offvalue=False,
+                                        indicatoron=False,
+                                        )
         sphere_projection.pack(padx=5, pady=10)
 
         self._rotations = LabelEntry(self._geometry_sphere_tab,
@@ -2874,6 +2877,14 @@ class World(LabelFrame):     # <<<2
                                   convert=int,
                                   width=6, justify=RIGHT)
         self._height.pack(padx=5, pady=5)
+
+        self._save_directory = LabelEntry(settings_frame,
+                                          label="save directory",
+                                          orientation="V",
+                                          value="./",
+                                          font="TkNormal 8",
+                                          width=24)
+        self._save_directory.pack(padx=5, pady=5)
 
         self._filename_template = LabelEntry(settings_frame,
                                              label="filename template",
@@ -3280,6 +3291,9 @@ class Function(LabelFrame):     # <<<2
         # tabs for the different kinds of functions / symmetries  <<<4
         self._tabs = Notebook(self)
         self._tabs.grid(row=0, column=0, rowspan=2, sticky=N+S, padx=5, pady=5)
+        # prevent arrows from changing tab
+        self._tabs.bind_all("<<NotebookTabChanged>>",
+                            lambda _: self.focus_set())
 
         self._wallpaper_tab = Frame(self._tabs)
         self._tabs.add(self._wallpaper_tab, text="wallpaper")
@@ -3303,9 +3317,11 @@ class Function(LabelFrame):     # <<<2
                 )
         self._wallpaper_combo.pack(padx=5, pady=5)
         self._wallpaper_combo.current(0)
-
         self._wallpaper_combo.bind("<<ComboboxSelected>>",
                                    self.update)
+        # remove focus to prevent Ctrl-Down from displaying the dropdown menu
+        self._wallpaper_combo.bind("<FocusIn>",
+                                   lambda _: self.focus_set())
 
         Label(self._wallpaper_tab,
               text="color symmetry group").pack(padx=5, pady=(5, 0))
@@ -3318,16 +3334,18 @@ class Function(LabelFrame):     # <<<2
                 )
         self._wallpaper_color_combo.pack(padx=5, pady=5)
         self._wallpaper_color_combo.current(0)
-
         self._wallpaper_color_combo.bind("<<ComboboxSelected>>",
                                          self.update)
+        # remove focus to prevent Ctrl-Down from displaying the dropdown menu
+        self._wallpaper_color_combo.bind("<FocusIn>",
+                                         lambda _: self.focus_set())
 
         self._lattice_parameters = LabelEntry(self._wallpaper_tab,
-                                          orientation="V",
-                                          label="lattice parameters",
-                                          value="",
-                                          convert=str_to_floats,
-                                          width=10)
+                                              orientation="V",
+                                              label="lattice parameters",
+                                              value="",
+                                              convert=str_to_floats,
+                                              width=10)
         self._lattice_parameters.pack(padx=5, pady=5)
 
         self._wallpaper_N = LabelEntry(self._wallpaper_tab,
