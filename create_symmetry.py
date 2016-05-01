@@ -2353,10 +2353,14 @@ class ColorWheel(LabelFrame):   # <<<2
     # >>>3
 
     def choose_colorwheel(self, *args):    # <<<3
+        if os.path.isfile(self.filename):
+            initialdir = os.path.dirname(self.filename)
+        else:
+            initialdir = "./"
         filename = filedialog.askopenfilename(
                 parent=self,
                 title="Create Symmetry: choose color wheel image",
-                initialdir="./",
+                initialdir=initialdir,
                 filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")])
         if filename:
             self.change_colorwheel(filename)
@@ -2937,11 +2941,16 @@ class World(LabelFrame):     # <<<2
     # >>>3
 
     def change_save_dir(self):  # <<<3
+        if os.path.isdir(self.save_directory):
+            initialdir = self.save_directory
+        else:
+            initialdir = "./"
         dir = filedialog.askdirectory(
                 parent=self,
                 title="Create Symmetry: save directory",
-                initialdir="./")
-        self.save_directory = dir
+                initialdir=initialdir)
+        if dir:
+            self.save_directory = dir
     # >>>3
 
     def disable_geometry_sphere_tab(self):  # <<<3
