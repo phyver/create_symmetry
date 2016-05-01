@@ -1210,6 +1210,10 @@ def apply_color(        # <<<2
     image in filename
     the resulting image is returned"""
 
+    # FIXME
+    morph = False
+    stable_coeff = .1
+
     if isinstance(color, str):
         color = getrgb(color)
 
@@ -1220,6 +1224,21 @@ def apply_color(        # <<<2
     width, height = tmp.size
     delta_x = (x_max-x_min) / (width-1)
     delta_y = (y_max-y_min) / (height-1)
+
+    # morphing
+    if morph:
+        width = res.shape[0]
+        morph = np.arange(0, width)
+
+        morph = -stable_coeff + morph * (1+2*stable_coeff) / width
+        np.place(morph, morph < 0, 0)
+        np.place(morph, morph > 1, 1)
+
+        morph = np.exp(1j * pi * morph)
+
+        res = morph[:, None] * res
+
+
 
     # we add a border to the top / right of the color image, using the default
     # color
