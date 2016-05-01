@@ -1205,17 +1205,19 @@ def apply_color(        # <<<2
         geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
         modulus="1",
         angle="0",
-        color="black"):
+        color="black",
+        morph_angle=False,
+        morph_start_angle=0,
+        morph_end_angle=180,
+        morph_stable=0.2
+        ):
     """replace each complex value in the array res by the color taken from an
     image in filename
     the resulting image is returned"""
 
-    # FIXME
-    morph = False
-    stable_coeff = .1
-
     if isinstance(color, str):
         color = getrgb(color)
+
 
     rho = modulus * complex(cos(angle*pi/180), sin(angle*pi/180))
     x_min, x_max, y_min, y_max = geometry
@@ -1226,15 +1228,18 @@ def apply_color(        # <<<2
     delta_y = (y_max-y_min) / (height-1)
 
     # morphing
-    if morph:
+    if morph_angle:
         width = res.shape[0]
         morph = np.arange(0, width)
 
-        morph = -stable_coeff + morph * (1+2*stable_coeff) / width
+        morph = -morph_stable + morph * (1+2*morph_stable) / width
         np.place(morph, morph < 0, 0)
         np.place(morph, morph > 1, 1)
 
-        morph = np.exp(1j * pi * morph)
+        a1 = morph_start_angle
+        a2 = morph_end_angle
+        morph = a1 + morph * (a2 - a1)
+        morph = np.exp(1j * pi * morph / 180)
 
         res = morph[:, None] * res
 
@@ -1675,7 +1680,11 @@ def make_image(color=None,     # <<<2
                       color["geometry"],
                       color["modulus"],
                       color["angle"],
-                      color["color"])
+                      color["color"],
+                      color["morph"],
+                      color["morph_start"],
+                      color["morph_end"],
+                      )
 
     if (world["sphere_background"] and not world["sphere_projection"]):
         return make_sphere_background(_zs,
@@ -2139,6 +2148,36 @@ class ColorWheel(LabelFrame):   # <<<2
         if os.path.exists(filename):
             self._alt_filename = filename
     # >>>4
+
+    @property
+    def morph(self):    # <<<4
+        return self._morph.get()
+    # >>>4
+
+    @morph.setter
+    def morph(self, b):     # <<<4
+        self._morph.set(b)
+    # >>>4
+
+    @property
+    def morph_start(self):    # <<<4
+        return self._morph_start.get()
+    # >>>4
+
+    @morph_start.setter
+    def morph_start(self, b):     # <<<4
+        self._morph_start.set(b)
+    # >>>4
+
+    @property
+    def morph_end(self):    # <<<4
+        return self._morph_end.get()
+    # >>>4
+
+    @morph_end.setter
+    def morph_end(self, b):     # <<<4
+        self._morph_end.set(b)
+    # >>>4
     # >>>3
 
     def __init__(self, root):        # <<<3
@@ -2231,6 +2270,30 @@ class ColorWheel(LabelFrame):   # <<<2
         self._reset_button = Button(self, text="reset",
                                     command=self.reset_geometry)
         self._reset_button.pack(padx=5, pady=(5, 10))
+
+        self._morph = BooleanVar()
+        self._morph.set(False)
+        self._morph_button = Checkbutton(
+                self,
+                variable=self._morph,
+                text="morph",
+                indicatoron=False)
+        self._morph_button.pack(side=LEFT, padx=(5, 0), pady=5)
+
+        self._morph_start = LabelEntry(self,
+                                       label=" from",
+                                       convert=int,
+                                       width=3)
+        self._morph_start.pack(side=LEFT, padx=0, pady=5)
+        self._morph_start.set(0)
+
+        self._morph_end = LabelEntry(self,
+                                     label="° to",
+                                     convert=int,
+                                     width=3)
+        self._morph_end.pack(side=LEFT, padx=0, pady=5)
+        self._morph_end.set(180)
+        Label(self, text="°").pack(side=LEFT, padx=(0, 5), pady=5)
 
         self.update_defaultcolor()
 
@@ -2398,7 +2461,7 @@ class ColorWheel(LabelFrame):   # <<<2
     def config(self):           # <<<3
         cfg = {}
         for k in ["filename", "alt_filename", "color", "geometry", "modulus",
-                  "angle", "stretch"]:
+                  "angle", "stretch", "morph", "morph_start", "morph_end"]:
             cfg[k] = getattr(self, k)
         return cfg
     # >>>3
@@ -2406,7 +2469,7 @@ class ColorWheel(LabelFrame):   # <<<2
     @config.setter
     def config(self, cfg):      # <<<3
         for k in ["color", "geometry", "modulus",
-                  "angle", "stretch"]:
+                  "angle", "stretch", "morph", "morph_start", "morph_end"]:
             if k in cfg:
                 setattr(self, k, cfg[k])
         if "filename" in cfg:
