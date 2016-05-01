@@ -2218,7 +2218,7 @@ class ColorWheel(LabelFrame):   # <<<2
                                    value=1,
                                    convert=float,
                                    width=6)
-        self._modulus.pack(padx=5, pady=5)
+        self._modulus.pack(padx=5, pady=(5, 2))
         self._modulus.bind("<Return>", self.draw_unit_circle, add="+")
         self._modulus.bind("<FocusOut>", self.draw_unit_circle, add="+")
 
@@ -2226,7 +2226,7 @@ class ColorWheel(LabelFrame):   # <<<2
                                  value=0,
                                  convert=float,
                                  width=4)
-        self._angle.pack(padx=5, pady=5)
+        self._angle.pack(padx=5, pady=(2, 5))
 
         self._reset_button = Button(self, text="reset",
                                     command=self.reset_geometry)
@@ -2801,13 +2801,13 @@ class World(LabelFrame):     # <<<2
                                    value=1,
                                    convert=float,
                                    width=6)
-        self._modulus.pack(padx=5, pady=5)
+        self._modulus.pack(padx=5, pady=(5, 2))
 
         self._angle = LabelEntry(transformation_frame, label="angle (°)",
                                  value=0,
                                  convert=float,
                                  width=4)
-        self._angle.pack(padx=5, pady=5)
+        self._angle.pack(padx=5, pady=(2, 5))
 
         Button(transformation_frame, text="zoom -",
                command=self.zoom(2**.25)).pack(side=LEFT,
@@ -2888,15 +2888,15 @@ class World(LabelFrame):     # <<<2
                                  label="width", value=OUTPUT_WIDTH,
                                  convert=int,
                                  width=6, justify=RIGHT)
-        self._width.pack(padx=5, pady=5)
+        self._width.pack(padx=5, pady=(5, 0))
 
         self._height = LabelEntry(settings_frame,
                                   label="height", value=OUTPUT_HEIGHT,
                                   convert=int,
                                   width=6, justify=RIGHT)
-        self._height.pack(padx=5, pady=5)
+        self._height.pack(padx=5, pady=(2, 5))
 
-        Label(settings_frame, text="save directory").pack(padx=5, pady=(5, 0))
+        Label(settings_frame, text="save directory").pack(padx=5, pady=(5, 2))
         self._save_directory = "./"
         self._save_directory_button = Button(settings_frame,
                                              text=self._save_directory,
@@ -2919,17 +2919,17 @@ class World(LabelFrame):     # <<<2
         tmp.grid(row=3, column=1, sticky=E+W, padx=5, pady=5)
 
         self._preview_button = Button(tmp, text="preview", command=None)
-        self._preview_button.pack(side=TOP, padx=10, pady=10)
+        self._preview_button.pack(side=TOP, padx=5, pady=5)
 
         self._save_preview_button = Button(
                 tmp,
                 text="save preview",
                 command=None
                 )
-        self._save_preview_button.pack(side=LEFT, padx=10, pady=10)
+        self._save_preview_button.pack(side=LEFT, padx=5, pady=5)
 
         self._save_button = Button(tmp, text="save", command=None)
-        self._save_button.pack(side=RIGHT, padx=10, pady=10)
+        self._save_button.pack(side=RIGHT, padx=5, pady=5)
 
         # >>>4
 
