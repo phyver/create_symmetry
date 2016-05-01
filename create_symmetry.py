@@ -1498,6 +1498,7 @@ def save_image(         # <<<2
         image=None,
         **config
         ):
+    save_directory = config["world"]["save_directory"]
     filename_template = config["world"]["filename_template"]
 
     color = config["color"]
@@ -1552,6 +1553,7 @@ def save_image(         # <<<2
     _filename = None
     while True:
         filename = filename_template.format(**info)
+        filename = os.path.join(save_directory, filename)
         if (not os.path.exists(filename+".jpg") and
                 not os.path.exists(filename+".sh")):
             break
@@ -2114,6 +2116,8 @@ class ColorWheel(LabelFrame):   # <<<2
 
     @filename.setter
     def filename(self, filename):   # <<<4
+        if filename is not None:
+            filename = os.path.abspath(filename)
         try:
             if self._filename != filename:
                 self._alt_filename = self._filename
@@ -2404,7 +2408,7 @@ class ColorWheel(LabelFrame):   # <<<2
         if "filename" in cfg:
             self.change_colorwheel(cfg["filename"])
         if "alt_filename" in cfg:
-            self.change_colorwheel(cfg["alt_filename"])
+            self.alt_filename = cfg["alt_filename"]
     # >>>3
 # >>>2
 
@@ -2421,6 +2425,20 @@ class World(LabelFrame):     # <<<2
     def filename_template(self, template):    # <<<4
         self._filename_template.set(template)
     # >>>4
+
+    @property
+    def save_directory(self):   # <<<4
+        return self._save_directory
+    # >>>4
+
+    @save_directory.setter
+    def save_directory(self, dir):   # <<<4
+        self._save_directory = dir
+        if len(dir) > 30:
+            dir = "..." +  dir[-27:]
+        self._save_directory_button.configure(text=dir)
+    # >>>4
+
 
     @property
     def geometry(self):     # <<<4
@@ -2878,13 +2896,14 @@ class World(LabelFrame):     # <<<2
                                   width=6, justify=RIGHT)
         self._height.pack(padx=5, pady=5)
 
-        self._save_directory = LabelEntry(settings_frame,
-                                          label="save directory",
-                                          orientation="V",
-                                          value="./",
-                                          font="TkNormal 8",
-                                          width=24)
-        self._save_directory.pack(padx=5, pady=5)
+        Label(settings_frame, text="save directory").pack(padx=5, pady=(5, 0))
+        self._save_directory = "./"
+        self._save_directory_button = Button(settings_frame,
+                                             text=self._save_directory,
+                                             font="TkNormal 8",
+                                             padx=2, pady=0,
+                                             command=self.change_save_dir)
+        self._save_directory_button.pack(padx=5, pady=(0, 5))
 
         self._filename_template = LabelEntry(settings_frame,
                                              label="filename template",
@@ -2915,6 +2934,14 @@ class World(LabelFrame):     # <<<2
         # >>>4
 
         self.adjust_geometry()
+    # >>>3
+
+    def change_save_dir(self):  # <<<3
+        dir = filedialog.askdirectory(
+                parent=self,
+                title="Create Symmetry: save directory",
+                initialdir="./")
+        self.save_directory = dir
     # >>>3
 
     def disable_geometry_sphere_tab(self):  # <<<3
@@ -3027,7 +3054,7 @@ class World(LabelFrame):     # <<<2
         cfg = {}
         for k in ["geometry_tab",
                   "geometry", "modulus", "angle",
-                  "size", "filename_template",
+                  "size", "filename_template", "save_directory",
                   "preview_size",
                   "draw_tile", "draw_orbifold", "draw_color_tile",
                   "draw_mirrors", "preview_fade", "preview_fade_coeff",
@@ -3042,7 +3069,7 @@ class World(LabelFrame):     # <<<2
     def config(self, cfg):      # <<<3
         for k in ["geometry_tab",
                   "geometry", "modulus", "angle",
-                  "size", "filename_template",
+                  "size", "filename_template", "save_directory",
                   "preview_size",
                   "draw_tile", "draw_orbifold", "draw_color_tile",
                   "draw_mirrors", "preview_fade", "preview_fade_coeff",
