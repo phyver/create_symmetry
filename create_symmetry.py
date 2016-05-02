@@ -1358,6 +1358,13 @@ def make_hyperbolic_image(     # <<<2
 
     if disk_model:
         zs = 1j * (1-zs) / (1+zs)
+
+        # x0 = 0
+        # y0 = 1
+        x0 = -1/2
+        y0 = -sqrt(3)/2
+        zs = (zs + x0) * y0
+
         # y = 1-np.abs(zs)
         # x = np.angle(zs)*4/(2*pi)
         # zs = x + 1j*y
@@ -1684,6 +1691,7 @@ def make_image(color=None,     # <<<2
                       color["morph"],
                       color["morph_start"],
                       color["morph_end"],
+                      color["morph_stable_coeff"],
                       )
 
     if (world["sphere_background"] and not world["sphere_projection"]):
@@ -2145,13 +2153,14 @@ class ColorWheel(LabelFrame):   # <<<2
 
     @alt_filename.setter
     def alt_filename(self, filename):   # <<<4
-        if os.path.exists(filename):
-            self._alt_filename = filename
+        if filename is not None:
+            if os.path.exists(filename):
+                self._alt_filename = filename
     # >>>4
 
     @property
     def morph(self):    # <<<4
-        return self._morph.get()
+        return (self._morph_button.cget("state") != DISABLED and self._morph.get())
     # >>>4
 
     @morph.setter
@@ -2177,6 +2186,16 @@ class ColorWheel(LabelFrame):   # <<<2
     @morph_end.setter
     def morph_end(self, b):     # <<<4
         self._morph_end.set(b)
+    # >>>4
+
+    @property
+    def morph_stable_coeff(self):    # <<<4
+        return self._morph_stable_coeff.get()
+    # >>>4
+
+    @morph_stable_coeff.setter
+    def morph_stable_coeff(self, c):     # <<<4
+        self._morph_stable_coeff.set(c)
     # >>>4
     # >>>3
 
@@ -2253,47 +2272,60 @@ class ColorWheel(LabelFrame):   # <<<2
 
         transformation_frame = LabelFrame(self, text="transformation")
         transformation_frame.pack(fill=X, padx=5, pady=5)
-        self._modulus = LabelEntry(transformation_frame, label="modulus",
+        tmp_frame = Frame(transformation_frame)
+        tmp_frame.pack()
+        self._modulus = LabelEntry(tmp_frame, label="modulus",
                                    value=1,
                                    convert=float,
                                    width=6)
-        self._modulus.pack(padx=5, pady=(5, 2))
+        self._modulus.grid(row=0, column=0, sticky=E, padx=5, pady=(5, 2))
         self._modulus.bind("<Return>", self.draw_unit_circle, add="+")
         self._modulus.bind("<FocusOut>", self.draw_unit_circle, add="+")
 
-        self._angle = LabelEntry(transformation_frame, label="angle (°)",
+        self._angle = LabelEntry(tmp_frame, label="angle (°)",
                                  value=0,
                                  convert=float,
                                  width=4)
-        self._angle.pack(padx=5, pady=(2, 5))
+        self._angle.grid(row=1, column=0, sticky=E, padx=5, pady=(2, 5))
 
         self._reset_button = Button(self, text="reset",
                                     command=self.reset_geometry)
         self._reset_button.pack(padx=5, pady=(5, 10))
 
+        self._morph_frame = LabelFrame(self, text="morph result")
+        self._morph_frame.pack(padx=5, pady=5)
+        self._morph_stable_coeff = LabelEntry(self._morph_frame,
+                                              label="stable coeff",
+                                              value=0.2,
+                                              convert=float,
+                                              width=3)
+        self._morph_stable_coeff.pack(side=BOTTOM, padx=5, pady=5)
+
         self._morph = BooleanVar()
         self._morph.set(False)
         self._morph_button = Checkbutton(
-                self,
+                self._morph_frame,
                 variable=self._morph,
                 text="morph",
                 indicatoron=False)
         self._morph_button.pack(side=LEFT, padx=(5, 0), pady=5)
+        self._morph_button.bind("<Double-Button-1>", self.morph_enable)
 
-        self._morph_start = LabelEntry(self,
+        self._morph_start = LabelEntry(self._morph_frame,
                                        label=" from",
                                        convert=int,
                                        width=3)
         self._morph_start.pack(side=LEFT, padx=0, pady=5)
         self._morph_start.set(0)
 
-        self._morph_end = LabelEntry(self,
+        self._morph_end = LabelEntry(self._morph_frame,
                                      label="° to",
                                      convert=int,
                                      width=3)
         self._morph_end.pack(side=LEFT, padx=0, pady=5)
         self._morph_end.set(180)
-        Label(self, text="°").pack(side=LEFT, padx=(0, 5), pady=5)
+        self._morph_end_label = Label(self._morph_frame, text="°")
+        self._morph_end_label.pack(side=LEFT, padx=(0, 5), pady=5)
 
         self.update_defaultcolor()
 
@@ -2307,6 +2339,25 @@ class ColorWheel(LabelFrame):   # <<<2
         if self._color.validate():
             self._canvas.config(bg="#{:02x}{:02x}{:02x}".format(*self.rgb_color))
     # >>>3
+
+    def morph_enable(self, *args):     # <<<3
+        self._morph_button.config(state=NORMAL)
+        self._morph_start.enable()
+        self._morph_end.enable()
+        self._morph_end_label.config(state=NORMAL)
+        self._morph_frame.configure(foreground="black")
+        return "break"      # prevent the click to go through the morph button
+    # >>>3
+
+    def morph_disable(self, *args):    # <<<3
+        self.morph = False
+        self._morph_button.config(state=DISABLED)
+        self._morph_start.disable()
+        self._morph_end.disable()
+        self._morph_end_label.config(state=DISABLED)
+        self._morph_frame.configure(foreground="gray")
+    # >>>3
+
 
     def change_colorwheel(self, filename):  # <<<3
         if filename is None:
@@ -2461,7 +2512,8 @@ class ColorWheel(LabelFrame):   # <<<2
     def config(self):           # <<<3
         cfg = {}
         for k in ["filename", "alt_filename", "color", "geometry", "modulus",
-                  "angle", "stretch", "morph", "morph_start", "morph_end"]:
+                  "angle", "stretch", "morph", "morph_start", "morph_end",
+                  "morph_stable_coeff"]:
             cfg[k] = getattr(self, k)
         return cfg
     # >>>3
@@ -2469,7 +2521,8 @@ class ColorWheel(LabelFrame):   # <<<2
     @config.setter
     def config(self, cfg):      # <<<3
         for k in ["color", "geometry", "modulus",
-                  "angle", "stretch", "morph", "morph_start", "morph_end"]:
+                  "angle", "stretch", "morph", "morph_start", "morph_end",
+                  "morph_stable_coeff"]:
             if k in cfg:
                 setattr(self, k, cfg[k])
         if "filename" in cfg:
@@ -2547,34 +2600,35 @@ class World(LabelFrame):     # <<<2
 
     @property
     def size(self):    # <<<4
-        return self._width.get(), self._height.get()
+        return self._size.get()
     # >>>4
 
     @size.setter
     def size(self, size):    # <<<4
         width, height = size
-        self._width.set(float_to_str(width))
-        self._height.set(float_to_str(height))
+        self._size.set("{} x {}".format(w, h))
     # >>>4
 
     @property
     def width(self):    # <<<4
-        return self._width.get()
+        return self.size[0]
     # >>>4
 
     @width.setter
     def width(self, width):    # <<<4
-        self._width.set(float_to_str(width))
+        h = self.height
+        self.size = width, h
     # >>>4
 
     @property
     def height(self):    # <<<4
-        return self._height.get()
+        return self.size[1]
     # >>>4
 
     @height.setter
     def height(self, height):    # <<<4
-        self._height.set(float_to_str(height))
+        w = self.width
+        self.size = w, height
     # >>>4
 
     @property
@@ -2864,17 +2918,19 @@ class World(LabelFrame):     # <<<2
         transformation_frame = LabelFrame(self._geometry_plane_tab,
                                           text="transformation")
         transformation_frame.pack(padx=5, pady=5, fill=BOTH)
-        self._modulus = LabelEntry(transformation_frame, label="modulus",
+        tmp_frame = Frame(transformation_frame)
+        tmp_frame.pack()
+        self._modulus = LabelEntry(tmp_frame, label="modulus",
                                    value=1,
                                    convert=float,
                                    width=6)
-        self._modulus.pack(padx=5, pady=(5, 2))
+        self._modulus.grid(row=0, column=0, sticky=E, padx=5, pady=(5, 2))
 
-        self._angle = LabelEntry(transformation_frame, label="angle (°)",
+        self._angle = LabelEntry(tmp_frame, label="angle (°)",
                                  value=0,
                                  convert=float,
                                  width=4)
-        self._angle.pack(padx=5, pady=(2, 5))
+        self._angle.grid(row=1, column=0, sticky=E, padx=5, pady=(2, 5))
 
         Button(transformation_frame, text="zoom -",
                command=self.zoom(2**.25)).pack(side=LEFT,
@@ -2926,42 +2982,45 @@ class World(LabelFrame):     # <<<2
                text="background",
                command=self.choose_sphere_background,
                padx=1, pady=1
-               ).pack(side=LEFT)
+               ).grid(row=0, column=0, sticky=E)
         Entry(background_frame,
               textvar=self._sphere_background,
-              width=10).pack(side=RIGHT)
+              width=10).grid(row=0, column=1, padx=5, pady=10, sticky=E)
         self.sphere_background = DEFAULT_SPHERE_BACKGROUND
 
-        self._sphere_background_fading = LabelEntry(self._geometry_sphere_tab,
+        self._sphere_background_fading = LabelEntry(background_frame,
                                                     label="fade background",
                                                     value=100,
                                                     width=5,
                                                     convert=int)
-        self._sphere_background_fading.pack(padx=5, pady=10)
+        self._sphere_background_fading.grid(row=1, column=0, columnspan=2, padx=5, pady=10, sticky=E)
 
-        self._sphere_stars = LabelEntry(self._geometry_sphere_tab,
+        self._sphere_stars = LabelEntry(background_frame,
                                         label="random stars",
                                         value=500,
                                         width=5,
                                         convert=int)
-        self._sphere_stars.pack(padx=5, pady=10)
+        self._sphere_stars.grid(row=2, column=0, columnspan=2, padx=5, pady=10, sticky=E)
         # >>>4
 
         # result settings       <<<4
         settings_frame = LabelFrame(self, text="output")
         settings_frame.grid(row=2, column=1, sticky=E+W, padx=5, pady=5)
 
-        self._width = LabelEntry(settings_frame,
-                                 label="width", value=OUTPUT_WIDTH,
-                                 convert=int,
-                                 width=6, justify=RIGHT)
-        self._width.pack(padx=5, pady=(5, 0))
-
-        self._height = LabelEntry(settings_frame,
-                                  label="height", value=OUTPUT_HEIGHT,
-                                  convert=int,
-                                  width=6, justify=RIGHT)
-        self._height.pack(padx=5, pady=(2, 5))
+        def convert_size(s):
+            try:
+                w, h = s.split("x")
+                w = int(w.strip())
+                h = int(h.strip())
+                return w, h
+            except:
+                raise ValueError
+        self._size = LabelEntry(settings_frame,
+                                label="size",
+                                value="{} x {}".format(OUTPUT_WIDTH, OUTPUT_HEIGHT),
+                                convert=convert_size,
+                                width=12)
+        self._size.pack(padx=5, pady=(5, 0))
 
         Label(settings_frame, text="save directory").pack(padx=5, pady=(5, 2))
         self._save_directory = "./"
@@ -3742,8 +3801,7 @@ class Function(LabelFrame):     # <<<2
 
     @config.setter
     def config(self, cfg):      # <<<3
-        for k in ["matrix",
-                  "random_nb_coeffs", "random_min_degre",
+        for k in ["random_nb_coeffs", "random_min_degre",
                   "random_max_degre", "random_modulus", "random_noise",
                   "current_tab",
                   "wallpaper_pattern",  # "lattice_parameters",
@@ -3763,90 +3821,94 @@ class Function(LabelFrame):     # <<<2
         # we can now set the lattice_parameters
         if "lattice_parameters" in cfg:
             self.lattice_parameters = cfg["lattice_parameters"]
+
+        if "matrix" in cfg:
+            self.change_matrix(cfg["matrix"])
     # >>>3
 
     def update(self, *args):     # <<<3
         # sphere tab  <<<4
-        pattern = self.sphere_pattern
-        if self.sphere_mode in ["frieze", "rosette"]:
-            self._sphere_combo["values"] = F_NAMES
-            pattern = pattern.replace("N", "∞")
-            self.sphere_pattern = pattern
-            self._sphere_N.label_widget.configure(text="period")
-            self._sphere_N.enable()
-        elif self.sphere_mode == "sphere":
-            pattern = pattern.replace("∞", "N")
-            self._sphere_combo["values"] = S_NAMES
-            self.sphere_pattern = pattern
-            self._sphere_N.label_widget.configure(text="N")
-            if "N" in self.sphere_pattern:
+        if self.current_tab == "sphere":
+            pattern = self.sphere_pattern
+            if self.sphere_mode in ["frieze", "rosette"]:
+                self._sphere_combo["values"] = F_NAMES
+                pattern = pattern.replace("N", "∞")
+                self.sphere_pattern = pattern
+                self._sphere_N.label_widget.configure(text="period")
                 self._sphere_N.enable()
-            else:
-                self._sphere_N.disable()
+            elif self.sphere_mode == "sphere":
+                pattern = pattern.replace("∞", "N")
+                self._sphere_combo["values"] = S_NAMES
+                self.sphere_pattern = pattern
+                self._sphere_N.label_widget.configure(text="N")
+                if "N" in self.sphere_pattern:
+                    self._sphere_N.enable()
+                else:
+                    self._sphere_N.disable()
         # >>>4
 
         # wallpaper tab     <<<4
-        color_pattern = self.wallpaper_color_pattern
-        try:
-            lattice_parameters = self.lattice_parameters
-        except:
-            lattice_parameters = None
-
-        # color reversing combo
-        self._wallpaper_color_combo.configure(
-                values=["--"] + C_NAMES(self.wallpaper_pattern)
-                )
-        self.wallpaper_color_pattern = color_pattern
-
-        if lattice_parameters is not None:
+        elif self.current_tab == "wallpaper":
+            color_pattern = self.wallpaper_color_pattern
             try:
-                self._lattice_parameters.convert(lattice_parameters)
-                self.lattice_parameters = lattice_parameters
+                lattice_parameters = self.lattice_parameters
             except:
-                pass
+                lattice_parameters = None
 
-        lattice = PATTERN[self.current_pattern]["description"]
-        lattice0 = lattice.split()[0]
+            # color reversing combo
+            self._wallpaper_color_combo.configure(
+                    values=["--"] + C_NAMES(self.wallpaper_pattern)
+                    )
+            self.wallpaper_color_pattern = color_pattern
 
-        def not_zero(s):
-            x = float(s)
-            assert x != 0
-            return [x]
+            if lattice_parameters is not None:
+                try:
+                    self._lattice_parameters.convert(lattice_parameters)
+                    self.lattice_parameters = lattice_parameters
+                except:
+                    pass
 
-        def det_not_null(s):
-            xs = str_to_floats(s)
-            assert len(xs) == 4
-            assert xs[0]*xs[3] - xs[1]*xs[2] != 0
-            return xs
+            lattice = PATTERN[self.current_pattern]["description"]
+            lattice0 = lattice.split()[0]
 
-        if lattice0 == "general":
-            self._lattice_parameters.enable()
-            self._lattice_parameters.label_widget.config(text=lattice + ": x1,y1,x2,y2")
-            self._lattice_parameters.convert = det_not_null
-            self.lattice_parameters = [1, 0, 1, 1]
-        elif lattice0 == "rhombic":
-            self._lattice_parameters.enable()
-            self._lattice_parameters.label_widget.config(text=lattice + ": b")
-            self._lattice_parameters.convert = not_zero
-            self.lattice_parameters = [.5]
-        elif lattice0 == "rectangular":
-            self._lattice_parameters.enable()
-            self._lattice_parameters.convert = not_zero
-            self.lattice_parameters = [.5]
-            self._lattice_parameters.label_widget.config(text=lattice + ": H")
-        elif lattice0 == "square":
-            self._lattice_parameters.convert = None
-            self.lattice_parameters = []
-            self._lattice_parameters.label_widget.config(text=lattice)
-            self._lattice_parameters.disable()
-        elif lattice0 == "hexagonal":
-            self._lattice_parameters.convert = None
-            self.lattice_parameters = []
-            self._lattice_parameters.label_widget.config(text=lattice)
-            self._lattice_parameters.disable()
-        else:
-            assert False
+            def not_zero(s):
+                x = float(s)
+                assert x != 0
+                return [x]
 
+            def det_not_null(s):
+                xs = str_to_floats(s)
+                assert len(xs) == 4
+                assert xs[0]*xs[3] - xs[1]*xs[2] != 0
+                return xs
+
+            if lattice0 == "general":
+                self._lattice_parameters.enable()
+                self._lattice_parameters.label_widget.config(text=lattice + ": x1,y1,x2,y2")
+                self._lattice_parameters.convert = det_not_null
+                self.lattice_parameters = [1, 0, 1, 1]
+            elif lattice0 == "rhombic":
+                self._lattice_parameters.enable()
+                self._lattice_parameters.label_widget.config(text=lattice + ": b")
+                self._lattice_parameters.convert = not_zero
+                self.lattice_parameters = [.5]
+            elif lattice0 == "rectangular":
+                self._lattice_parameters.enable()
+                self._lattice_parameters.convert = not_zero
+                self.lattice_parameters = [.5]
+                self._lattice_parameters.label_widget.config(text=lattice + ": H")
+            elif lattice0 == "square":
+                self._lattice_parameters.convert = None
+                self.lattice_parameters = []
+                self._lattice_parameters.label_widget.config(text=lattice)
+                self._lattice_parameters.disable()
+            elif lattice0 == "hexagonal":
+                self._lattice_parameters.convert = None
+                self.lattice_parameters = []
+                self._lattice_parameters.label_widget.config(text=lattice)
+                self._lattice_parameters.disable()
+            else:
+                assert False
         # >>>4
     # >>>3
 
@@ -4004,20 +4066,20 @@ class CreateSymmetry(Tk):      # <<<2
 
         # <<<4
         self.function._tabs.bind("<<NotebookTabChanged>>",
-                                 self.update_world_tab)
+                                 self.update)
         self.function._sphere_mode.trace(
                 "w",
-                callback=self.update_world_tab)
+                callback=self.update)
 
         # update settings (checkbutton for showing orbifold for color pattern)
         self.function._wallpaper_combo.bind(
                 "<<ComboboxSelected>>",
-                self.update_world_tab,
+                self.update,
                 add="+"
                 )
         self.function._wallpaper_color_combo.bind(
                 "<<ComboboxSelected>>",
-                self.update_world_tab,
+                self.update,
                 add="+"
                 )
 
@@ -4120,8 +4182,7 @@ Keyboard shortcuts:
         self.wait_window(dialog)
     # >>>3
 
-    def update_world_tab(self, *args):       # <<<3
-        # enable / disable sphere geometry tab
+    def update(self, *args):       # <<<3
         if self.function.current_tab in ["sphere"]:
             if self.function.sphere_mode in ["rosette", "frieze"]:
                 self.world.sphere_projection = True
@@ -4159,8 +4220,12 @@ Keyboard shortcuts:
                 self.world._draw_color_tile_button.config(state=DISABLED)
             else:
                 self.world._draw_color_tile_button.config(state=NORMAL)
-
             self.world.update()
+
+        if self.function.current_tab in ["wallpaper"]:
+            self.colorwheel.morph_enable()
+        else:
+            self.colorwheel.morph_disable()
 
     # >>>3
 
@@ -4341,7 +4406,7 @@ Keyboard shortcuts:
                             # .format(1+self.output_params_queue.qsize(), m))
                             "output ({}): {}%"
                             .format(1+self.output_params_queue.qsize(),
-                                    int(m*100)))
+                                    round(m*100, 3)))
                     self._output_console.config(state=DISABLED)
                 elif not self.pending_output_jobs:
                     self._output_console.config(state=NORMAL)
@@ -4843,6 +4908,7 @@ def main():     # <<<1
     # function_config["lattice_parameters"] = [2,1,1,-1]
 
     # function_config["current_tab"] = "hyperbolic"
+    # function_config["random_nb_coeffs"] = 1
     # world_config["geometry"] = (0,1/2, 0, 1/2)
     # function_config["sphere_pattern"] = "532"
 
