@@ -854,7 +854,8 @@ def str_to_floats(s):       # <<<2
     if s.strip() == "":
         return []
     else:
-        return list(map(float, s.split(",")))
+        s = re.sub("[,;]", " ", s)
+        return list(map(float, s.split()))
 # >>>2
 
 
@@ -1209,7 +1210,7 @@ def apply_color(        # <<<2
         morph_angle=False,
         morph_start_angle=0,
         morph_end_angle=180,
-        morph_stable=0.2
+        morph_stable=20
         ):
     """replace each complex value in the array res by the color taken from an
     image in filename
@@ -1232,7 +1233,10 @@ def apply_color(        # <<<2
         width = res.shape[0]
         morph = np.arange(0, width)
 
-        morph = -morph_stable + morph * (1+2*morph_stable) / width
+        if morph_stable >= 50:
+            morph_stable = 50 - 1e-10
+        x = 100*morph_stable / ((100-2*morph_stable)*width)
+        morph = -x + morph * (1+2*x) / width
         np.place(morph, morph < 0, 0)
         np.place(morph, morph > 1, 1)
 
@@ -1688,10 +1692,10 @@ def make_image(color=None,     # <<<2
                       color["modulus"],
                       color["angle"],
                       color["color"],
-                      color["morph"],
-                      color["morph_start"],
-                      color["morph_end"],
-                      color["morph_stable_coeff"],
+                      world["morph"],
+                      world["morph_start"],
+                      world["morph_end"],
+                      world["morph_stable_coeff"],
                       )
 
     if (world["sphere_background"] and not world["sphere_projection"]):
@@ -2158,45 +2162,6 @@ class ColorWheel(LabelFrame):   # <<<2
                 self._alt_filename = filename
     # >>>4
 
-    @property
-    def morph(self):    # <<<4
-        return (self._morph_button.cget("state") != DISABLED and self._morph.get())
-    # >>>4
-
-    @morph.setter
-    def morph(self, b):     # <<<4
-        self._morph.set(b)
-    # >>>4
-
-    @property
-    def morph_start(self):    # <<<4
-        return self._morph_start.get()
-    # >>>4
-
-    @morph_start.setter
-    def morph_start(self, b):     # <<<4
-        self._morph_start.set(b)
-    # >>>4
-
-    @property
-    def morph_end(self):    # <<<4
-        return self._morph_end.get()
-    # >>>4
-
-    @morph_end.setter
-    def morph_end(self, b):     # <<<4
-        self._morph_end.set(b)
-    # >>>4
-
-    @property
-    def morph_stable_coeff(self):    # <<<4
-        return self._morph_stable_coeff.get()
-    # >>>4
-
-    @morph_stable_coeff.setter
-    def morph_stable_coeff(self, c):     # <<<4
-        self._morph_stable_coeff.set(c)
-    # >>>4
     # >>>3
 
     def __init__(self, root):        # <<<3
@@ -2292,41 +2257,6 @@ class ColorWheel(LabelFrame):   # <<<2
                                     command=self.reset_geometry)
         self._reset_button.pack(padx=5, pady=(5, 10))
 
-        self._morph_frame = LabelFrame(self, text="morph result")
-        self._morph_frame.pack(padx=5, pady=5)
-        self._morph_stable_coeff = LabelEntry(self._morph_frame,
-                                              label="stable coeff",
-                                              value=0.2,
-                                              convert=float,
-                                              width=3)
-        self._morph_stable_coeff.pack(side=BOTTOM, padx=5, pady=5)
-
-        self._morph = BooleanVar()
-        self._morph.set(False)
-        self._morph_button = Checkbutton(
-                self._morph_frame,
-                variable=self._morph,
-                text="morph",
-                indicatoron=False)
-        self._morph_button.pack(side=LEFT, padx=(5, 0), pady=5)
-        self._morph_button.bind("<Double-Button-1>", self.morph_enable)
-
-        self._morph_start = LabelEntry(self._morph_frame,
-                                       label=" from",
-                                       convert=int,
-                                       width=3)
-        self._morph_start.pack(side=LEFT, padx=0, pady=5)
-        self._morph_start.set(0)
-
-        self._morph_end = LabelEntry(self._morph_frame,
-                                     label="° to",
-                                     convert=int,
-                                     width=3)
-        self._morph_end.pack(side=LEFT, padx=0, pady=5)
-        self._morph_end.set(180)
-        self._morph_end_label = Label(self._morph_frame, text="°")
-        self._morph_end_label.pack(side=LEFT, padx=(0, 5), pady=5)
-
         self.update_defaultcolor()
 
         if os.path.exists("./colorwheel.jpg"):
@@ -2339,25 +2269,6 @@ class ColorWheel(LabelFrame):   # <<<2
         if self._color.validate():
             self._canvas.config(bg="#{:02x}{:02x}{:02x}".format(*self.rgb_color))
     # >>>3
-
-    def morph_enable(self, *args):     # <<<3
-        self._morph_button.config(state=NORMAL)
-        self._morph_start.enable()
-        self._morph_end.enable()
-        self._morph_end_label.config(state=NORMAL)
-        self._morph_frame.configure(foreground="black")
-        return "break"      # prevent the click to go through the morph button
-    # >>>3
-
-    def morph_disable(self, *args):    # <<<3
-        self.morph = False
-        self._morph_button.config(state=DISABLED)
-        self._morph_start.disable()
-        self._morph_end.disable()
-        self._morph_end_label.config(state=DISABLED)
-        self._morph_frame.configure(foreground="gray")
-    # >>>3
-
 
     def change_colorwheel(self, filename):  # <<<3
         if filename is None:
@@ -2512,8 +2423,7 @@ class ColorWheel(LabelFrame):   # <<<2
     def config(self):           # <<<3
         cfg = {}
         for k in ["filename", "alt_filename", "color", "geometry", "modulus",
-                  "angle", "stretch", "morph", "morph_start", "morph_end",
-                  "morph_stable_coeff"]:
+                  "angle", "stretch"]:
             cfg[k] = getattr(self, k)
         return cfg
     # >>>3
@@ -2521,8 +2431,7 @@ class ColorWheel(LabelFrame):   # <<<2
     @config.setter
     def config(self, cfg):      # <<<3
         for k in ["color", "geometry", "modulus",
-                  "angle", "stretch", "morph", "morph_start", "morph_end",
-                  "morph_stable_coeff"]:
+                  "angle", "stretch"]:
             if k in cfg:
                 setattr(self, k, cfg[k])
         if "filename" in cfg:
@@ -2605,7 +2514,7 @@ class World(LabelFrame):     # <<<2
 
     @size.setter
     def size(self, size):    # <<<4
-        width, height = size
+        w, h = size
         self._size.set("{} x {}".format(w, h))
     # >>>4
 
@@ -2703,6 +2612,9 @@ class World(LabelFrame):     # <<<2
         elif ("plane" in self._geometry_tabs.tab(self._geometry_tabs.select(),
                                                  "text")):
             return "plane"
+        elif ("morph" in self._geometry_tabs.tab(self._geometry_tabs.select(),
+                                                 "text")):
+            return "morph"
         else:
             assert False
     # >>>4
@@ -2714,6 +2626,8 @@ class World(LabelFrame):     # <<<2
             self._geometry_tabs.select(self._geometry_sphere_tab)
         elif tab == "plane":
             self._geometry_tabs.select(self._geometry_plane_tab)
+        elif tab == "morph":
+            self._geometry_tabs.select(self._geometry_morph_tab)
     # >>>4
 
     @property
@@ -2786,6 +2700,45 @@ class World(LabelFrame):     # <<<2
         self._preview_size.set(min(PREVIEW_SIZE, n))
     # >>>4
 
+    @property
+    def morph(self):    # <<<4
+        return (self._morph_button.cget("state") != DISABLED and self._morph.get())
+    # >>>4
+
+    @morph.setter
+    def morph(self, b):     # <<<4
+        self._morph.set(b)
+    # >>>4
+
+    @property
+    def morph_start(self):    # <<<4
+        return self._morph_start.get()
+    # >>>4
+
+    @morph_start.setter
+    def morph_start(self, b):     # <<<4
+        self._morph_start.set(b)
+    # >>>4
+
+    @property
+    def morph_end(self):    # <<<4
+        return self._morph_end.get()
+    # >>>4
+
+    @morph_end.setter
+    def morph_end(self, b):     # <<<4
+        self._morph_end.set(b)
+    # >>>4
+
+    @property
+    def morph_stable_coeff(self):    # <<<4
+        return self._morph_stable_coeff.get()
+    # >>>4
+
+    @morph_stable_coeff.setter
+    def morph_stable_coeff(self, c):     # <<<4
+        self._morph_stable_coeff.set(float_to_str(c))
+    # >>>4
     # >>>3
 
     def __init__(self, root):       # <<<3
@@ -2885,6 +2838,13 @@ class World(LabelFrame):     # <<<2
         self._geometry_plane_tab = Frame(self._geometry_tabs)
         self._geometry_tabs.add(self._geometry_plane_tab, text="plane")
 
+        self._geometry_sphere_tab = Frame(self._geometry_tabs)
+        self._geometry_tabs.add(self._geometry_sphere_tab, text="sphere")
+
+        self._geometry_morph_tab = Frame(self._geometry_tabs)
+        self._geometry_tabs.add(self._geometry_morph_tab, text="morph")
+
+        # geometry tab ###4
         coord_frame = LabelFrame(self._geometry_plane_tab, text="coordinates")
         coord_frame.pack(padx=5, pady=5)
         # coord_frame.grid(row=0, column=1, sticky=E+W, padx=5, pady=5)
@@ -2946,12 +2906,11 @@ class World(LabelFrame):     # <<<2
         # >>>4
 
         # sphere parameters     <<<4
-        self._geometry_sphere_tab = Frame(self._geometry_tabs)
-        self._geometry_tabs.add(self._geometry_sphere_tab, text="sphere")
         self._geometry_tabs.bind(
-                "<Double-Button-1>",
-                lambda _: self._geometry_tabs.tab(self._geometry_sphere_tab,
-                                                  state=NORMAL))
+                "<Triple-Button-1>",
+                sequence(self.enable_geometry_sphere_tab,
+                         self.enable_geometry_morph_tab)
+        )
 
         self._sphere_projection = BooleanVar()
         self._sphere_projection.set(True)
@@ -3003,13 +2962,49 @@ class World(LabelFrame):     # <<<2
         self._sphere_stars.grid(row=2, column=0, columnspan=2, padx=5, pady=10, sticky=E)
         # >>>4
 
+        # morph parameters      ###4
+        self._morph = BooleanVar()
+        self._morph.set(False)
+        self._morph_button = Checkbutton(
+                self._geometry_morph_tab,
+                variable=self._morph,
+                text="morph",
+                indicatoron=False)
+        self._morph_button.pack(padx=5, pady=10)
+
+        tmp_frame = Frame(self._geometry_morph_tab)
+        tmp_frame.pack()
+        self._morph_start = LabelEntry(tmp_frame,
+                                       label="from (°)",
+                                       convert=int,
+                                       width=3)
+        self._morph_start.grid(row=0, column=0, sticky=E, padx=5, pady=5)
+        self._morph_start.set(0)
+
+        self._morph_end = LabelEntry(tmp_frame,
+                                     label="to (°)",
+                                     convert=int,
+                                     width=3)
+        self._morph_end.grid(row=1, column=0, sticky=E, padx=5, pady=5)
+        self._morph_end.set(180)
+
+        self._morph_stable_coeff = LabelEntry(self._geometry_morph_tab,
+                                              label="stable (%)",
+                                              value=20,
+                                              convert=float,
+                                              width=3)
+        self._morph_stable_coeff.pack(padx=5, pady=5)
+
+        # >>>4
+
         # result settings       <<<4
         settings_frame = LabelFrame(self, text="output")
         settings_frame.grid(row=2, column=1, sticky=E+W, padx=5, pady=5)
 
         def convert_size(s):
             try:
-                w, h = s.split("x")
+                s = re.sub("[,;x]", " ", s)
+                w, h = s.split()
                 w = int(w.strip())
                 h = int(h.strip())
                 return w, h
@@ -3017,7 +3012,8 @@ class World(LabelFrame):     # <<<2
                 raise ValueError
         self._size = LabelEntry(settings_frame,
                                 label="size",
-                                value="{} x {}".format(OUTPUT_WIDTH, OUTPUT_HEIGHT),
+                                value="{} x {}".format(OUTPUT_WIDTH,
+                                                       OUTPUT_HEIGHT),
                                 convert=convert_size,
                                 width=12)
         self._size.pack(padx=5, pady=(5, 0))
@@ -3075,13 +3071,22 @@ class World(LabelFrame):     # <<<2
             self.save_directory = dir
     # >>>3
 
-    def disable_geometry_sphere_tab(self):  # <<<3
+    def disable_geometry_sphere_tab(self, *args):  # <<<3
         self.sphere_projection = True
         self._geometry_tabs.tab(self._geometry_sphere_tab, state=DISABLED)
     # >>>3
 
-    def enable_geometry_sphere_tab(self):   # <<<3
+    def disable_geometry_morph_tab(self, *args):  # <<<3
+        self.morph = False
+        self._geometry_tabs.tab(self._geometry_morph_tab, state=DISABLED)
+    # >>>3
+
+    def enable_geometry_sphere_tab(self, *args):   # <<<3
         self._geometry_tabs.tab(self._geometry_sphere_tab, state=NORMAL)
+    # >>>3
+
+    def enable_geometry_morph_tab(self, *args):   # <<<3
+        self._geometry_tabs.tab(self._geometry_morph_tab, state=NORMAL)
     # >>>3
 
     def reset_geometry(self, *args):        # <<<3
@@ -3191,7 +3196,8 @@ class World(LabelFrame):     # <<<2
                   "draw_mirrors", "preview_fade", "preview_fade_coeff",
                   "sphere_projection", "sphere_rotations",
                   "sphere_background", "sphere_background_fading",
-                  "sphere_stars"]:
+                  "sphere_stars",
+                  "morph", "morph_start", "morph_end", "morph_stable_coeff"]:
             cfg[k] = getattr(self, k)
         return cfg
     # >>>3
@@ -3206,7 +3212,8 @@ class World(LabelFrame):     # <<<2
                   "draw_mirrors", "preview_fade", "preview_fade_coeff",
                   "sphere_projection", "sphere_rotations",
                   "sphere_background", "sphere_background_fading",
-                  "sphere_stars"]:
+                  "sphere_stars",
+                  "morph", "morph_start", "morph_end", "morph_stable_coeff"]:
             if k in cfg:
                 setattr(self, k, cfg[k])
     # >>>3
@@ -4185,17 +4192,24 @@ Keyboard shortcuts:
     def update(self, *args):       # <<<3
         if self.function.current_tab in ["sphere"]:
             if self.function.sphere_mode in ["rosette", "frieze"]:
-                self.world.sphere_projection = True
                 self.world.disable_geometry_sphere_tab()
+                self.world.sphere_projection = True
                 self.world.geometry_tab = "plane"
+                self.world.disable_geometry_morph_tab()
             elif self.function.sphere_mode == "sphere":
                 self.world.enable_geometry_sphere_tab()
                 self.world.sphere_projection = False
                 self.world.geometry_tab = "sphere"
+                self.world.disable_geometry_morph_tab()
             else:
                 assert False
-        else:
+        elif self.function.current_tab in ["wallpaper"]:
             self.world.disable_geometry_sphere_tab()
+            self.world.enable_geometry_morph_tab()
+        elif self.function.current_tab in ["hyperbolic"]:
+            self.world.disable_geometry_sphere_tab()
+            self.world.disable_geometry_morph_tab()
+
 
         # enable / disable tiling / orbifold drawing buttons
         if self.function.current_tab in ["sphere", "hyperbolic"]:
@@ -4221,11 +4235,6 @@ Keyboard shortcuts:
             else:
                 self.world._draw_color_tile_button.config(state=NORMAL)
             self.world.update()
-
-        if self.function.current_tab in ["wallpaper"]:
-            self.colorwheel.morph_enable()
-        else:
-            self.colorwheel.morph_disable()
 
     # >>>3
 
