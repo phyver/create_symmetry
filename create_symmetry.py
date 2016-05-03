@@ -4556,6 +4556,7 @@ Keyboard shortcuts:
     # >>>3
 
     def make_output(self, *args):      # <<<3
+        self.world.adjust_geometry()
         config = {
                 "color": self.colorwheel.config,
                 "world": self.world.config,
