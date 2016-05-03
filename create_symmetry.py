@@ -4052,9 +4052,12 @@ class CreateSymmetry(Tk):      # <<<2
 
         self.world._canvas.bind("<Double-Button-1>", self.show_bigger_preview)
 
+        self.world._canvas.bind(
+                "<Motion>",
+                lambda e: self.update_pointer_coordinates(e.x, e.y))
+
         self.world._canvas.bind("<ButtonPress-1>", self.start_zoom_rectangle)
         self.world._canvas.bind("<B1-Motion>", self.update_zoom_rectangle)
-        self.world._canvas.bind("<Motion>", self.update_pointer_coordinates)
         self.world._canvas.bind("<ButtonRelease-1>", self.apply_zoom_rectangle)
 
         self.colorwheel._canvas.bind(
@@ -4239,7 +4242,7 @@ Keyboard shortcuts:
 
     # >>>3
 
-    def update_pointer_coordinates(self, event):
+    def update_pointer_coordinates(self, px, py):
         try:
             self.world._canvas._pointer_coords
         except:
@@ -4249,11 +4252,10 @@ Keyboard shortcuts:
                     fill="white",
                     text="")
 
-        px, py = event.x, event.y
         x_min, x_max, y_min, y_max = self.world.geometry
         try:
-            delta_x = self.world._canvas._img.width / (x_max - x_min)
-            delta_y = self.world._canvas._img.height / (y_max - y_min)
+            delta_x = self.world._canvas._image.width / (x_max - x_min)
+            delta_y = self.world._canvas._image.height / (y_max - y_min)
             px_center, py_center = self.world._canvas.coords(
                     self.world._canvas._image_id
                     )
@@ -4268,6 +4270,9 @@ Keyboard shortcuts:
                 text="{:6.4f} , {:6.4f}".format(x, y))
 
     def start_zoom_rectangle(self, event):   # <<<3
+        if not hasattr(self.world._canvas, "_image_id"):
+            return
+
         self.start_x = event.x
         self.start_y = event.y
         self.rect = self.world._canvas.create_rectangle(
@@ -4280,6 +4285,8 @@ Keyboard shortcuts:
     # >>>3
 
     def update_zoom_rectangle(self, event):     # <<<3
+        if not hasattr(self, "rect"):
+            return
         curX, curY = (event.x, event.y)
         ratio = self.world.width / self.world.height
         sx = -1 if curX < self.start_x else 1
@@ -4298,11 +4305,13 @@ Keyboard shortcuts:
                 self.start_y,
                 curX,
                 curY)
+        self.update_pointer_coordinates(curX, curY)
     # >>>3
 
     def apply_zoom_rectangle(self, event):     # <<<3
         try:
             self.world._canvas.delete(self.rect)
+            del self.rect
             curX, curY = (event.x, event.y)
             ratio = self.world.width / self.world.height
             if curX <= self.start_x and curY <= self.start_y:
@@ -4316,8 +4325,8 @@ Keyboard shortcuts:
 
         x_min, x_max, y_min, y_max = self.world.geometry
         try:
-            delta_x = self.world._canvas._img.width / (x_max - x_min)
-            delta_y = self.world._canvas._img.height / (y_max - y_min)
+            delta_x = self.world._canvas._image.width / (x_max - x_min)
+            delta_y = self.world._canvas._image.height / (y_max - y_min)
             px_center, py_center = self.world._canvas.coords(
                     self.world._canvas._image_id
                     )
@@ -4343,13 +4352,13 @@ Keyboard shortcuts:
         try:
             if self.world.preview_fade:
                 preview_fade = fade_image(
-                        self.world._canvas._img,
+                        self.world._canvas._image,
                         255-self.world.preview_fade_coeff
                         )
                 self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(preview_fade)
             else:
                 self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(
-                        self.world._canvas._img
+                        self.world._canvas._image
                         )
 
             self.world._canvas._image_id = self.world._canvas.create_image(
@@ -4464,7 +4473,7 @@ Keyboard shortcuts:
                 if image is not None:
                     # FIXME: methode change_preview in World class
 
-                    self.world._canvas._img = image
+                    self.world._canvas._image = image
                     self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
 
                     try:
@@ -4651,7 +4660,7 @@ Keyboard shortcuts:
 
     def full_preview_image(self):       # <<<3
         """paste the preview, tile, orbifold and mirror images together"""
-        img = self.world._canvas._img
+        img = self.world._canvas._image
         width, height = img.size
         if self.world.preview_fade:
             img = fade_image(img)
