@@ -4054,6 +4054,7 @@ class CreateSymmetry(Tk):      # <<<2
 
         self.world._canvas.bind("<ButtonPress-1>", self.start_zoom_rectangle)
         self.world._canvas.bind("<B1-Motion>", self.update_zoom_rectangle)
+        self.world._canvas.bind("<Motion>", self.update_pointer_coordinates)
         self.world._canvas.bind("<ButtonRelease-1>", self.apply_zoom_rectangle)
 
         self.colorwheel._canvas.bind(
@@ -4238,6 +4239,34 @@ Keyboard shortcuts:
 
     # >>>3
 
+    def update_pointer_coordinates(self, event):
+        try:
+            self.world._canvas._pointer_coords
+        except:
+            self.world._canvas._pointer_coords = self.world._canvas.create_text(
+                    PREVIEW_SIZE, PREVIEW_SIZE,
+                    anchor=SE,
+                    fill="white",
+                    text="")
+
+        px, py = event.x, event.y
+        x_min, x_max, y_min, y_max = self.world.geometry
+        try:
+            delta_x = self.world._canvas._img.width / (x_max - x_min)
+            delta_y = self.world._canvas._img.height / (y_max - y_min)
+            px_center, py_center = self.world._canvas.coords(
+                    self.world._canvas._image_id
+                    )
+            x_center = (x_max - x_min) / 2
+            y_center = (y_max - y_min) / 2
+        except AttributeError:
+            return
+        x = (px - px_center) / delta_x
+        y = (py_center - py) / delta_y
+        self.world._canvas.itemconfig(
+                self.world._canvas._pointer_coords,
+                text="{:6.4f} , {:6.4f}".format(x, y))
+
     def start_zoom_rectangle(self, event):   # <<<3
         self.start_x = event.x
         self.start_y = event.y
@@ -4253,13 +4282,16 @@ Keyboard shortcuts:
     def update_zoom_rectangle(self, event):     # <<<3
         curX, curY = (event.x, event.y)
         ratio = self.world.width / self.world.height
-        if curX <= self.start_x or curY <= self.start_y:
+        sx = -1 if curX < self.start_x else 1
+        sy = -1 if curY < self.start_y else 1
+        if (curX == self.start_x or curY == self.start_y or
+                (curX < self.start_x and curY < self.start_y)):
             curX = self.start_x
             curY = self.start_y
-        elif ratio > (curX-self.start_x) / (curY-self.start_y):
-            curX = self.start_x + (curY-self.start_y) * ratio
+        elif ratio > abs(curX-self.start_x) / abs(curY-self.start_y):
+            curX = self.start_x + sx * abs(curY-self.start_y) * ratio
         else:
-            curY = self.start_y + (curX-self.start_x) / ratio
+            curY = self.start_y + sy * abs(curX-self.start_x) / ratio
         self.world._canvas.coords(
                 self.rect,
                 self.start_x,
@@ -4273,7 +4305,7 @@ Keyboard shortcuts:
             self.world._canvas.delete(self.rect)
             curX, curY = (event.x, event.y)
             ratio = self.world.width / self.world.height
-            if curX <= self.start_x or curY <= self.start_y:
+            if curX <= self.start_x and curY <= self.start_y:
                 return
             elif ratio > (curX-self.start_x) / (curY-self.start_y):
                 curX = self.start_x + (curY-self.start_y) * ratio
