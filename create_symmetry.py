@@ -4,21 +4,6 @@
 # imports
 # <<<1
 
-# image manipulation (Pillow)
-import PIL
-from PIL import ImageDraw
-import PIL.ImageTk
-from PIL.ImageColor import getrgb
-
-# vectorized arrays
-import numpy as np
-
-# Tkinter for GUI
-from tkinter import *
-from tkinter.ttk import Combobox, Notebook, Style
-import tkinter.font
-from tkinter import filedialog
-
 # misc functions
 import copy
 import getopt
@@ -39,13 +24,29 @@ from random import randrange, uniform, shuffle, seed
 from multiprocessing import Process, Queue
 from threading import Thread
 import queue
+
+# Tkinter for GUI
+from tkinter import *
+from tkinter.ttk import Combobox, Notebook, Style
+import tkinter.font
+from tkinter import filedialog, messagebox
+
+# image manipulation (Pillow)
+import PIL
+from PIL import ImageDraw
+import PIL.ImageTk
+from PIL.ImageColor import getrgb
+
+# vectorized arrays
+import numpy as np
+
 # >>>1
 
-PREVIEW_SIZE = 500
+PREVIEW_SIZE = 400
 STRETCH_DISPLAY_RADIUS = 5
 OUTPUT_WIDTH = 1280
 OUTPUT_HEIGHT = 960
-COLOR_SIZE = 200
+COLOR_SIZE = 180
 COLOR_GEOMETRY = (-1, 1, -1, 1)
 WORLD_GEOMETRY = (-2, 2, -2, 2)
 DEFAULT_COLOR = "black"
@@ -54,9 +55,14 @@ UNDO_SIZE = 100
 DEFAULT_SPHERE_BACKGROUND = "#000066"
 STAR_COLOR = "#FFC"
 
+# keep a random seed to display random pixels in sphere images. The pixels
+# should always be at the same place during a run of the program to prevent
+# "jumps" during translatiosn / rotations of the image
 RANDOM_SEED = uniform(0, 1)
 
+# all the recipes and related informations
 PATTERN = {     # <<<1
+    # the 17 wallpaper groups   <<<2
     'o': {
         "alt_name": "p1",
         "recipe": "",
@@ -192,105 +198,9 @@ PATTERN = {     # <<<1
         "type": "plane group",
         "description": "hexagonal lattice",
         # OK
-    },
-    '332': {
-        "alt_name": "T",
-        "recipe": "n,m = -n,-m",
-        "parity": "n-m = 0 mod 2",
-        "type": "sphere group",
-        "description": "tetrahedral symmetry",
-    },
-    '432': {
-        "alt_name": "O",
-        "recipe": "n,m = -n,-m",
-        "parity": "n-m = 0 mod 4",
-        "type": "sphere group",
-        "description": "octahedral symmetry",
-    },
-    '532': {
-        "alt_name": "I",
-        "recipe": "n,m = -n,-m",
-        "parity": "n-m = 0 mod 2",
-        "type": "sphere group",
-        "description": "icosahedral symmetry",
-    },
-    '3*2': {
-        "alt_name": "Th",
-        "recipe": "n,m = -n,-m ; n,m = -m,-n",
-        "parity": "n-m = 0 mod 2",
-        "type": "sphere group",
-        "description": "tetrahedral symmetry",
-    },
-    '*332': {
-        "alt_name": "Td",
-        "recipe": "n,m = -n,-m ; n,m = i{n-m}(m,n)",
-        "parity": "n-m = 0 mod 2",
-        "type": "sphere group",
-        "description": "tetrahedral symmetry",
-    },
-    '*432': {
-        "alt_name": "Oh",
-        "recipe": "n,m = -n,-m ; n,m = -m,-n",
-        "parity": "n-m = 0 mod 4",
-        "type": "sphere group",
-        "description": "octahedral symmetry",
-    },
-    '*532': {
-        "alt_name": "Ih",
-        "recipe": "n,m = -n,-m ; n,m = -m,-n",
-        "parity": "n-m = 0 mod 2",
-        "type": "sphere group",
-        "description": "icosahedral symmetry",
-    },
-    'NN': {
-        "alt_name": "CN p111",
-        "recipe": "",
-        "parity": "n-m = 0 mod N",
-        "type": "sphere group",
-        "description": "cyclic symmetry",
-    },
-    '22N': {
-        "alt_name": "DN p211",
-        "recipe": "n,m = -n,-m",
-        "parity": "n-m = 0 mod N",
-        "type": "sphere group",
-        "description": "dihedral symmetry",
-    },
-    '*NN': {
-        "alt_name": "CNv p1m1",
-        "recipe": "n,m = m,n",
-        "parity": "n-m = 0 mod N",
-        "type": "sphere group",
-        "description": "cyclic symmetry",
-    },
-    'N*': {
-        "alt_name": "CNh p11m",
-        "recipe": "n,m = -m,-n",
-        "parity": "n-m = 0 mod N",
-        "type": "sphere group",
-        "description": "cyclic symmetry",
-    },
-    '*22N': {
-        "alt_name": "DNh p2mm",
-        "recipe": "n,m = m,n = -n,-m = -m,-n",
-        "parity": "n-m = 0 mod N",
-        "type": "sphere group",
-        "description": "dihedral symmetry",
-    },
-    'N×': {
-        "alt_name": "S2N p11g",
-        "recipe": "n,m = -{n+m}(-m,-n)",
-        "parity": "n-m = 0 mod N",
-        "type": "sphere group",
-        "description": "cyclic symmetry",
-    },
-    '2*N': {
-        "alt_name": "DNd p2mg",
-        "recipe": "n,m = -n,-m = -{n+m}(-m,-n) = -{n+m}(m,n)",
-        "parity": "n-m = 0 mod N",
-        "type": "sphere group",
-        "description": "dihedral symmetry",
-    },
+    },      # >>>2
+
+    # the 47 color reversing wallpaper groups       <<<2
     ('o', 'o'): {
         "alt_name": "",
         "recipe": "",
@@ -658,10 +568,113 @@ PATTERN = {     # <<<1
         "type": "color reversing plane group",
         "description": "hexagonal lattice, 6-fold symmetry",
         # OK
-    },
-    }
+    },          # >>>2
 
-# transform all the cyclic sphere groups into frieze groups
+    # the 14 spherical symmetry groups      <<<2
+    '332': {
+        "alt_name": "T",
+        "recipe": "n,m = -n,-m",
+        "parity": "n-m = 0 mod 2",
+        "type": "sphere group",
+        "description": "tetrahedral symmetry",
+    },
+    '432': {
+        "alt_name": "O",
+        "recipe": "n,m = -n,-m",
+        "parity": "n-m = 0 mod 4",
+        "type": "sphere group",
+        "description": "octahedral symmetry",
+    },
+    '532': {
+        "alt_name": "I",
+        "recipe": "n,m = -n,-m",
+        "parity": "n-m = 0 mod 2",
+        "type": "sphere group",
+        "description": "icosahedral symmetry",
+    },
+    '3*2': {
+        "alt_name": "Th",
+        "recipe": "n,m = -n,-m ; n,m = -m,-n",
+        "parity": "n-m = 0 mod 2",
+        "type": "sphere group",
+        "description": "tetrahedral symmetry",
+    },
+    '*332': {
+        "alt_name": "Td",
+        "recipe": "n,m = -n,-m ; n,m = i{n-m}(m,n)",
+        "parity": "n-m = 0 mod 2",
+        "type": "sphere group",
+        "description": "tetrahedral symmetry",
+    },
+    '*432': {
+        "alt_name": "Oh",
+        "recipe": "n,m = -n,-m ; n,m = -m,-n",
+        "parity": "n-m = 0 mod 4",
+        "type": "sphere group",
+        "description": "octahedral symmetry",
+    },
+    '*532': {
+        "alt_name": "Ih",
+        "recipe": "n,m = -n,-m ; n,m = -m,-n",
+        "parity": "n-m = 0 mod 2",
+        "type": "sphere group",
+        "description": "icosahedral symmetry",
+    },
+    'NN': {
+        "alt_name": "CN p111",
+        "recipe": "",
+        "parity": "n-m = 0 mod N",
+        "type": "sphere group",
+        "description": "cyclic symmetry",
+    },
+    '22N': {
+        "alt_name": "DN p211",
+        "recipe": "n,m = -n,-m",
+        "parity": "n-m = 0 mod N",
+        "type": "sphere group",
+        "description": "dihedral symmetry",
+    },
+    '*NN': {
+        "alt_name": "CNv p1m1",
+        "recipe": "n,m = m,n",
+        "parity": "n-m = 0 mod N",
+        "type": "sphere group",
+        "description": "cyclic symmetry",
+    },
+    'N*': {
+        "alt_name": "CNh p11m",
+        "recipe": "n,m = -m,-n",
+        "parity": "n-m = 0 mod N",
+        "type": "sphere group",
+        "description": "cyclic symmetry",
+    },
+    '*22N': {
+        "alt_name": "DNh p2mm",
+        "recipe": "n,m = m,n = -n,-m = -m,-n",
+        "parity": "n-m = 0 mod N",
+        "type": "sphere group",
+        "description": "dihedral symmetry",
+    },
+    'N×': {
+        "alt_name": "S2N p11g",
+        "recipe": "n,m = -{n+m}(-m,-n)",
+        "parity": "n-m = 0 mod N",
+        "type": "sphere group",
+        "description": "cyclic symmetry",
+    },
+    '2*N': {
+        "alt_name": "DNd p2mg",
+        "recipe": "n,m = -n,-m = -{n+m}(-m,-n) = -{n+m}(m,n)",
+        "parity": "n-m = 0 mod N",
+        "type": "sphere group",
+        "description": "dihedral symmetry",
+    },      # >>>2
+
+    # the 7 frieze groups are generated from the corresponding cyclic spherical
+    # groups
+}
+
+# transform all the appropriate cyclic sphere groups into frieze groups
 _F = {}
 for p in PATTERN:
     if PATTERN[p]["type"] == "sphere group" and "N" in p:
@@ -676,27 +689,27 @@ PATTERN.update(_F)
 del _F
 # >>>1
 
-NAMES = [    # <<<1
-    # order of the groups in menus
-    # plane groups
-    "o",       # general
+# order of the groups in menus
+NAMES = [       # <<<1
+    # wallpaper groups
+    "o",        # general lattice
     "2222",
-    "*×",      # rhombic
+    "*×",       # rhombic lattice
     "2*22",
-    "**",      # rectangular
+    "**",       # rectangular lattice
     "××",
     "*2222",
     "22*",
     "22×",
-    "442",     # square
+    "442",      # square lattice
     "*442",
     "4*2",
-    "333",     # hexagonal
+    "333",      # hexagonal lattice
     "3*3",
     "*333",
     "632",
     "*632",
-    # sphere groups
+    # spherical groups
     "332",
     "*332",
     "3*2",
@@ -716,7 +729,7 @@ NAMES = [    # <<<1
 # add names for frieze patterns
 NAMES = NAMES + [p.replace("N", "∞") for p in NAMES if "N" in p]
 
-# names, with alternative names, for wallpaper groups
+# full names, with alternative names, for wallpaper groups
 W_NAMES = ["{} ({})".format(p, PATTERN[p]["alt_name"])
            for p in NAMES
            if PATTERN[p]["type"] == "plane group"]
@@ -725,10 +738,10 @@ for i in range(len(W_NAMES)):
     p = W_NAMES[i].split()[0]
     t = PATTERN[p]["description"].split()[0]
     if _t != t:
-        W_NAMES[i] += "                   -- {}".format(t)
+        W_NAMES[i] += "         -- {}".format(t)
     _t = t
 
-# names, with alternative names, for sphere groups
+# full names, with alternative names, for sphere groups
 S_NAMES = ["{} ({})".format(p, PATTERN[p]["alt_name"])
            for p in NAMES
            if PATTERN[p]["type"] == "sphere group"]
@@ -740,14 +753,15 @@ for i in range(len(S_NAMES)):
         S_NAMES[i] += "     -- {}".format(t)
     _t = t
 
-# names, with alternative names, for frieze groups
+# full names, with alternative names, for frieze groups
 F_NAMES = ["{} ({})".format(p, PATTERN[p]["alt_name"])
            for p in NAMES
            if PATTERN[p]["type"] == "frieze"]
 del _t
 
 
-# names, with alternative names, for color reversing groups
+# full names, with alternative names, for color reversing groups, as a function
+# of the symmetry groups
 def C_NAMES(s):
     r = []
     # we need to deal with the two groups for **/**
@@ -793,8 +807,11 @@ def sequence(*fs):      # <<<2
     useful for running several functions in a callback
     """
     def res(*args):
+        r = []
         for f in fs:
-            f()
+            r.append(f())
+        if "break" in r:
+            return "break"
     return res
 # >>>2
 
@@ -808,7 +825,7 @@ def invert22(M):        # <<<2
 # >>>2
 
 
-def mult_M(M1, M2):     # <<<2
+def matrix_mult(M1, M2):     # <<<2
     """matrix multiplication"""
     assert len(M1[0]) == len(M2)
     R = [[0]*len(M2[0]) for i in range(len(M1))]
@@ -851,16 +868,20 @@ def tait_angle(R):                  # <<<2
 
 def str_to_floats(s):       # <<<2
     """transform a string into a list of floats"""
-    if s.strip() == "":
-        return []
-    else:
-        s = re.sub("[,;]", " ", s)
-        return list(map(float, s.split()))
+    try:
+        if s.strip() == "":
+            return []
+        else:
+            s = re.sub("[,;]", " ", s)
+            return list(map(float, s.split()))
+    except:
+        raise ValueError("str_to_floats: '{}' is not a list of floats"
+                         .format(s))
 # >>>2
 
 
 def float_to_str(x):       # <<<2
-    """transform a float into a string, removing trailing decimal 0s,
+    """transform a float into a string, removing trailing decimal 0s
     and decimal points if possible
     """
     s = re.sub("\.0*\s*$", "", str(x))
@@ -882,19 +903,22 @@ def complex_to_str(z, precision=4):    # <<<2
     if z == 0:
         return "0"
     elif z == z.real:
-        x = "{:.4f}".format(z.real).rstrip("0")
-        x = x.rstrip(".")
+        x = "{x:.{prec:}f}".format(x=z.real, prec=precision)
+        x = re.sub("\.0*\s*$", "", x)
         return x
     elif z == z - z.real:
-        y = "{:.4f}".format(z.imag).rstrip("0")
-        y = y.rstrip(".") + "i"
-        return y
+        y = "{y:.{prec:}f}".format(y=z.imag, prec=precision)
+        y = re.sub("\.0*\s*$", "", y)
+        y = "" if y == "1" else y
+        return y + "i"
     else:
         sign = "+" if z.imag > 0 else "-"
-        x = "{x:.{prec:}f}".format(x=z.real, prec=precision).rstrip("0")
-        y = "{y:.{prec:}f}".format(y=abs(z.imag), prec=precision).rstrip("0")
-        x = x.rstrip(".").rjust(7)
-        y = y.rstrip(".")
+        x = "{x:.{prec:}f}".format(x=z.real, prec=precision)
+        x = re.sub("\.0*\s*$", "", x)
+        x = x.rjust(precision + 3)
+        y = "{y:.{prec:}f}".format(y=abs(z.imag), prec=precision)
+        y = re.sub("\.0*\s*$", "", y)
+        y = "" if y == "1" else y
         return "{} {} {}i".format(x, sign, y)
 # >>>2
 
@@ -904,8 +928,12 @@ def matrix_to_list(M):      # <<<2
     and complex numbers as values) into a list of pairs of pairs:
         - the pair of integers of the key
         - the real and imaginary parts of the value
+    This is used as preprocessing before transforming the matrix to JSON.
     """
-    return [((n, m), (z.real, z.imag)) for (n, m), z in M.items()]
+    try:
+        return [((n, m), (z.real, z.imag)) for (n, m), z in M.items()]
+    except:
+        return M
 # >>>2
 
 
@@ -913,13 +941,18 @@ def list_to_matrix(L):      # <<<2
     """transform a list of pairs of pairs into a matrix:
         - the first pairs are integers
         - the second pairs are floats (real and imaginary parts)
+    This is used as postprocessing after getting the matrix from JSON.
     """
-    return dict([((n, m), complex(x, y)) for ((n, m), (x, y)) in L])
+    try:
+        return dict([((n, m), complex(x, y)) for ((n, m), (x, y)) in L])
+    except:
+        return L
 # >>>2
 
 
 def parse_matrix(s):        # <<<2
     """parse a string and return the corresponding matrix"""
+    # ugly, but works
     s = s.strip(" {}")
     tmp = re.split("\s*(?:[,;:]|(?:[-=]>))\s*", s)
     M = {}
@@ -942,17 +975,19 @@ def is_rgb(s):  # <<<2
 # >>>2
 
 
-def random_matrix(nb_coeffs, min_degre, max_degre, modulus):
-        coeffs = list(product(range(min_degre, max_degre+1),
-                              range(min_degre, max_degre+1)))
-        shuffle(coeffs)
-        coeffs = coeffs[:nb_coeffs]
-        M = {}
-        for (n, m) in coeffs:
-            mod = uniform(0, modulus) / nb_coeffs
-            angle = uniform(0, 2*pi)
-            M[(n, m)] = mod * complex(cos(angle), sin(angle))
-        return M
+def random_matrix(nb_coeffs, min_degre=-3, max_degre=3, modulus=1):    # <<<2
+    """generate a random complex matrix"""
+    coeffs = list(product(range(min_degre, max_degre+1),
+                          range(min_degre, max_degre+1)))
+    shuffle(coeffs)
+    coeffs = coeffs[:nb_coeffs]
+    M = {}
+    for (n, m) in coeffs:
+        mod = uniform(0, modulus) / nb_coeffs
+        angle = uniform(0, 2*pi)
+        M[(n, m)] = mod * complex(cos(angle), sin(angle))
+    return M
+# >>>2
 
 
 def eqn_indices(eq, n, m):        # <<<2
@@ -1085,8 +1120,8 @@ def apply_parity(parity, M):    # <<<2
 
 def add_symmetries(M, recipe, parity=""):      # <<<2
     """return a matrix computed from M by adding symmetries given by recipe
-recipe can be of the form "n,m = -n,-m = -(m,n) ; n,m = -{n+m}(n,m)"...
-"""
+    recipe can be of the form "n,m = -n,-m = -(m,n) ; n,m = -{n+m}(n,m)"...
+    """
     M = apply_parity(parity, M)
 
     R = {}
@@ -1117,7 +1152,6 @@ def basis(pattern, *params):        # <<<2
         return None
     lattice = PATTERN[pattern]["description"].split()[0]
     if lattice == "general":
-        # return [[1, 0], [params[0], params[1]]]
         return [[params[0], params[1]], [params[2], params[3]]]
     elif lattice == "rhombic":
         return [[1/2, params[0]/2], [1/2, -params[0]/2]]
@@ -1133,7 +1167,7 @@ def basis(pattern, *params):        # <<<2
 
 
 def bezout(a, b):
-    """Calcule (u, v, p) tels que a*u + b*v = p et p = pgcd(a, b)"""
+    """Compute Bezout number, ie (u, v, p) st a*u + b*v = p and p = gcd(a, b)"""
     if a == 0 and b == 0:
         return (0, 0, 0)
     if b == 0:
@@ -1160,11 +1194,11 @@ def make_coordinates_array(         # <<<2
     delta_x = (x_max-x_min) / (width-1)
     delta_y = (y_max-y_min) / (height-1)
 
-    xs = np.arange(width, dtype='float64')
+    xs = np.arange(width, dtype='float')
     np.multiply(delta_x, xs, out=xs)
     np.add(x_min, xs, out=xs)
 
-    ys = np.arange(height, dtype='float64')
+    ys = np.arange(height, dtype='float')
     np.multiply(delta_y, ys, out=ys)
     np.subtract(y_max, ys, out=ys)
 
@@ -1200,25 +1234,24 @@ def plane_coordinates_to_sphere(zs, rotations=(0, 0, 0)):       # <<<2
 # >>>2
 
 
-def apply_color(        # <<<2
-        res,
-        filename=None,                  # image for the colorwheel image
-        geometry=COLOR_GEOMETRY,          # coordinates of the colorwheel
-        modulus="1",
+def apply_color(                    # <<<2
+        res,                        # the complex values
+        filename=None,              # image for the colorwheel image
+        geometry=COLOR_GEOMETRY,    # coordinates of the colorwheel
+        modulus="1",                # transformation to apply to the colorwheel
         angle="0",
-        color="black",
-        morph_angle=False,
-        morph_start_angle=0,
-        morph_end_angle=180,
-        morph_stable=20
-        ):
+        color="black",              # default color if value is outside image
+        morph_angle=False,          # should the result morph
+        morph_start_angle=0,        # from one angle transformation
+        morph_end_angle=180,        # to another
+        morph_stable=20):           # and if so, how big (%) should the
+                                    # constant parts of the result be
     """replace each complex value in the array res by the color taken from an
     image in filename
     the resulting image is returned"""
 
     if isinstance(color, str):
         color = getrgb(color)
-
 
     rho = modulus * complex(cos(angle*pi/180), sin(angle*pi/180))
     x_min, x_max, y_min, y_max = geometry
@@ -1247,10 +1280,8 @@ def apply_color(        # <<<2
 
         res = morph[:, None] * res
 
-
-
-    # we add a border to the top / right of the color image, using the default
-    # color
+    # we add a one pixel border to the top / right of the color image, using
+    # the default color
     color_im = PIL.Image.new("RGB",
                              (width+1,
                               height+1),
@@ -1289,13 +1320,14 @@ def apply_color(        # <<<2
 # >>>2
 
 
-def make_wallpaper_image(zs,     # <<<2
-                         matrix,
-                         pattern,
-                         basis,      # additional parameters
-                         N=1,
-                         color_pattern="",
-                         message_queue=None):
+def make_wallpaper_image(   # <<<2
+        zs,                 # input coordinates
+        matrix,             # transformation matrix
+        pattern,            # name of pattern
+        basis,              # additional parameters for basis
+        N=1,                # additional forced symmetry
+        color_pattern="",   # color reversing symmetry pattern
+        message_queue=None):
     """use the given matrix to make an image for the given pattern
     the ``N`` parameter is used to enforce rotational symmetry around the
     origin but will usually destroy periodicity
@@ -1319,7 +1351,7 @@ def make_wallpaper_image(zs,     # <<<2
 
     w1, w2 = 1, len(matrix)*N
     for (n, m) in matrix:
-        ZS = np.zeros(zs.shape, dtype=complex)
+        ZS = np.zeros(zs.shape, dtype="complex128")
 
         for k in range(0, N):
             rho = complex(cos(2*pi*k/N),
@@ -1342,12 +1374,12 @@ def make_wallpaper_image(zs,     # <<<2
 # >>>2
 
 
-def make_hyperbolic_image(     # <<<2
-        zs,
-        matrix=None,
-        nb_steps=200,
-        color_pattern="",
-        disk_model=True,
+def make_hyperbolic_image(      # <<<2
+        zs,                     # input coordinates
+        matrix=None,            # transformation matrix
+        nb_steps=200,           # number of approximations steps to perform
+        disk_model=True,        # inverse the result into Pointcarre disk?
+        center_disk=1j,         # center for the disk inversion
         message_queue=None):
 
     for n, m in matrix:
@@ -1356,25 +1388,31 @@ def make_hyperbolic_image(     # <<<2
             matrix[n, m] = complex(10*abs(x), y)
 
     done = set([])
-    res = np.zeros(zs.shape, dtype=complex)
+    res = np.zeros(zs.shape, dtype="complex128")
     c, d = 0, 0
     w1, w2 = 0, nb_steps*len(matrix)
 
     if disk_model:
         zs = 1j * (1-zs) / (1+zs)
 
-        # x0 = 0
-        # y0 = 1
+        x0 = center_disk.real
+        y0 = center_disk.imag
+
+        # FIXME: add those as parameters in the morph tab
         x0 = -1/2
         y0 = -sqrt(3)/2
+
         zs = (zs + x0) * y0
 
-        # y = 1-np.abs(zs)
-        # x = np.angle(zs)*4/(2*pi)
-        # zs = x + 1j*y
-
     def PSL2():
-        """generator for elements of the PSL2(Z)"""
+        """generator for elements of the PSL2(Z),
+        ie, quadruples (a, b, c, d) such that ad - bc = 1
+        They are generated in order
+            c+d = 1
+            c+d = 2
+            c+d = 3
+            ...
+        """
         total = 0
         c = 0
         while True:
@@ -1398,23 +1436,23 @@ def make_hyperbolic_image(     # <<<2
         ZS = (a*zs + b) / (c*zs + d)
 
         for n, m in matrix:
+            # TODO use in place computation
             res += ZS.imag**matrix[n, m] * np.exp(2j*pi*(n*ZS.real + m*ZS.imag))
             w1 += 1
             if message_queue is not None:
                 message_queue.put(w1/w2)
 
-    # res = res / nb_steps
-
     return res
 # >>>2
 
 
-def make_sphere_image(zs,      # <<<2
-                      matrix,
-                      pattern,
-                      N=5,
-                      unwind=False,
-                      message_queue=None):
+def make_sphere_image(      # <<<2
+        zs,                 # input coordinates
+        matrix,             # transformation matrix
+        pattern,            # name of group
+        N=5,                # parameter for cyclic groups
+        unwind=False,       # should the result be in stereographic projection?
+        message_queue=None):
     """use the given matrix to make an image for the given spherical pattern
 
     the ``N`` parameter is used for cyclic groups
@@ -1432,6 +1470,7 @@ def make_sphere_image(zs,      # <<<2
         np.multiply(1j, zs, out=zs)
         np.exp(zs, out=zs)
 
+    # choose the elements (rotations) on which to average
     if "T" in PATTERN[pattern]["alt_name"]:
         average = [([[1, 0], [0, 1]], 1), ([[1, 1j], [1, -1j]], 3)]
     elif "O" in PATTERN[pattern]["alt_name"]:
@@ -1464,7 +1503,14 @@ def make_sphere_image(zs,      # <<<2
 # >>>2
 
 
-def make_sphere_background(zs, img, background="back.jpg", fade=128, stars=0):
+def make_sphere_background(         # <<<2
+        geometry,
+        modulus,
+        angle,
+        img,                        # the sphere image
+        background="back.jpg",      # background: either a colorname or a filename
+        fade=128,                   # fade the background
+        stars=0):                   # how many random "stars" (pixels) to add
     """compute the background for a sphere
         - background can either be a color, or a filename containing an image
           to display
@@ -1473,7 +1519,7 @@ def make_sphere_background(zs, img, background="back.jpg", fade=128, stars=0):
         - stars is the number of random "stars" (pixels) to add to the
           background
       """
-    width, height = zs.shape
+    zs = make_coordinates_array(img.size, geometry, modulus, angle)
     try:
         background_img = PIL.Image.open(background)
         background_img = background_img.resize((width, height))
@@ -1481,9 +1527,10 @@ def make_sphere_background(zs, img, background="back.jpg", fade=128, stars=0):
         try:
             color = getrgb(background)
             background_img = PIL.Image.new(mode="RGB",
-                                           size=(width, height),
+                                           size=img.size,
                                            color=color)
             seed(RANDOM_SEED)
+            width, height = img.size
             for i in range(stars):
                 background_img.putpixel((randrange(0, width),
                                         randrange(0, height)),
@@ -1514,15 +1561,21 @@ def save_image(         # <<<2
         image=None,
         **config
         ):
+    """save an image to a file, and construct a shell script to invoke the
+    program with the exact same parameters
+    ``config`` should contain the whole configuration of the program
+    """
     save_directory = config["world"]["save_directory"]
     filename_template = config["world"]["filename_template"]
 
     color = config["color"]
     world = config["world"]
-    params = config["params"]
+    function = config["function"]
+    params = config["params"]       # TODO remove
     pattern = config["pattern"]
-    matrix = config["matrix"]
+    matrix = function["matrix"]
 
+    # put the tile and / or orbifold into the image
     if ((world["draw_tile"] or world["draw_orbifold"]) and
             PATTERN[pattern]["type"] in ["plane group",
                                          "color reversing plane group"]):
@@ -1539,9 +1592,10 @@ def save_image(         # <<<2
                 )
         image.paste(tile, mask=tile)
 
+    # build the filename
     function = config["function"]
     info = {"type": "", "name": "", "alt_name": ""}
-    if function["current_tab"] == "wallpaper":
+    if function["pattern_type"] == "wallpaper":
         info["type"] = "planar"
         info["name"] = function["wallpaper_pattern"]
         info["alt_name"] = PATTERN[info["name"]]["alt_name"]
@@ -1551,14 +1605,14 @@ def save_image(         # <<<2
             info["alt_name"] = (PATTERN[cp]["alt_name"] +
                                 "_" +
                                 info["alt_name"])
-    elif function["current_tab"] == "sphere":
+    elif function["pattern_type"] == "sphere":
         info["type"] = "spherical"
         p = function["sphere_pattern"]
         N = function["sphere_N"]
         info["name"] = p.replace("N", str(N))
         info["alt_name"] = PATTERN[p]["alt_name"]
         info["alt_name"] = info["alt_name"].replace("N", str(N))
-    elif function["current_tab"] == "hyperbolic":
+    elif function["pattern_type"] == "hyperbolic":
         info["type"] = "hyperbolic"
         info["name"] = "--"
         info["alt_name"] = "--"
@@ -1581,31 +1635,23 @@ def save_image(         # <<<2
     if message_queue is not None:
         message_queue.put("saved file {}".format(filename+".jpg"))
 
-    config["function"]["matrix"] = matrix_to_list(config["matrix"])
-    cmd = ("""#!/bin/sh
-CREATE_SYM={prog_path:}
-
-$CREATE_SYM --color-config='{color_config:}' \\
-        --world-config='{world_config:}' \\
-        --function-config='{function_config:}' \\
-        --preview \\
-        $@
-""".format(
-       prog_path=os.path.abspath(sys.argv[0]),
-       color_config=json.dumps(config["color"], separators=(",", ":")),
-       world_config=json.dumps(config["world"], separators=(",", ":")),
-       function_config=json.dumps(config["function"], separators=(",", ":")),
-       ))
-
-    cs = open(filename + ".sh", mode="w")
-    cs.write(cmd)
-    cs.close()
+    cfg = {
+        "color": config["color"],
+        "world": config["world"],
+        "function": config["function"],
+        "preview": True}
+    config_file = open(filename + ".ct", mode="w")
+    if "matrix" in cfg["function"]:
+        cfg["function"]["matrix"] = matrix_to_list(cfg["function"]["matrix"])
+    json.dump(cfg, config_file, indent=2)
+    config_file.close()
 # >>>2
 
 
 def background_output(     # <<<2
         message_queue=None,
-        output_message_queue=None, **config):
+        output_message_queue=None,
+        **config):
     """compute an image from the configuration in config, and save it to a file
     used by the GUI for output jobs"""
 
@@ -1613,13 +1659,15 @@ def background_output(     # <<<2
 
     color = config["color"]
     world = config["world"]
-    params = config["params"]
+    function = config["function"]
+    matrix = function["matrix"]
+
+    params = config["params"]       # TODO remove
     pattern = config["pattern"]
-    matrix = config["matrix"]
     image = make_image(color=color,
                        world=world,
+                       function=function,
                        pattern=pattern,
-                       matrix=matrix,
                        message_queue=output_message_queue,
                        tile=True,
                        stretch_color=color["stretch"],
@@ -1633,48 +1681,48 @@ def background_output(     # <<<2
             image=image,
             **config
             )
-
-
 # >>>2
 
 
-def make_image(color=None,     # <<<2
-               world=None,
-               pattern="",
-               matrix=None,
-               message_queue=None,
-               stretch_color=False,
-               **params):
+# HERE
+# TODO remove "pattern" parameter and get it from "function"
+# remove "params" parameters and get everything from "function"
+def make_image(                 # <<<2
+        color=None,
+        world=None,
+        function=None,
+        pattern="",
+        message_queue=None,
+        stretch_color=False,
+        **params):      # TODO remove params
     """compute an image for a pattern"""
 
     zs = make_coordinates_array(world["size"],
                                 world["geometry"],
                                 world["modulus"],
                                 world["angle"])
-    _zs = zs
 
     if not world["sphere_projection"]:
-        _zs = np.copy(zs)
         zs = plane_coordinates_to_sphere(zs, world["sphere_rotations"])
 
     if pattern == "hyperbolic":
         res = make_hyperbolic_image(
                 zs,
-                matrix,
+                function["matrix"],
                 nb_steps=params["nb_steps"],
                 disk_model=params["disk_model"],
                 message_queue=message_queue)
     elif PATTERN[pattern]["type"] in ["plane group",
                                       "color reversing plane group"]:
         res = make_wallpaper_image(zs,
-                                   matrix,
+                                   function["matrix"],
                                    pattern,
                                    params["lattice_basis"],
                                    N=params["N"],
                                    message_queue=message_queue)
     elif PATTERN[pattern]["type"] in ["sphere group", "frieze", "rosette"]:
         res = make_sphere_image(zs,
-                                matrix,
+                                function["matrix"],
                                 pattern,
                                 N=params["N"],
                                 unwind=params["sphere_mode"] == "frieze",
@@ -1683,6 +1731,7 @@ def make_image(color=None,     # <<<2
         print(PATTERN[pattern]["type"])
         assert False
 
+    # TODO: this should be in apply_color
     if stretch_color:
         np.divide(res, np.sqrt(1 + res.real**2 * res.imag**2), out=res)
 
@@ -1699,13 +1748,17 @@ def make_image(color=None,     # <<<2
                       )
 
     if (world["sphere_background"] and not world["sphere_projection"]):
-        return make_sphere_background(_zs,
+        return make_sphere_background(world["geometry"],
+                                      world["modulus"],
+                                      world["angle"],
                                       img,
                                       background=world["sphere_background"],
                                       fade=world["sphere_background_fading"],
                                       stars=world["sphere_stars"])
     elif (pattern == "hyperbolic" and params["disk_model"]):
-        return make_sphere_background(_zs,
+        return make_sphere_background(world["geometry"],
+                                      world["modulus"],
+                                      world["angle"],
                                       img,
                                       background=world["sphere_background"],
                                       fade=0,
@@ -1802,7 +1855,7 @@ def make_tile(geometry,         # <<<2
             if color_tile:
                 C = [[0, 1], [1, 0]]
 
-        basis = mult_M(C, basis)
+        basis = matrix_mult(C, basis)
 
         if color_tile:
             pattern = pattern[0]
@@ -2182,14 +2235,18 @@ class ColorWheel(LabelFrame):   # <<<2
 
         self._stretch_color = BooleanVar()
         self._stretch_color.set(False)
-        Checkbutton(self, text="stretch unit disk",
-                    variable=self._stretch_color,
-                    onvalue=True, offvalue=False,
-                    command=lambda: self.change_colorwheel(self.filename),
-                    indicatoron=False
-                    ).pack(padx=5, pady=0)
+        self._stretch_color.trace(
+                "w",
+                lambda *_: self.change_colorwheel(self.filename)
+                )
+        # Checkbutton(self, text="stretch unit disk",
+        #             variable=self._stretch_color,
+        #             onvalue=True, offvalue=False,
+        #             command=lambda: self.change_colorwheel(self.filename),
+        #             indicatoron=False
+        #             ).pack(padx=5, pady=0)
 
-        self._canvas = Canvas(self, width=200, height=200, bg="white")
+        self._canvas = Canvas(self, width=COLOR_SIZE, height=COLOR_SIZE, bg="white")
         self._canvas.pack(padx=5, pady=5)
         for i in range(5, COLOR_SIZE, 10):
             for j in range(5, COLOR_SIZE, 10):
@@ -2253,9 +2310,9 @@ class ColorWheel(LabelFrame):   # <<<2
                                  width=4)
         self._angle.grid(row=1, column=0, sticky=E, padx=5, pady=(2, 5))
 
-        self._reset_button = Button(self, text="reset",
-                                    command=self.reset_geometry)
-        self._reset_button.pack(padx=5, pady=(5, 10))
+        # self._reset_button = Button(self, text="reset",
+        #                             command=self.reset_geometry)
+        # self._reset_button.pack(padx=5, pady=(5, 10))
 
         self.update_defaultcolor()
 
@@ -2281,7 +2338,7 @@ class ColorWheel(LabelFrame):   # <<<2
                 self._y_max.disable()
                 self._modulus.disable()
                 self._angle.disable()
-                self._reset_button.configure(state=DISABLED)
+                # self._reset_button.configure(state=DISABLED)
                 zs = make_coordinates_array(
                         size=(PREVIEW_SIZE, PREVIEW_SIZE),
                         geometry=(-STRETCH_DISPLAY_RADIUS,
@@ -2302,9 +2359,11 @@ class ColorWheel(LabelFrame):   # <<<2
                 self._y_max.enable()
                 self._modulus.enable()
                 self._angle.enable()
-                self._reset_button.configure(state=NORMAL)
+                # self._reset_button.configure(state=NORMAL)
                 img = PIL.Image.open(filename)
-                img.thumbnail((COLOR_SIZE, COLOR_SIZE), PIL.Image.ANTIALIAS)
+                img.thumbnail(
+                        (COLOR_SIZE+1, COLOR_SIZE+1),
+                        PIL.Image.ANTIALIAS)
                 width, height = img.size
                 ratio = width / height
                 if ratio < 1:
@@ -2322,7 +2381,7 @@ class ColorWheel(LabelFrame):   # <<<2
             tk_img = PIL.ImageTk.PhotoImage(img)
             self._tk_image = tk_img     # prevent garbage collection
             self._canvas.delete(self._colorwheel_id)
-            self._canvas.create_image((100, 100), image=tk_img)
+            self._canvas.create_image((COLOR_SIZE//2, COLOR_SIZE//2), image=tk_img)
             self.filename = filename
             self._filename_button.config(text=os.path.basename(filename))
             try:
@@ -2343,6 +2402,7 @@ class ColorWheel(LabelFrame):   # <<<2
     def switch_colorwheel(self, *args):     # <<<3
         try:
             self.change_colorwheel(self._alt_filename)
+            return "break"
         except AttributeError:
             pass
     # >>>3
@@ -2368,8 +2428,8 @@ class ColorWheel(LabelFrame):   # <<<2
         x0 = - delta_x * x_min
         y0 = delta_y * y_max
         r = delta_x / self.modulus
-        self._unit_circle = self._canvas.create_oval(x0-r, y0-r, x0+r, y0+r,
-                                                     width=3,
+        self._unit_circle = self._canvas.create_oval(x0-r+1, y0-r+1, x0+r, y0+r,
+                                                     width=2,
                                                      outline="gray")
         self._center = self._canvas.create_oval(x0-5, y0-5, x0+5, y0+5,
                                                 width=1,
@@ -2409,14 +2469,14 @@ class ColorWheel(LabelFrame):   # <<<2
     # >>>3
 
     def reset_geometry(self, *args):        # <<<3
-        if self.stretch:
-            return
+        # if self.stretch:
+        #     return
         self.modulus = 1
         self.angle = 0
+        self.stretch = False
+        self.geometry = COLOR_GEOMETRY
         if self.filename is not None:
             self.change_colorwheel(self.filename)
-        else:
-            self.geometry = COLOR_GEOMETRY
     # >>>3
 
     @property
@@ -2899,10 +2959,9 @@ class World(LabelFrame):     # <<<2
                command=self.zoom(2**-.25)).pack(side=RIGHT,
                                                 padx=5, pady=5)
 
-        Button(self._geometry_plane_tab, text="reset",
-               command=self.reset_geometry).pack(side=TOP,
-                                                 padx=5, pady=(5, 10))
-
+        # Button(self._geometry_plane_tab, text="reset",
+        #        command=self.reset_geometry).pack(side=TOP,
+        #                                          padx=5, pady=(5, 10))
         # >>>4
 
         # sphere parameters     <<<4
@@ -2952,14 +3011,14 @@ class World(LabelFrame):     # <<<2
                                                     value=100,
                                                     width=5,
                                                     convert=int)
-        self._sphere_background_fading.grid(row=1, column=0, columnspan=2, padx=5, pady=10, sticky=E)
+        self._sphere_background_fading.grid(row=1, column=0, columnspan=2, padx=5, pady=5, sticky=E)
 
         self._sphere_stars = LabelEntry(background_frame,
                                         label="random stars",
                                         value=500,
                                         width=5,
                                         convert=int)
-        self._sphere_stars.grid(row=2, column=0, columnspan=2, padx=5, pady=10, sticky=E)
+        self._sphere_stars.grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky=E)
         # >>>4
 
         # morph parameters      ###4
@@ -3036,23 +3095,9 @@ class World(LabelFrame):     # <<<2
         self._filename_template.pack(padx=5, pady=5)
         # >>>4
 
-        # image buttons (preview / save)    <<<4
-        tmp = LabelFrame(self, text="image")
-        tmp.grid(row=3, column=1, sticky=E+W, padx=5, pady=5)
-
-        self._preview_button = Button(tmp, text="preview", command=None)
-        self._preview_button.pack(side=TOP, padx=5, pady=5)
-
-        self._save_preview_button = Button(
-                tmp,
-                text="save preview",
-                command=None
-                )
-        self._save_preview_button.pack(side=LEFT, padx=5, pady=5)
-
-        self._save_button = Button(tmp, text="save", command=None)
-        self._save_button.pack(side=RIGHT, padx=5, pady=5)
-
+        # preview button    <<<4
+        self._preview_button = Button(self, text="preview", command=None)
+        self._preview_button.grid(row=3, column=1, padx=5, pady=5)
         # >>>4
 
         self.adjust_geometry()
@@ -3123,7 +3168,7 @@ class World(LabelFrame):     # <<<2
 
             R2 = rotation_matrix(10*dz*pi/180, 10*dx*pi/180, -10*dy*pi/180)
 
-            R = mult_M(R1, R2)
+            R = matrix_mult(R1, R2)
             theta_x, theta_y, theta_z = tait_angle(R)
 
             theta_x = round(theta_x * 180 / pi)
@@ -3224,7 +3269,7 @@ class Function(LabelFrame):     # <<<2
 
     # setters and getters <<<3
     @property
-    def current_tab(self):      # <<<4
+    def pattern_type(self):      # <<<4
         if ("wallpaper" in self._tabs.tab(self._tabs.select(), "text")):
             return "wallpaper"
         elif ("sphere" in self._tabs.tab(self._tabs.select(), "text")):
@@ -3235,8 +3280,8 @@ class Function(LabelFrame):     # <<<2
             assert False
     # >>>4
 
-    @current_tab.setter
-    def current_tab(self, tab):      # <<<4
+    @pattern_type.setter
+    def pattern_type(self, tab):      # <<<4
         tab = tab.lower().strip()
         if tab == "wallpaper":
             self._tabs.select(self._wallpaper_tab)
@@ -3397,16 +3442,16 @@ class Function(LabelFrame):     # <<<2
 
     @property
     def current_pattern(self):          # <<<4
-        if self.current_tab == "wallpaper":
+        if self.pattern_type == "wallpaper":
             color_pattern = self.wallpaper_color_pattern
             if color_pattern:
                 return (color_pattern, self.wallpaper_pattern)
             else:
                 return self.wallpaper_pattern
             return self.wallpaper_pattern
-        elif self.current_tab == "sphere":
+        elif self.pattern_type == "sphere":
             return self.sphere_pattern
-        elif self.current_tab == "hyperbolic":
+        elif self.pattern_type == "hyperbolic":
             return "hyperbolic"
         else:
             return ""
@@ -3475,7 +3520,7 @@ class Function(LabelFrame):     # <<<2
               text="symmetry group").pack(padx=5, pady=(20, 0))
         self._wallpaper_pattern = StringVar()
         self._wallpaper_combo = Combobox(
-                self._wallpaper_tab, width=38, exportselection=0,
+                self._wallpaper_tab, width=24, exportselection=0,
                 textvariable=self._wallpaper_pattern,
                 state="readonly",
                 values=W_NAMES
@@ -3604,7 +3649,7 @@ class Function(LabelFrame):     # <<<2
         self._display_matrix = Listbox(scroll_matrix_frame,
                                        selectmode=MULTIPLE,
                                        font="TkFixedFont",
-                                       width=30, height=8)
+                                       width=26, height=8)
         self._display_matrix.pack(side=LEFT)
 
         scrollbar = Scrollbar(scroll_matrix_frame)
@@ -3621,7 +3666,7 @@ class Function(LabelFrame):     # <<<2
         # change entries <<<4
         self._change_entry = LabelEntry(main_matrix_frame,
                                         label="change entry", value="",
-                                        width=17, font="TkFixedFont")
+                                        width=15, font="TkFixedFont")
         self._change_entry.pack(padx=5, pady=5)
         self._change_entry.bind("<Return>", self.add_entry)
 
@@ -3727,11 +3772,12 @@ class Function(LabelFrame):     # <<<2
             z = z.replace("i", "j")
             z = complex(z)
             if z == 0:
-                del self.matrix[(n, m)]
+                if (n, m) in self.matrix:
+                    del self.matrix[n, m]
             else:
                 self.matrix[(n, m)] = z
             self.change_matrix()
-            self_change_entry = ""
+            self.change_entry = ""
         except Exception as err:
             error("cannot parse matrix entry '{}': {}".format(e, err))
         # >>>3
@@ -3768,7 +3814,7 @@ class Function(LabelFrame):     # <<<2
 
     def add_symmetries(self, M):        # <<<3
 
-        if self.current_tab == "wallpaper":
+        if self.pattern_type == "wallpaper":
             pattern = self.wallpaper_pattern
             color_pattern = self.wallpaper_color_pattern
             if color_pattern:
@@ -3779,12 +3825,12 @@ class Function(LabelFrame):     # <<<2
                                    PATTERN[color_pattern, pattern]["parity"])
             else:
                 M = add_symmetries(M, PATTERN[pattern]["recipe"])
-        elif self.current_tab == "sphere":
+        elif self.pattern_type == "sphere":
             M = add_symmetries(M,
                                PATTERN[self.sphere_pattern]["recipe"],
                                PATTERN[self.sphere_pattern]["parity"]
                                .replace("N", str(self.sphere_N)))
-        elif self.current_tab == "hyperbolic":
+        elif self.pattern_type == "hyperbolic":
             pass
         else:
             assert False
@@ -3797,7 +3843,7 @@ class Function(LabelFrame):     # <<<2
         for k in ["matrix",
                   "random_nb_coeffs", "random_min_degre",
                   "random_max_degre", "random_modulus", "random_noise",
-                  "current_tab",
+                  "pattern_type",
                   "wallpaper_pattern", "lattice_parameters",
                   "wallpaper_color_pattern",
                   "sphere_pattern", "sphere_N", "sphere_mode",
@@ -3810,7 +3856,7 @@ class Function(LabelFrame):     # <<<2
     def config(self, cfg):      # <<<3
         for k in ["random_nb_coeffs", "random_min_degre",
                   "random_max_degre", "random_modulus", "random_noise",
-                  "current_tab",
+                  "pattern_type",
                   "wallpaper_pattern",  # "lattice_parameters",
                   # "wallpaper_color_pattern",
                   "sphere_pattern", "sphere_N", "sphere_mode",
@@ -3830,12 +3876,13 @@ class Function(LabelFrame):     # <<<2
             self.lattice_parameters = cfg["lattice_parameters"]
 
         if "matrix" in cfg:
+            cfg["matrix"] = list_to_matrix(cfg["matrix"])
             self.change_matrix(cfg["matrix"])
     # >>>3
 
     def update(self, *args):     # <<<3
         # sphere tab  <<<4
-        if self.current_tab == "sphere":
+        if self.pattern_type == "sphere":
             pattern = self.sphere_pattern
             if self.sphere_mode in ["frieze", "rosette"]:
                 self._sphere_combo["values"] = F_NAMES
@@ -3855,7 +3902,7 @@ class Function(LabelFrame):     # <<<2
         # >>>4
 
         # wallpaper tab     <<<4
-        elif self.current_tab == "wallpaper":
+        elif self.pattern_type == "wallpaper":
             color_pattern = self.wallpaper_color_pattern
             try:
                 lattice_parameters = self.lattice_parameters
@@ -3891,28 +3938,28 @@ class Function(LabelFrame):     # <<<2
 
             if lattice0 == "general":
                 self._lattice_parameters.enable()
-                self._lattice_parameters.label_widget.config(text=lattice + ": x1,y1,x2,y2")
+                self._lattice_parameters.label_widget.config(text=lattice0 + ": x1,y1,x2,y2")
                 self._lattice_parameters.convert = det_not_null
                 self.lattice_parameters = [1, 0, 1, 1]
             elif lattice0 == "rhombic":
                 self._lattice_parameters.enable()
-                self._lattice_parameters.label_widget.config(text=lattice + ": b")
+                self._lattice_parameters.label_widget.config(text=lattice0 + ": b")
                 self._lattice_parameters.convert = not_zero
                 self.lattice_parameters = [.5]
             elif lattice0 == "rectangular":
                 self._lattice_parameters.enable()
                 self._lattice_parameters.convert = not_zero
                 self.lattice_parameters = [.5]
-                self._lattice_parameters.label_widget.config(text=lattice + ": H")
+                self._lattice_parameters.label_widget.config(text=lattice0 + ": H")
             elif lattice0 == "square":
                 self._lattice_parameters.convert = None
                 self.lattice_parameters = []
-                self._lattice_parameters.label_widget.config(text=lattice)
+                self._lattice_parameters.label_widget.config(text=lattice0)
                 self._lattice_parameters.disable()
             elif lattice0 == "hexagonal":
                 self._lattice_parameters.convert = None
                 self.lattice_parameters = []
-                self._lattice_parameters.label_widget.config(text=lattice)
+                self._lattice_parameters.label_widget.config(text=lattice0)
                 self._lattice_parameters.disable()
             else:
                 assert False
@@ -3921,14 +3968,15 @@ class Function(LabelFrame):     # <<<2
 
     @property
     def pattern_params(self):       # <<<3
-        if self.current_tab == "wallpaper":
+        # TODO: remove this function
+        if self.pattern_type == "wallpaper":
             return {"lattice_basis": self.wallpaper_basis,
                     "color_pattern": self.wallpaper_color_pattern,
                     "N": self.wallpaper_N}
-        elif self.current_tab == "sphere":
+        elif self.pattern_type == "sphere":
             return {"N": self.sphere_N,
                     "sphere_mode": self.sphere_mode}
-        elif self.current_tab == "hyperbolic":
+        elif self.pattern_type == "hyperbolic":
             return {"nb_steps": self.hyper_nb_steps,
                     "disk_model": self.hyper_disk_model}
         else:
@@ -3938,6 +3986,22 @@ class Function(LabelFrame):     # <<<2
 
 
 class CreateSymmetry(Tk):      # <<<2
+
+    # getters and setters <<<3
+    @property
+    def config(self):       # <<<4
+        return {"color": self.colorwheel.config,
+                "function": self.function.config,
+                "world": self.world.config}
+    # >>>4
+
+    @config.setter
+    def config(self, cfg):      # <<<4
+        self.colorwheel.config = cfg.get("color", {})
+        self.world.config = cfg.get("world", {})
+        self.function.config = cfg.get("function", {})
+    # >>>4
+    # >>>3
 
     def __init__(self):     # <<<3
 
@@ -3999,10 +4063,6 @@ class CreateSymmetry(Tk):      # <<<2
 
         # attach appropriate actions to buttons     <<<4
         self.world._preview_button.config(command=sequence(self.make_preview))
-        self.world._save_button.config(command=sequence(self.make_output))
-        self.world._save_preview_button.config(
-                command=sequence(self.save_preview)
-                )
         # >>>4
 
         # keybindings       <<<4
@@ -4059,23 +4119,113 @@ class CreateSymmetry(Tk):      # <<<2
         self.world._canvas.bind("<ButtonPress-1>", self.start_zoom_rectangle)
         self.world._canvas.bind("<B1-Motion>", self.update_zoom_rectangle)
         self.world._canvas.bind("<ButtonRelease-1>", self.apply_zoom_rectangle)
-
-        self.colorwheel._canvas.bind(
-                "<Double-Button-1>",
-                sequence(
-                    self.colorwheel.switch_colorwheel,
-                    self.make_preview
-                    )
-                )
-
-        # def get_focus(event):
-        #     print(event.widget)
-        #     event.widget.focus()
-        # self.bind_all(
-        #         "<Button-1>", get_focus)
         # >>>4
 
-        # <<<4
+        # menu <<<4
+        menu = Menu(self)
+        self.configure(menu=menu)
+
+        file_menu = Menu(menu, tearoff=False)
+        menu.add_cascade(label="file", menu=file_menu)
+
+        file_menu.add_command(
+            label="preview",
+            accelerator="Ctrl-p",
+            command=sequence(self.make_preview)
+        )
+        file_menu.add_command(
+            label="save image",
+            accelerator="Ctrl-s",
+            command=sequence(self.make_output)
+        )
+        file_menu.add_command(
+            label="save preview image",
+            accelerator="Ctrl-S",
+            command=sequence(self.save_preview)
+        )
+        file_menu.add_command(
+            label="save config",
+            command=self.save_config
+        )
+        file_menu.add_command(
+            label="load config",
+            command=self.load_config
+        )
+        file_menu.add_command(
+            label="quit",
+            accelerator="Ctrl-q",
+            command=sequence(self.destroy)
+        )
+
+        edit_menu = Menu(menu, tearoff=False)
+        menu.add_cascade(label="edit", menu=edit_menu)
+
+        edit_menu.add_command(
+            label="undo",
+            accelerator="Ctrl-u",
+            command=sequence(self.undo)
+        )
+        edit_menu.add_command(
+            label="redo",
+            accelerator="Ctrl-r",
+            command=sequence(self.redo)
+        )
+
+        color_menu = Menu(menu, tearoff=False)
+        menu.add_cascade(label="colorwheel", menu=color_menu)
+
+        color_menu.add_command(
+            label="open colorwheel",
+            command=sequence(self.colorwheel.choose_colorwheel)
+        )
+        color_menu.add_command(
+            label="switch to alt. colorwheel",
+            command=sequence(self.colorwheel.switch_colorwheel),
+            # accelerator="Double-clic"
+        )
+        color_menu.add_command(
+            label="reset geometry",
+            command=sequence(self.colorwheel.reset_geometry)
+        )
+        color_menu.add_checkbutton(
+            label="stretch unit disk",
+            onvalue=True, offvalue=False,
+            variable=self.colorwheel._stretch_color
+        )
+
+        world_menu = Menu(menu, tearoff=False)
+        menu.add_cascade(label="world", menu=world_menu)
+
+        world_menu.add_command(
+            label="reset world",
+            accelerator="Ctrl-0",
+            command=sequence(self.world.reset_geometry)
+        )
+        world_menu.add_command(
+            label="change save dir",
+            command=sequence(self.world.change_save_dir)
+        )
+
+        function_menu = Menu(menu, tearoff=False)
+        menu.add_cascade(label="function", menu=function_menu)
+
+
+        about_menu = Menu(menu, tearoff=False)
+        menu.add_cascade(label="about", menu=about_menu)
+
+        about_menu.add_command(
+            label="help",
+            accelerator="Ctrl-h",
+            command=sequence(self.display_help)
+        )
+
+        about_menu.add_command(
+            label="about",
+            command=sequence(self.display_about)
+        )
+        # >>>4
+
+        # updating events <<<4
         self.function._tabs.bind("<<NotebookTabChanged>>",
                                  self.update)
         self.function._sphere_mode.trace(
@@ -4113,6 +4263,7 @@ class CreateSymmetry(Tk):      # <<<2
         self.world._preview_fade_coeff.bind("<FocusOut>", self.update_world_preview)
         # >>>4
 
+        # initialisations  <<<4
         # list of matrices, for UNDO
         self.undo_list = []
         self.undo_index = -1
@@ -4134,18 +4285,20 @@ class CreateSymmetry(Tk):      # <<<2
 -------------------------
 """)
         self.update_GUI()
+    # >>>4
     # >>>3
 
     def display_help(self):     # <<<3
         dialog = Toplevel(self)
         dialog.resizable(width=False, height=False)
 
-        text = Text(dialog, height=35)
-        text.pack(padx=10, pady=10)
+        text = Text(dialog,
+                    height=35,
+                    background="lightgrey",
+                    relief=FLAT,
+                    font="TkFixedFont")
+        text.pack()
         text.insert(END, """
-create_symmetry.py : a Python script to experiment with
-Frank Farris recipes from his book "Creating Symmetry"
-
 Keyboard shortcuts:
 
   Control-h     this help message
@@ -4193,8 +4346,40 @@ Keyboard shortcuts:
         self.wait_window(dialog)
     # >>>3
 
+    def display_about(self):        # <<<3
+        dialog = Toplevel(self)
+        dialog.resizable(width=False, height=False)
+
+        text = Text(dialog,
+                    background="lightgrey",
+                    height=12,
+                    width=60,
+                    relief=FLAT,
+                    font="TkFixedFont")
+        text.pack()
+        text.insert(END, """
+create symmetry
+===============
+
+a Python program to compute wallpaper patterns based on
+Frank Farris book "creating symmetry"
+
+author: Pierre Hyvernat
+contact: Pierre.Hyvernat@univ-smb.fr
+""")
+        text.config(state=DISABLED)
+
+        dialog.bind("<Escape>", lambda _: dialog.destroy())
+        dialog.bind("<Control-q>", lambda _: dialog.destroy())
+        ok = Button(dialog, text="OK",
+                    command=lambda: dialog.destroy())
+        ok.pack(padx=10, pady=10)
+        ok.focus_set()
+        self.wait_window(dialog)
+    # >>>3
+
     def update(self, *args):       # <<<3
-        if self.function.current_tab in ["sphere"]:
+        if self.function.pattern_type in ["sphere"]:
             if self.function.sphere_mode in ["rosette", "frieze"]:
                 self.world.disable_geometry_sphere_tab()
                 self.world.sphere_projection = True
@@ -4207,16 +4392,16 @@ Keyboard shortcuts:
                 self.world.disable_geometry_morph_tab()
             else:
                 assert False
-        elif self.function.current_tab in ["wallpaper"]:
+        elif self.function.pattern_type in ["wallpaper"]:
             self.world.disable_geometry_sphere_tab()
             self.world.enable_geometry_morph_tab()
-        elif self.function.current_tab in ["hyperbolic"]:
+        elif self.function.pattern_type in ["hyperbolic"]:
             self.world.disable_geometry_sphere_tab()
             self.world.disable_geometry_morph_tab()
 
 
         # enable / disable tiling / orbifold drawing buttons
-        if self.function.current_tab in ["sphere", "hyperbolic"]:
+        if self.function.pattern_type in ["sphere", "hyperbolic"]:
             self.world.draw_tile = False
             self.world.draw_orbifold = False
             self.world.draw_mirrors = False
@@ -4242,7 +4427,7 @@ Keyboard shortcuts:
 
     # >>>3
 
-    def update_pointer_coordinates(self, px, py):
+    def update_pointer_coordinates(self, px, py):       # <<<3
         try:
             self.world._canvas._pointer_coords
         except:
@@ -4268,6 +4453,7 @@ Keyboard shortcuts:
         self.world._canvas.itemconfig(
                 self.world._canvas._pointer_coords,
                 text="{:6.4f} , {:6.4f}".format(x, y))
+    # >>>3
 
     def start_zoom_rectangle(self, event):   # <<<3
         if not hasattr(self.world._canvas, "_image_id"):
@@ -4566,26 +4752,22 @@ Keyboard shortcuts:
 
     def make_output(self, *args):      # <<<3
         self.world.adjust_geometry()
-        config = {
-                "color": self.colorwheel.config,
-                "world": self.world.config,
-                "function": self.function.config,
-                "params": self.function.pattern_params,
-                "pattern": self.function.current_pattern,
-                "matrix": self.function.matrix,
-                }
-        self.output_params_queue.put(config)
+        cfg = self.config
+        cfg["params"] = self.function.pattern_params     # TODO: remove
+        cfg["pattern"] = self.function.current_pattern   # TODO remove
+
+        self.output_params_queue.put(cfg)
 
         def output_thread():
             self.pending_output_jobs = True
             while True:
                 try:
-                    config = self.output_params_queue.get(timeout=0.1)
+                    cfg = self.output_params_queue.get(timeout=0.1)
                 except queue.Empty:
                     break
-                config["message_queue"] = self.message_queue
-                config["output_message_queue"] = self.output_message_queue
-                p = Process(target=background_output, kwargs=config)
+                cfg["message_queue"] = self.message_queue
+                cfg["output_message_queue"] = self.output_message_queue
+                p = Process(target=background_output, kwargs=cfg)
                 p.start()
                 p.join()
             self.pending_output_jobs = False
@@ -4612,15 +4794,14 @@ Keyboard shortcuts:
             height = self.world.preview_size
 
         def make_preview_job():
-            color = self.colorwheel.config
-            world = self.world.config
-            world["size"] = (width, height)
+            cfg = self.config
+            cfg["world"]["size"] = (width, height)
             params = self.function.pattern_params
 
-            image = make_image(color=color,
-                               world=world,
+            image = make_image(color=cfg["color"],
+                               world=cfg["world"],
+                               function=cfg["function"],
                                pattern=self.function.current_pattern,
-                               matrix=self.function.matrix,
                                message_queue=self.preview_message_queue,
                                stretch_color=self.colorwheel.stretch,
                                tile=False,
@@ -4637,14 +4818,11 @@ Keyboard shortcuts:
             pass
 
         try:
-            self.preview_config = {
-                    "color": self.colorwheel.config,
-                    "world": self.world.config,
-                    "function": self.function.config,
-                    "params": self.function.pattern_params,
-                    "pattern": self.function.current_pattern,
-                    "matrix": self.function.matrix,
-                    }
+            self.preview_config = self.config
+            self.preview_config["params"] = self.function.pattern_params
+            self.preview_config["pattern"] = self.function.current_pattern
+            self.preview_config["matrix"] = self.function.matrix
+
             self.preview_process = Process(target=make_preview_job)
             self.preview_process.start()
 
@@ -4747,24 +4925,72 @@ Keyboard shortcuts:
         self.make_preview()
     # >>>3
 
+    def load_config(self, *args):   # <<<3
+        if not hasattr(self, "_config_dir"):
+            self._config_dir = "./"
+
+        filename = filedialog.askopenfilename(
+                parent=self,
+                title="Create Symmetry: choose configuration file",
+                initialdir=self._config_dir,
+                filetypes=[("ct files", "*.ct"), ("all", "*.*")])
+        if not filename:
+            return
+
+        self._config_dir = os.path.dirname(filename)
+
+        try:
+            f = open(filename, mode="r")
+            cfg = json.load(f)
+            try:
+                self.color.config = cfg["color"]
+            except:
+                pass
+            try:
+                self.world.config = cfg["world"]
+            except:
+                pass
+            try:
+                self.function.config = cfg["function"]
+            except:
+                pass
+            if cfg.get("preview", False):
+                self.make_preview()
+        except:
+            error("could read config file '{}'".format(filename))
+    # >>>3
+
+    def save_config(self, *args):
+        if not hasattr(self, "_config_dir"):
+            self._config_dir = "./"
+        filename = filedialog.asksaveasfilename(
+                parent=self,
+                title="Create Symmetry: choose configuration file",
+                initialdir=self._config_dir,
+                filetypes=[("ct files", "*.ct"), ("all", "*.*")])
+        cfg = self.config
+        cfg["preview"] = True
+
+        if not filename.endswith(".ct"):
+            filename = filename + ".ct"
+        config_file = open(filename, mode="w")
+        if "matrix" in cfg["function"]:
+            cfg["function"]["matrix"] = matrix_to_list(cfg["function"]["matrix"])
+        json.dump(cfg, config_file, indent=2)
+        config_file.close()
+
     def undo(self):     # <<<3
         # print(">>", self.undo_index, len(self.undo_list))
         if abs(self.undo_index) < len(self.undo_list):
             self.undo_index -= 1
-            config = self.undo_list[self.undo_index]
-            self.world.config = config["world"]
-            self.function.config = config["function"]
-            self.colorwheel.config = config["color"]
+            self.config = self.undo_list[self.undo_index]
     # >>>3
 
     def redo(self):     # <<<3
         # print(">>>", self.undo_index, len(self.undo_list))
         if self.undo_index < -1:
             self.undo_index += 1
-            config = self.undo_list[self.undo_index]
-            self.world.config = config["world"]
-            self.function.config = config["function"]
-            self.colorwheel.config = config["color"]
+            self.config = self.undo_list[self.undo_index]
     # >>>3
 # >>>2
 # >>>1
@@ -4799,6 +5025,7 @@ def main():     # <<<1
     --color-config=...
     --world-config=...
     --function-config=...
+    --config=...                        config file
 
     --preview                           compute the initial preview image
 
@@ -4814,7 +5041,7 @@ def main():     # <<<1
             "matrix=", "rotation-symmetry=",
             "preview",
             "wallpaper=", "sphere", "frieze=", "rosette=", "params=",
-            "color-config=", "world-config=", "function-config="]
+            "color-config=", "world-config=", "function-config=", "config="]
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], short_options, long_options)
@@ -4826,23 +5053,36 @@ def main():     # <<<1
     tab = None
     pattern = None
     params = None
-    color_config = {}
-    world_config = {}
-    function_config = {}
+    config = {"color": {}, "world": {}, "function": {}}
     make_preview = False
+
+    def get_config(f):
+        nonlocal config, make_preview
+        try:
+            f = open(f, mode="r")
+            cfg = json.load(f)
+            for d in ["color", "world", "function"]:
+                for k in cfg[d]:
+                    config[d][k] = cfg[d][k]
+            if cfg.get("preview", False):
+                make_preview = True
+        except:
+            error("problem while loading configuration from '{}'"
+                  .format(a))
+
     for o, a in opts:
         if o in ["-h", "--help"]:
             display_help()
             sys.exit(0)
         elif o in ["-c", "--color"]:
-            color_config["filename"] = a
+            config["color"]["filename"] = a
         elif o in ["-o", "--output"]:
-            world_config["filename_template"] = a
+            config["world"]["filename_template"] = a
         elif o in ["-s", "--size"]:
             try:
                 tmp = map(int, a.split(","))
                 width, height = tmp
-                world_config["size"] = (width, height)
+                config["world"]["size"] = (width, height)
             except:
                 error("problem with size '{}'".format(a))
                 sys.exit(1)
@@ -4850,7 +5090,7 @@ def main():     # <<<1
             try:
                 tmp = map(float, a.split(","))
                 x_min, x_max, y_min, y_max = tmp
-                world_config["geometry"] = x_min, x_max, y_min, y_max
+                config["world"]["geometry"] = x_min, x_max, y_min, y_max
             except:
                 error("problem with geometry '{}' for output".format(a))
                 sys.exit(1)
@@ -4861,14 +5101,14 @@ def main():     # <<<1
                 error("problem with rotational symmetry '{}'".format(a))
         elif o in ["--modulus"]:
             try:
-                world_config["modulu"] = float(a)
+                config["world"]["modulu"] = float(a)
             except:
                 error("problem with modulus '{}'".format(a))
                 sys.exit(1)
         elif o in ["--angle"]:
             try:
                 angle = float(a)
-                world_config["angle"] = float(a)
+                config["world"]["angle"] = float(a)
             except:
                 error("problem with angle '{}'".format(a))
                 sys.exit(1)
@@ -4876,58 +5116,65 @@ def main():     # <<<1
             try:
                 tmp = map(float, a.split(","))
                 color_x_min, color_x_max, color_y_min, color_y_max = tmp
-                color_config["geometry"] = x_min, x_max, y_min, y_max
+                config["color"]["geometry"] = x_min, x_max, y_min, y_max
             except:
                 error("problem with geometry '{}' for color image".format(a))
                 sys.exit(1)
         elif o in ["--color-modulus"]:
             try:
-                color_config["modulu"] = float(a)
+                config["color"]["modulu"] = float(a)
             except:
                 error("problem with modulus '{}'".format(a))
                 sys.exit(1)
         elif o in ["--color-angle"]:
             try:
-                color_config["angle"] = float(a)
+                config["color"]["angle"] = float(a)
             except:
                 error("problem with angle '{}'".format(a))
                 sys.exit(1)
         elif o in ["--wallpaper"]:
-            function_config["current_tab"] = "wallpaper"
-            function_config["wallpaper_pattern"] = a
+            config["function"]["pattern_type"] = "wallpaper"
+            config["function"]["wallpaper_pattern"] = a
         elif o in ["--sphere"]:
-            function_config["current_tab"] = "sphere"
-            function_config["sphere_pattern"] = a
+            config["function"]["pattern_type"] = "sphere"
+            config["function"]["sphere_pattern"] = a
         elif o in ["--frieze"]:
-            function_config["current_tab"] = "sphere"
-            function_config["sphere_pattern"] = a
-            function_config["sphere_mode"] = "frieze"
+            config["function"]["pattern_type"] = "sphere"
+            config["function"]["sphere_pattern"] = a
+            config["function"]["sphere_mode"] = "frieze"
         elif o in ["--rosette"]:
-            function_config["current_tab"] = "sphere"
-            function_config["sphere_pattern"] = a
-            function_config["sphere_mode"] = "rosette"
+            config["function"]["pattern_type"] = "sphere"
+            config["function"]["sphere_pattern"] = a
+            config["function"]["sphere_mode"] = "rosette"
         elif o in ["--params"]:
             params = a
         elif o == "--preview":
             make_preview = True
         elif o in ["--matrix"]:
-            function_config["matrix"] = parse_matrix(a)
+            config["function"]["matrix"] = parse_matrix(a)
         elif o == "--color-config":
             cfg = json.loads(a)
             for k in cfg:
-                color_config[k] = cfg[k]
+                config["color"][k] = cfg[k]
         elif o == "--world-config":
             cfg = json.loads(a)
             for k in cfg:
-                world_config[k] = cfg[k]
+                config["world"][k] = cfg[k]
         elif o == "--function-config":
             cfg = json.loads(a)
-            if "matrix" in cfg:
-                cfg["matrix"] = list_to_matrix(cfg["matrix"])
             for k in cfg:
-                function_config[k] = cfg[k]
+                config["function"][k] = cfg[k]
+        elif o == "--config":
+            get_config(a)
         else:
             assert False
+
+    if len(args) == 1:
+        get_config(args[0])
+    elif len(args) > 1:
+        error("cannot give more than one argument on the command line: '{}'"
+              .format(args))
+        sys.exit(1)
 
     # the "identity" function with waves, with period (1,0) / (0,1)
     # t = 10
@@ -4939,34 +5186,34 @@ def main():     # <<<1
     #     M[(0, n)] = (-1)**(n+1) * 1/abs(n*pi)
     #     M[(0, -n)] = (-1)**(n+1) * -1/abs(n*pi)
 
-    # function_config["matrix"] = M
-    # color_config["modulus"] = 1.5
+    # config["function"]["matrix"] = M
+    # config["color"]["modulus"] = 1.5
 
-    # color_config["filename"] = "Images/flame-sym.jpg"
-    # color_config["alt_filename"] = "Images/flame-sym-gray.jpg"
-    # color_config["modulus"] = .5
+    # config["color"]["filename"] = "Images/flame-sym.jpg"
+    # config["color"]["alt_filename"] = "Images/flame-sym-gray.jpg"
+    # config["color"]["modulus"] = .5
 
-    # function_config["wallpaper_pattern"] = '2222'
-    # function_config["wallpaper_color_pattern"] = '22×'
-    # function_config["random_nb_coeffs"] = 10
+    # config["function"]["wallpaper_pattern"] = '2222'
+    # config["function"]["wallpaper_color_pattern"] = '22×'
+    # config["function"]["random_nb_coeffs"] = 10
 
-    # world_config["draw_orbifold"] = True
-    # world_config["draw_tile"] = True
-    # world_config["draw_mirrors"] = True
-    # world_config["draw_color_tile"] = False
-    # world_config["preview_fade"] = False
-    # world_config["modulus"] = 1.5
-    # function_config["lattice_parameters"] = [2,1,1,-1]
+    # config["world"]["draw_orbifold"] = True
+    # config["world"]["draw_tile"] = True
+    # config["world"]["draw_mirrors"] = True
+    # config["world"]["draw_color_tile"] = False
+    # config["world"]["preview_fade"] = False
+    # config["world"]["modulus"] = 1.5
+    # config["function"]["lattice_parameters"] = [2,1,1,-1]
 
-    # function_config["current_tab"] = "hyperbolic"
-    # function_config["random_nb_coeffs"] = 1
-    # world_config["geometry"] = (0,1/2, 0, 1/2)
-    # function_config["sphere_pattern"] = "532"
+    # config["function"]["pattern_type"] = "hyperbolic"
+    # config["function"]["random_nb_coeffs"] = 1
+    # config["world"]["geometry"] = (0,1/2, 0, 1/2)
+    # config["function"]["sphere_pattern"] = "532"
 
     gui = CreateSymmetry()
-    gui.colorwheel.config = color_config
-    gui.world.config = world_config
-    gui.function.config = function_config
+    gui.colorwheel.config = config["color"]
+    gui.world.config = config["world"]
+    gui.function.config = config["function"]
     if make_preview:
         gui.make_preview()
     gui.mainloop()
