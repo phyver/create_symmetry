@@ -1150,6 +1150,7 @@ def basis(pattern, *params):        # <<<2
     arguments from params if necessary (see Farris)"""
     if pattern == "hyperbolic":
         return None
+    print(pattern, PATTERN[pattern]["description"].split())
     lattice = PATTERN[pattern]["description"].split()[0]
     if lattice == "general":
         return [[params[0], params[1]], [params[2], params[3]]]
@@ -1240,6 +1241,7 @@ def apply_color(                    # <<<2
         geometry=COLOR_GEOMETRY,    # coordinates of the colorwheel
         modulus="1",                # transformation to apply to the colorwheel
         angle="0",
+        stretch=False,              # should we stretch the colorwheel
         color="black",              # default color if value is outside image
         morph_angle=False,          # should the result morph
         morph_start_angle=0,        # from one angle transformation
@@ -1252,6 +1254,9 @@ def apply_color(                    # <<<2
 
     if isinstance(color, str):
         color = getrgb(color)
+
+    if stretch:
+        np.divide(res, np.sqrt(1 + res.real**2 * res.imag**2), out=res)
 
     rho = modulus * complex(cos(angle*pi/180), sin(angle*pi/180))
     x_min, x_max, y_min, y_max = geometry
@@ -1667,11 +1672,7 @@ def background_output(     # <<<2
     image = make_image(color=color,
                        world=world,
                        function=function,
-                       pattern=pattern,
-                       message_queue=output_message_queue,
-                       tile=True,
-                       stretch_color=color["stretch"],
-                       **params)
+                       message_queue=output_message_queue)
 
     if world["preview_fade"]:
         image = fade_image(image)
@@ -1685,17 +1686,23 @@ def background_output(     # <<<2
 
 
 # HERE
-# TODO remove "pattern" parameter and get it from "function"
-# remove "params" parameters and get everything from "function"
 def make_image(                 # <<<2
         color=None,
         world=None,
         function=None,
-        pattern="",
-        message_queue=None,
-        stretch_color=False,
-        **params):      # TODO remove params
+        message_queue=None):
     """compute an image for a pattern"""
+
+    if function["pattern_type"] == "wallpaper":
+        color_pattern = function["wallpaper_color_pattern"]
+        if color_pattern:
+            pattern = (color_pattern, function["wallpaper_pattern"])
+        else:
+            pattern = function["wallpaper_pattern"]
+    elif function["pattern_type"] == "sphere":
+        pattern = function["sphere_pattern"]
+    elif function["pattern_type"] == "hyperbolic":
+        pattern = "hyperbolic"
 
     zs = make_coordinates_array(world["size"],
                                 world["geometry"],
@@ -1709,37 +1716,34 @@ def make_image(                 # <<<2
         res = make_hyperbolic_image(
                 zs,
                 function["matrix"],
-                nb_steps=params["nb_steps"],
-                disk_model=params["disk_model"],
+                nb_steps=function["hyper_nb_steps"],
+                disk_model=function["hyper_disk_model"],
                 message_queue=message_queue)
     elif PATTERN[pattern]["type"] in ["plane group",
                                       "color reversing plane group"]:
         res = make_wallpaper_image(zs,
                                    function["matrix"],
                                    pattern,
-                                   params["lattice_basis"],
-                                   N=params["N"],
+                                   basis(pattern, *function["lattice_parameters"]),
+                                   N=function["wallpaper_N"],
                                    message_queue=message_queue)
     elif PATTERN[pattern]["type"] in ["sphere group", "frieze", "rosette"]:
         res = make_sphere_image(zs,
                                 function["matrix"],
                                 pattern,
-                                N=params["N"],
-                                unwind=params["sphere_mode"] == "frieze",
+                                N=function["sphere_N"],
+                                unwind=function["sphere_mode"] == "frieze",
                                 message_queue=message_queue)
     else:
         print(PATTERN[pattern]["type"])
         assert False
-
-    # TODO: this should be in apply_color
-    if stretch_color:
-        np.divide(res, np.sqrt(1 + res.real**2 * res.imag**2), out=res)
 
     img = apply_color(res,
                       color["filename"],
                       color["geometry"],
                       color["modulus"],
                       color["angle"],
+                      color["stretch"],
                       color["color"],
                       world["morph"],
                       world["morph_start"],
@@ -1755,7 +1759,7 @@ def make_image(                 # <<<2
                                       background=world["sphere_background"],
                                       fade=world["sphere_background_fading"],
                                       stars=world["sphere_stars"])
-    elif (pattern == "hyperbolic" and params["disk_model"]):
+    elif (pattern == "hyperbolic" and function["hyper_disk_model"]):
         return make_sphere_background(world["geometry"],
                                       world["modulus"],
                                       world["angle"],
@@ -1769,6 +1773,7 @@ def make_image(                 # <<<2
 
 
 # TODO: name all arguments
+# remove pattern parameter and use config argument?
 def make_tile(geometry,         # <<<2
               transformation,
               pattern,
@@ -2351,6 +2356,7 @@ class ColorWheel(LabelFrame):   # <<<2
                                   self.geometry,
                                   self.modulus,
                                   self.angle,
+                                  self.stretch,
                                   self.rgb_color)
             else:
                 self._x_min.enable()
@@ -3845,7 +3851,7 @@ class Function(LabelFrame):     # <<<2
                   "random_max_degre", "random_modulus", "random_noise",
                   "pattern_type",
                   "wallpaper_pattern", "lattice_parameters",
-                  "wallpaper_color_pattern",
+                  "wallpaper_color_pattern", "wallpaper_N",
                   "sphere_pattern", "sphere_N", "sphere_mode",
                   "hyper_nb_steps", "hyper_disk_model"]:
             cfg[k] = getattr(self, k)
@@ -3857,7 +3863,7 @@ class Function(LabelFrame):     # <<<2
         for k in ["random_nb_coeffs", "random_min_degre",
                   "random_max_degre", "random_modulus", "random_noise",
                   "pattern_type",
-                  "wallpaper_pattern",  # "lattice_parameters",
+                  "wallpaper_pattern",  "wallpaper_N", # "lattice_parameters",
                   # "wallpaper_color_pattern",
                   "sphere_pattern", "sphere_N", "sphere_mode",
                   "hyper_nb_steps", "hyper_disk_model"]:
@@ -4671,78 +4677,79 @@ contact: Pierre.Hyvernat@univ-smb.fr
                                     (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
                                     image=self.world._canvas.tk_img)
 
-                    # name all argument of make tile and use dictionary here
-                    self.world._canvas._tile_img = (
-                                self.world.geometry,
-                                (self.world.modulus, self.world.angle),
-                                self.function.current_pattern,
-                                self.function.wallpaper_basis,
-                                image.size,
-                                True,
-                                False,
-                                False,
-                                False
-                                )
+                    if self.function.pattern_type == "wallpaper":
+                        # name all argument of make tile and use dictionary here
+                        self.world._canvas._tile_img = (
+                                    self.world.geometry,
+                                    (self.world.modulus, self.world.angle),
+                                    self.function.current_pattern,
+                                    self.function.wallpaper_basis,
+                                    image.size,
+                                    True,
+                                    False,
+                                    False,
+                                    False
+                                    )
 
-                    self.world._canvas._orbifold_img = (
-                                self.world.geometry,
-                                (self.world.modulus, self.world.angle),
-                                self.function.current_pattern,
-                                self.function.wallpaper_basis,
-                                image.size,
-                                False,
-                                True,
-                                False,
-                                False
-                                )
+                        self.world._canvas._orbifold_img = (
+                                    self.world.geometry,
+                                    (self.world.modulus, self.world.angle),
+                                    self.function.current_pattern,
+                                    self.function.wallpaper_basis,
+                                    image.size,
+                                    False,
+                                    True,
+                                    False,
+                                    False
+                                    )
 
-                    self.world._canvas._mirrors_img = (
-                                self.world.geometry,
-                                (self.world.modulus, self.world.angle),
-                                self.function.current_pattern,
-                                self.function.wallpaper_basis,
-                                image.size,
-                                False,
-                                True,
-                                False,
-                                True
-                                )
+                        self.world._canvas._mirrors_img = (
+                                    self.world.geometry,
+                                    (self.world.modulus, self.world.angle),
+                                    self.function.current_pattern,
+                                    self.function.wallpaper_basis,
+                                    image.size,
+                                    False,
+                                    True,
+                                    False,
+                                    True
+                                    )
 
-                    self.world._canvas._color_tile_img = (
-                                self.world.geometry,
-                                (self.world.modulus, self.world.angle),
-                                self.function.current_pattern,
-                                self.function.wallpaper_basis,
-                                image.size,
-                                True,
-                                False,
-                                True,
-                                False
-                                )
+                        self.world._canvas._color_tile_img = (
+                                    self.world.geometry,
+                                    (self.world.modulus, self.world.angle),
+                                    self.function.current_pattern,
+                                    self.function.wallpaper_basis,
+                                    image.size,
+                                    True,
+                                    False,
+                                    True,
+                                    False
+                                    )
 
-                    self.world._canvas._color_orbifold_img = (
-                                self.world.geometry,
-                                (self.world.modulus, self.world.angle),
-                                self.function.current_pattern,
-                                self.function.wallpaper_basis,
-                                image.size,
-                                False,
-                                True,
-                                True,
-                                False
-                                )
+                        self.world._canvas._color_orbifold_img = (
+                                    self.world.geometry,
+                                    (self.world.modulus, self.world.angle),
+                                    self.function.current_pattern,
+                                    self.function.wallpaper_basis,
+                                    image.size,
+                                    False,
+                                    True,
+                                    True,
+                                    False
+                                    )
 
-                    self.world._canvas._color_mirrors_img = (
-                                self.world.geometry,
-                                (self.world.modulus, self.world.angle),
-                                self.function.current_pattern,
-                                self.function.wallpaper_basis,
-                                image.size,
-                                False,
-                                True,
-                                True,
-                                True
-                                )
+                        self.world._canvas._color_mirrors_img = (
+                                    self.world.geometry,
+                                    (self.world.modulus, self.world.angle),
+                                    self.function.current_pattern,
+                                    self.function.wallpaper_basis,
+                                    image.size,
+                                    False,
+                                    True,
+                                    True,
+                                    True
+                                    )
 
                     self.update_world_preview()
                 break
@@ -4801,11 +4808,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
             image = make_image(color=cfg["color"],
                                world=cfg["world"],
                                function=cfg["function"],
-                               pattern=self.function.current_pattern,
-                               message_queue=self.preview_message_queue,
-                               stretch_color=self.colorwheel.stretch,
-                               tile=False,
-                               **params)
+                               message_queue=self.preview_message_queue)
             self.preview_image_queue.put(image)
 
         try:
