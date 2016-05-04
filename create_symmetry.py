@@ -1150,7 +1150,6 @@ def basis(pattern, *params):        # <<<2
     arguments from params if necessary (see Farris)"""
     if pattern == "hyperbolic":
         return None
-    print(pattern, PATTERN[pattern]["description"].split())
     lattice = PATTERN[pattern]["description"].split()[0]
     if lattice == "general":
         return [[params[0], params[1]], [params[2], params[3]]]
@@ -1237,7 +1236,7 @@ def plane_coordinates_to_sphere(zs, rotations=(0, 0, 0)):       # <<<2
 
 def apply_color(                    # <<<2
         res,                        # the complex values
-        filename=None,              # image for the colorwheel image
+        filename,                   # image for the colorwheel image
         geometry=COLOR_GEOMETRY,    # coordinates of the colorwheel
         modulus="1",                # transformation to apply to the colorwheel
         angle="0",
@@ -1246,8 +1245,9 @@ def apply_color(                    # <<<2
         morph_angle=False,          # should the result morph
         morph_start_angle=0,        # from one angle transformation
         morph_end_angle=180,        # to another
-        morph_stable=20):           # and if so, how big (%) should the
-                                    # constant parts of the result be
+        morph_stable=20,            # and if so, how big (%) should the
+        **_):                       # constant parts of the result be
+
     """replace each complex value in the array res by the color taken from an
     image in filename
     the resulting image is returned"""
@@ -1508,14 +1508,14 @@ def make_sphere_image(      # <<<2
 # >>>2
 
 
-def make_sphere_background(         # <<<2
+def make_sphere_background(     # <<<2
         geometry,
         modulus,
         angle,
-        img,                        # the sphere image
-        background="back.jpg",      # background: either a colorname or a filename
-        fade=128,                   # fade the background
-        stars=0):                   # how many random "stars" (pixels) to add
+        img,                    # the sphere image
+        background="back.jpg",  # background: either a colorname or a filename
+        fade=128,               # fade the background
+        stars=0):               # how many random "stars" (pixels) to add
     """compute the background for a sphere
         - background can either be a color, or a filename containing an image
           to display
@@ -1531,31 +1531,39 @@ def make_sphere_background(         # <<<2
     except Exception as e:
         try:
             color = getrgb(background)
-            background_img = PIL.Image.new(mode="RGB",
-                                           size=img.size,
-                                           color=color)
+            background_img = PIL.Image.new(
+                mode="RGB",
+                size=img.size,
+                color=color
+            )
             seed(RANDOM_SEED)
             width, height = img.size
             for i in range(stars):
-                background_img.putpixel((randrange(0, width),
-                                        randrange(0, height)),
-                                        getrgb(STAR_COLOR))
+                background_img.putpixel(
+                    (randrange(0, width),
+                     randrange(0, height)),
+                    getrgb(STAR_COLOR)
+                )
             seed()
         except ValueError:
-            background_img = PIL.Image.new(mode="RGB",
-                                           size=(width, height),
-                                           color=DEFAULT_SPHERE_BACKGROUND)
+            background_img = PIL.Image.new(
+                mode="RGB",
+                size=(width, height),
+                color=DEFAULT_SPHERE_BACKGROUND
+            )
 
     mask = (zs.real**2 + zs.imag**2 > 1).astype(int).transpose(1, 0)
 
     mask_background = PIL.Image.fromarray(
-            np.array(mask*fade, dtype=np.uint8),
-            "L")
+        np.array(mask*fade, dtype=np.uint8),
+        "L"
+    )
     background_img.paste(0, mask=mask_background)
 
     mask_sphere = PIL.Image.fromarray(
-            np.array(mask*255, dtype=np.uint8),
-            "L")
+        np.array(mask*255, dtype=np.uint8),
+        "L"
+    )
     img.paste(background_img, mask=mask_sphere)
     return img
 # >>>2
@@ -1576,25 +1584,33 @@ def save_image(         # <<<2
     color = config["color"]
     world = config["world"]
     function = config["function"]
-    params = config["params"]       # TODO remove
-    pattern = config["pattern"]
-    matrix = function["matrix"]
+
+    if function["pattern_type"] == "wallpaper":
+        if function["wallpaper_color_pattern"]:
+            pattern = (function["wallpaper_color_pattern"],
+                       function["wallpaper_pattern"])
+        else:
+            pattern = function["wallpaper_pattern"]
+    elif function["pattern_type"] == "sphere":
+        pattern = function["sphere_pattern"]
+    elif function["pattern_type"] == "hyperbolic":
+        pattern = "hyperbolic"
 
     # put the tile and / or orbifold into the image
     if ((world["draw_tile"] or world["draw_orbifold"]) and
             PATTERN[pattern]["type"] in ["plane group",
                                          "color reversing plane group"]):
         tile = make_tile(
-                world["geometry"],
-                (world["modulus"], world["angle"]),
-                pattern,
-                params["lattice_basis"],
-                image.size,
-                draw_tile=world["draw_tile"],
-                draw_orbifold=world["draw_orbifold"],
-                color_tile=world["draw_color_tile"],
-                draw_mirrors=world["draw_mirrors"]
-                )
+            world["geometry"],
+            (world["modulus"], world["angle"]),
+            pattern,
+            basis(pattern, *function["lattice_parameters"]),
+            image.size,
+            draw_tile=world["draw_tile"],
+            draw_orbifold=world["draw_orbifold"],
+            color_tile=world["draw_color_tile"],
+            draw_mirrors=world["draw_mirrors"]
+        )
         image.paste(tile, mask=tile)
 
     # build the filename
@@ -1644,7 +1660,8 @@ def save_image(         # <<<2
         "color": config["color"],
         "world": config["world"],
         "function": config["function"],
-        "preview": True}
+        "preview": True
+    }
     config_file = open(filename + ".ct", mode="w")
     if "matrix" in cfg["function"]:
         cfg["function"]["matrix"] = matrix_to_list(cfg["function"]["matrix"])
@@ -1667,36 +1684,35 @@ def background_output(     # <<<2
     function = config["function"]
     matrix = function["matrix"]
 
-    params = config["params"]       # TODO remove
-    pattern = config["pattern"]
-    image = make_image(color=color,
-                       world=world,
-                       function=function,
-                       message_queue=output_message_queue)
+    image = make_image(
+        color=color,
+        world=world,
+        function=function,
+        message_queue=output_message_queue
+    )
 
     if world["preview_fade"]:
         image = fade_image(image)
 
     save_image(
-            message_queue=message_queue,
-            image=image,
-            **config
-            )
+        message_queue=message_queue,
+        image=image,
+        **config
+    )
 # >>>2
 
 
-# HERE
 def make_image(                 # <<<2
-        color=None,
-        world=None,
-        function=None,
+        color=None,             # configuration of colorwheel
+        world=None,             # configuration of output
+        function=None,          # configuration for function
         message_queue=None):
     """compute an image for a pattern"""
 
     if function["pattern_type"] == "wallpaper":
-        color_pattern = function["wallpaper_color_pattern"]
-        if color_pattern:
-            pattern = (color_pattern, function["wallpaper_pattern"])
+        if function["wallpaper_color_pattern"]:
+            pattern = (function["wallpaper_color_pattern"],
+                       function["wallpaper_pattern"])
         else:
             pattern = function["wallpaper_pattern"]
     elif function["pattern_type"] == "sphere":
@@ -1704,76 +1720,75 @@ def make_image(                 # <<<2
     elif function["pattern_type"] == "hyperbolic":
         pattern = "hyperbolic"
 
-    zs = make_coordinates_array(world["size"],
-                                world["geometry"],
-                                world["modulus"],
-                                world["angle"])
+    zs = make_coordinates_array(
+        world["size"],
+        world["geometry"],
+        world["modulus"],
+        world["angle"]
+    )
 
     if not world["sphere_projection"]:
         zs = plane_coordinates_to_sphere(zs, world["sphere_rotations"])
 
     if pattern == "hyperbolic":
         res = make_hyperbolic_image(
-                zs,
-                function["matrix"],
-                nb_steps=function["hyper_nb_steps"],
-                disk_model=function["hyper_disk_model"],
-                message_queue=message_queue)
+            zs,
+            function["matrix"],
+            nb_steps=function["hyper_nb_steps"],
+            disk_model=function["hyper_disk_model"],
+            message_queue=message_queue
+        )
     elif PATTERN[pattern]["type"] in ["plane group",
                                       "color reversing plane group"]:
-        res = make_wallpaper_image(zs,
-                                   function["matrix"],
-                                   pattern,
-                                   basis(pattern, *function["lattice_parameters"]),
-                                   N=function["wallpaper_N"],
-                                   message_queue=message_queue)
+        res = make_wallpaper_image(
+            zs,
+            function["matrix"],
+            pattern,
+            basis(pattern, *function["lattice_parameters"]),
+            N=function["wallpaper_N"],
+            message_queue=message_queue
+        )
     elif PATTERN[pattern]["type"] in ["sphere group", "frieze", "rosette"]:
-        res = make_sphere_image(zs,
-                                function["matrix"],
-                                pattern,
-                                N=function["sphere_N"],
-                                unwind=function["sphere_mode"] == "frieze",
-                                message_queue=message_queue)
+        res = make_sphere_image(
+            zs,
+            function["matrix"],
+            pattern,
+            N=function["sphere_N"],
+            unwind=function["sphere_mode"] == "frieze",
+            message_queue=message_queue
+        )
     else:
         print(PATTERN[pattern]["type"])
         assert False
 
-    img = apply_color(res,
-                      color["filename"],
-                      color["geometry"],
-                      color["modulus"],
-                      color["angle"],
-                      color["stretch"],
-                      color["color"],
-                      world["morph"],
-                      world["morph_start"],
-                      world["morph_end"],
-                      world["morph_stable_coeff"],
-                      )
+    img = apply_color(res, color.pop("filename"), **color)
 
     if (world["sphere_background"] and not world["sphere_projection"]):
-        return make_sphere_background(world["geometry"],
-                                      world["modulus"],
-                                      world["angle"],
-                                      img,
-                                      background=world["sphere_background"],
-                                      fade=world["sphere_background_fading"],
-                                      stars=world["sphere_stars"])
+        return make_sphere_background(
+            world["geometry"],
+            world["modulus"],
+            world["angle"],
+            img,
+            background=world["sphere_background"],
+            fade=world["sphere_background_fading"],
+            stars=world["sphere_stars"]
+        )
     elif (pattern == "hyperbolic" and function["hyper_disk_model"]):
-        return make_sphere_background(world["geometry"],
-                                      world["modulus"],
-                                      world["angle"],
-                                      img,
-                                      background=world["sphere_background"],
-                                      fade=0,
-                                      stars=0)
+        return make_sphere_background(
+            world["geometry"],
+            world["modulus"],
+            world["angle"],
+            img,
+            background=world["sphere_background"],
+            fade=0,
+            stars=0
+        )
     else:
         return img
 # >>>2
 
 
 # TODO: name all arguments
-# remove pattern parameter and use config argument?
 def make_tile(geometry,         # <<<2
               transformation,
               pattern,
@@ -2001,7 +2016,7 @@ def fade_image(image, coeff=100):       # <<<2
     white = PIL.Image.new("RGB", image.size, (255, 255, 255))
     white.paste(image, mask=mask)
     return white
-# >>>
+# >>>2
 # >>>1
 
 
@@ -2219,7 +2234,6 @@ class ColorWheel(LabelFrame):   # <<<2
             if os.path.exists(filename):
                 self._alt_filename = filename
     # >>>4
-
     # >>>3
 
     def __init__(self, root):        # <<<3
@@ -2229,11 +2243,13 @@ class ColorWheel(LabelFrame):   # <<<2
         LabelFrame.__init__(self, root)
         self.configure(text="Color Wheel")
 
-        self._color = LabelEntry(self,
-                                 label="default color",
-                                 value=DEFAULT_COLOR,
-                                 width=10,
-                                 convert=getrgb)
+        self._color = LabelEntry(
+            self,
+            label="default color",
+            value=DEFAULT_COLOR,
+            width=10,
+            convert=getrgb
+        )
         self._color.pack(padx=5, pady=5)
         self._color.bind("<Return>", self.update_defaultcolor)
         self._color.bind("<FocusOut>", self.update_defaultcolor)
@@ -2241,9 +2257,9 @@ class ColorWheel(LabelFrame):   # <<<2
         self._stretch_color = BooleanVar()
         self._stretch_color.set(False)
         self._stretch_color.trace(
-                "w",
-                lambda *_: self.change_colorwheel(self.filename)
-                )
+            "w",
+            lambda *_: self.change_colorwheel(self.filename)
+        )
         # Checkbutton(self, text="stretch unit disk",
         #             variable=self._stretch_color,
         #             onvalue=True, offvalue=False,
@@ -2251,7 +2267,12 @@ class ColorWheel(LabelFrame):   # <<<2
         #             indicatoron=False
         #             ).pack(padx=5, pady=0)
 
-        self._canvas = Canvas(self, width=COLOR_SIZE, height=COLOR_SIZE, bg="white")
+        self._canvas = Canvas(
+            self,
+            width=COLOR_SIZE,
+            height=COLOR_SIZE,
+            bg="white"
+        )
         self._canvas.pack(padx=5, pady=5)
         for i in range(5, COLOR_SIZE, 10):
             for j in range(5, COLOR_SIZE, 10):
@@ -2261,8 +2282,11 @@ class ColorWheel(LabelFrame):   # <<<2
         self._canvas.bind("<Button-3>", self.set_origin)
         self._canvas.bind("<Double-Button-1>", self.switch_colorwheel)
 
-        self._filename_button = Button(self, text="choose file",
-                                       command=self.choose_colorwheel)
+        self._filename_button = Button(
+            self,
+            text="choose file",
+            command=self.choose_colorwheel
+        )
         self._filename_button.pack(padx=5, pady=0)
 
         self._alt_filename_label = Label(self, text="alt: ", font="TkNormal 8")
@@ -2301,23 +2325,24 @@ class ColorWheel(LabelFrame):   # <<<2
         transformation_frame.pack(fill=X, padx=5, pady=5)
         tmp_frame = Frame(transformation_frame)
         tmp_frame.pack()
-        self._modulus = LabelEntry(tmp_frame, label="modulus",
-                                   value=1,
-                                   convert=float,
-                                   width=6)
+        self._modulus = LabelEntry(
+            tmp_frame,
+            label="modulus",
+            value=1,
+            convert=float,
+            width=6
+        )
         self._modulus.grid(row=0, column=0, sticky=E, padx=5, pady=(5, 2))
         self._modulus.bind("<Return>", self.draw_unit_circle, add="+")
         self._modulus.bind("<FocusOut>", self.draw_unit_circle, add="+")
 
-        self._angle = LabelEntry(tmp_frame, label="angle (°)",
-                                 value=0,
-                                 convert=float,
-                                 width=4)
+        self._angle = LabelEntry(
+            tmp_frame, label="angle (°)",
+            value=0,
+            convert=float,
+            width=4
+        )
         self._angle.grid(row=1, column=0, sticky=E, padx=5, pady=(2, 5))
-
-        # self._reset_button = Button(self, text="reset",
-        #                             command=self.reset_geometry)
-        # self._reset_button.pack(padx=5, pady=(5, 10))
 
         self.update_defaultcolor()
 
@@ -2329,7 +2354,8 @@ class ColorWheel(LabelFrame):   # <<<2
 
     def update_defaultcolor(self, *args):     # <<<3
         if self._color.validate():
-            self._canvas.config(bg="#{:02x}{:02x}{:02x}".format(*self.rgb_color))
+            self._canvas.config(bg="#{:02x}{:02x}{:02x}"
+                                .format(*self.rgb_color))
     # >>>3
 
     def change_colorwheel(self, filename):  # <<<3
@@ -2351,13 +2377,15 @@ class ColorWheel(LabelFrame):   # <<<2
                                   -STRETCH_DISPLAY_RADIUS,
                                   STRETCH_DISPLAY_RADIUS))
                 np.divide(zs, np.sqrt(1 + zs.real**2 + zs.imag**2), out=zs)
-                img = apply_color(zs,
-                                  filename,
-                                  self.geometry,
-                                  self.modulus,
-                                  self.angle,
-                                  self.stretch,
-                                  self.rgb_color)
+                img = apply_color(
+                    zs,
+                    filename,
+                    geometry=self.geometry,
+                    modulus=self.modulus,
+                    angle=self.angle,
+                    stretch=self.stretch,
+                    color=self.rgb_color
+                )
             else:
                 self._x_min.enable()
                 self._x_max.enable()
@@ -2368,8 +2396,9 @@ class ColorWheel(LabelFrame):   # <<<2
                 # self._reset_button.configure(state=NORMAL)
                 img = PIL.Image.open(filename)
                 img.thumbnail(
-                        (COLOR_SIZE+1, COLOR_SIZE+1),
-                        PIL.Image.ANTIALIAS)
+                    (COLOR_SIZE+1, COLOR_SIZE+1),
+                    PIL.Image.ANTIALIAS
+                )
                 width, height = img.size
                 ratio = width / height
                 if ratio < 1:
@@ -2420,7 +2449,6 @@ class ColorWheel(LabelFrame):   # <<<2
         except:
             pass
 
-
         if self.stretch:
             x_min = -STRETCH_DISPLAY_RADIUS
             x_max = STRETCH_DISPLAY_RADIUS
@@ -2434,13 +2462,19 @@ class ColorWheel(LabelFrame):   # <<<2
         x0 = - delta_x * x_min
         y0 = delta_y * y_max
         r = delta_x / self.modulus
-        self._unit_circle = self._canvas.create_oval(x0-r+1, y0-r+1, x0+r, y0+r,
-                                                     width=2,
-                                                     outline="gray")
-        self._center = self._canvas.create_oval(x0-5, y0-5, x0+5, y0+5,
-                                                width=1,
-                                                fill="gray",
-                                                outline="red")
+        self._unit_circle = self._canvas.create_oval(
+            x0-r+1, y0-r+1,
+            x0+r, y0+r,
+            width=2,
+            outline="gray"
+        )
+        self._center = self._canvas.create_oval(
+            x0-5, y0-5,
+            x0+5, y0+5,
+            width=1,
+            fill="gray",
+            outline="red"
+        )
     # >>>3
 
     def choose_colorwheel(self, *args):    # <<<3
@@ -2449,10 +2483,11 @@ class ColorWheel(LabelFrame):   # <<<2
         else:
             initialdir = "./"
         filename = filedialog.askopenfilename(
-                parent=self,
-                title="Create Symmetry: choose color wheel image",
-                initialdir=initialdir,
-                filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")])
+            parent=self,
+            title="Create Symmetry: choose color wheel image",
+            initialdir=initialdir,
+            filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")]
+        )
         if filename:
             self.change_colorwheel(filename)
     # >>>3
@@ -2533,7 +2568,6 @@ class World(LabelFrame):     # <<<2
             dir = "..." +  dir[-27:]
         self._save_directory_button.configure(text=dir)
     # >>>4
-
 
     @property
     def geometry(self):     # <<<4
@@ -2818,9 +2852,12 @@ class World(LabelFrame):     # <<<2
         canvas_frame = Frame(self)
         canvas_frame.grid(row=0, column=0, rowspan=4, padx=5, pady=5)
 
-        self._canvas = Canvas(canvas_frame,
-                              width=PREVIEW_SIZE, height=PREVIEW_SIZE,
-                              bg="light gray")
+        self._canvas = Canvas(
+            canvas_frame,
+            width=PREVIEW_SIZE,
+            height=PREVIEW_SIZE,
+            bg="light gray"
+        )
         for i in range(5, PREVIEW_SIZE, 10):
             for j in range(5, PREVIEW_SIZE, 10):
                 self._canvas.create_line(i-1, j, i+2, j, fill="gray")
@@ -2829,55 +2866,62 @@ class World(LabelFrame):     # <<<2
 
         self._draw_color_tile = BooleanVar()
         self._draw_color_tile_button = Checkbutton(
-                canvas_frame,
-                variable=self._draw_color_tile,
-                text="")
+            canvas_frame,
+            variable=self._draw_color_tile,
+            text=""
+        )
         self._draw_color_tile_button.pack(side=LEFT, padx=0, pady=0)
 
         self._draw_tile = BooleanVar()
         self._draw_tile_button = Checkbutton(
-                canvas_frame,
-                variable=self._draw_tile,
-                text="tile",
-                indicatoron=False)
+            canvas_frame,
+            variable=self._draw_tile,
+            text="tile",
+            indicatoron=False
+        )
         self._draw_tile_button.pack(side=LEFT, padx=5, pady=5)
 
         self._draw_orbifold = BooleanVar()
         self._draw_orbifold_button = Checkbutton(
-                canvas_frame,
-                variable=self._draw_orbifold,
-                text="orbifold",
-                indicatoron=False)
+            canvas_frame,
+            variable=self._draw_orbifold,
+            text="orbifold",
+            indicatoron=False
+        )
         self._draw_orbifold_button.pack(side=LEFT, padx=5, pady=5)
 
         self._draw_mirrors = BooleanVar()
         self._draw_mirrors_button = Checkbutton(
-                canvas_frame,
-                variable=self._draw_mirrors,
-                text="mirrors",
-                indicatoron=False)
+            canvas_frame,
+            variable=self._draw_mirrors,
+            text="mirrors",
+            indicatoron=False
+        )
         self._draw_mirrors_button.pack(side=LEFT, padx=5, pady=5)
 
         self._fade = BooleanVar()
         self._fade_button = Checkbutton(
-                canvas_frame,
-                variable=self._fade,
-                text="fade",
-                indicatoron=False)
+            canvas_frame,
+            variable=self._fade,
+            text="fade",
+            indicatoron=False
+        )
         self._fade_button.pack(side=LEFT, padx=(5, 0), pady=5)
 
         self._preview_fade_coeff = LabelEntry(
-                canvas_frame,
-                convert=int,
-                width=3,
-                label="")
+            canvas_frame,
+            convert=int,
+            width=3,
+            label=""
+        )
         self._preview_fade_coeff.pack(side=LEFT, padx=(0, 5), pady=5)
 
         self._preview_size = LabelEntry(
-                canvas_frame,
-                convert=int,
-                width=3,
-                label="preview size")
+            canvas_frame,
+            convert=int,
+            width=3,
+            label="preview size"
+        )
         self._preview_size.pack(side=RIGHT, padx=5, pady=5)
         self._preview_size.set(PREVIEW_SIZE)
 
@@ -2898,8 +2942,10 @@ class World(LabelFrame):     # <<<2
         self._geometry_tabs = Notebook(self)
         self._geometry_tabs.grid(row=0, column=1, sticky=E+W, padx=5, pady=5)
         # prevent arrows from changing tab
-        self._geometry_tabs.bind_all("<<NotebookTabChanged>>",
-                                     lambda _: self.focus_set())
+        self._geometry_tabs.bind_all(
+            "<<NotebookTabChanged>>",
+            lambda _: self.focus_set()
+        )
 
         self._geometry_plane_tab = Frame(self._geometry_tabs)
         self._geometry_tabs.add(self._geometry_plane_tab, text="plane")
@@ -2917,83 +2963,106 @@ class World(LabelFrame):     # <<<2
         coord_frame.columnconfigure(0, weight=1)
         coord_frame.columnconfigure(1, weight=1)
 
-        self._x_min = LabelEntry(coord_frame, label="x min",
-                                 value=WORLD_GEOMETRY[0],
-                                 convert=float,
-                                 width=4, justify=RIGHT)
+        self._x_min = LabelEntry(
+            coord_frame,
+            label="x min",
+            value=WORLD_GEOMETRY[0],
+            convert=float,
+            width=4, justify=RIGHT
+        )
         self._x_min.grid(row=0, column=0, padx=5, pady=5)
 
-        self._x_max = LabelEntry(coord_frame, label="x max",
-                                 value=WORLD_GEOMETRY[1],
-                                 convert=float,
-                                 width=4, justify=RIGHT)
+        self._x_max = LabelEntry(
+            coord_frame,
+            label="x max",
+            value=WORLD_GEOMETRY[1],
+            convert=float,
+            width=4, justify=RIGHT
+        )
         self._x_max.grid(row=0, column=1, padx=5, pady=5)
 
-        self._y_min = LabelEntry(coord_frame, label="y min",
-                                 value=WORLD_GEOMETRY[2],
-                                 convert=float,
-                                 width=4, justify=RIGHT)
+        self._y_min = LabelEntry(
+            coord_frame,
+            label="y min",
+            value=WORLD_GEOMETRY[2],
+            convert=float,
+            width=4, justify=RIGHT
+        )
         self._y_min.grid(row=1, column=0, padx=5, pady=5)
 
-        self._y_max = LabelEntry(coord_frame, label="y max",
-                                 value=WORLD_GEOMETRY[3],
-                                 convert=float,
-                                 width=4, justify=RIGHT)
+        self._y_max = LabelEntry(
+            coord_frame,
+            label="y max",
+            value=WORLD_GEOMETRY[3],
+            convert=float,
+            width=4, justify=RIGHT
+        )
         self._y_max.grid(row=1, column=1, padx=5, pady=5)
 
-        transformation_frame = LabelFrame(self._geometry_plane_tab,
-                                          text="transformation")
+        transformation_frame = LabelFrame(
+            self._geometry_plane_tab,
+            text="transformation"
+        )
         transformation_frame.pack(padx=5, pady=5, fill=BOTH)
         tmp_frame = Frame(transformation_frame)
         tmp_frame.pack()
-        self._modulus = LabelEntry(tmp_frame, label="modulus",
-                                   value=1,
-                                   convert=float,
-                                   width=6)
+        self._modulus = LabelEntry(
+            tmp_frame,
+            label="modulus",
+            value=1,
+            convert=float,
+            width=6
+        )
         self._modulus.grid(row=0, column=0, sticky=E, padx=5, pady=(5, 2))
 
-        self._angle = LabelEntry(tmp_frame, label="angle (°)",
-                                 value=0,
-                                 convert=float,
-                                 width=4)
+        self._angle = LabelEntry(
+            tmp_frame,
+            label="angle (°)",
+            value=0,
+            convert=float,
+            width=4
+        )
         self._angle.grid(row=1, column=0, sticky=E, padx=5, pady=(2, 5))
 
-        Button(transformation_frame, text="zoom -",
-               command=self.zoom(2**.25)).pack(side=LEFT,
-                                               padx=5, pady=5)
-        Button(transformation_frame, text="zoom +",
-               command=self.zoom(2**-.25)).pack(side=RIGHT,
-                                                padx=5, pady=5)
-
-        # Button(self._geometry_plane_tab, text="reset",
-        #        command=self.reset_geometry).pack(side=TOP,
-        #                                          padx=5, pady=(5, 10))
+        Button(
+            transformation_frame,
+            text="zoom -",
+            command=self.zoom(2**.25)
+        ).pack(side=LEFT, padx=5, pady=5)
+        Button(
+            transformation_frame,
+            text="zoom +",
+            command=self.zoom(2**-.25)
+        ).pack(side=RIGHT, padx=5, pady=5)
         # >>>4
 
         # sphere parameters     <<<4
         self._geometry_tabs.bind(
-                "<Triple-Button-1>",
-                sequence(self.enable_geometry_sphere_tab,
-                         self.enable_geometry_morph_tab)
+            "<Triple-Button-1>",
+            sequence(self.enable_geometry_sphere_tab,
+                     self.enable_geometry_morph_tab)
         )
 
         self._sphere_projection = BooleanVar()
         self._sphere_projection.set(True)
 
-        sphere_projection = Checkbutton(self._geometry_sphere_tab,
-                                        text="stereographic projection",
-                                        variable=self._sphere_projection,
-                                        onvalue=True, offvalue=False,
-                                        indicatoron=False,
-                                        )
+        sphere_projection = Checkbutton(
+            self._geometry_sphere_tab,
+            text="stereographic projection",
+            variable=self._sphere_projection,
+            onvalue=True, offvalue=False,
+            indicatoron=False,
+        )
         sphere_projection.pack(padx=5, pady=10)
 
-        self._rotations = LabelEntry(self._geometry_sphere_tab,
-                                     label="rotations x, y, z (°)",
-                                     orientation="V",
-                                     value="15, 15, 0",
-                                     convert=str_to_floats,
-                                     width=15)
+        self._rotations = LabelEntry(
+            self._geometry_sphere_tab,
+            label="rotations x, y, z (°)",
+            orientation="V",
+            value="15, 15, 0",
+            convert=str_to_floats,
+            width=15
+        )
         self._rotations.pack(padx=5, pady=10)
 
         background_frame = Frame(self._geometry_sphere_tab)
@@ -3002,64 +3071,85 @@ class World(LabelFrame):     # <<<2
         self._sphere_background_full_filename = ""
         self._sphere_background = StringVar()
 
-        Button(background_frame,
-               text="background",
-               command=self.choose_sphere_background,
-               padx=1, pady=1
-               ).grid(row=0, column=0, sticky=E)
-        Entry(background_frame,
-              textvar=self._sphere_background,
-              width=10).grid(row=0, column=1, padx=5, pady=10, sticky=E)
+        Button(
+            background_frame,
+            text="background",
+            command=self.choose_sphere_background,
+            padx=1, pady=1
+        ).grid(row=0, column=0, sticky=E)
+        Entry(
+            background_frame,
+            textvar=self._sphere_background,
+            width=10
+        ).grid(row=0, column=1, padx=5, pady=10, sticky=E)
         self.sphere_background = DEFAULT_SPHERE_BACKGROUND
 
-        self._sphere_background_fading = LabelEntry(background_frame,
-                                                    label="fade background",
-                                                    value=100,
-                                                    width=5,
-                                                    convert=int)
-        self._sphere_background_fading.grid(row=1, column=0, columnspan=2, padx=5, pady=5, sticky=E)
+        self._sphere_background_fading = LabelEntry(
+            background_frame,
+            label="fade background",
+            value=100,
+            width=5,
+            convert=int
+        )
+        self._sphere_background_fading.grid(
+            row=1, column=0, columnspan=2,
+            padx=5, pady=5,
+            sticky=E
+        )
 
-        self._sphere_stars = LabelEntry(background_frame,
-                                        label="random stars",
-                                        value=500,
-                                        width=5,
-                                        convert=int)
-        self._sphere_stars.grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky=E)
+        self._sphere_stars = LabelEntry(
+            background_frame,
+            label="random stars",
+            value=500,
+            width=5,
+            convert=int
+        )
+        self._sphere_stars.grid(
+            row=2, column=0, columnspan=2,
+            padx=5, pady=5,
+            sticky=E
+        )
         # >>>4
 
         # morph parameters      ###4
         self._morph = BooleanVar()
         self._morph.set(False)
         self._morph_button = Checkbutton(
-                self._geometry_morph_tab,
-                variable=self._morph,
-                text="morph",
-                indicatoron=False)
+            self._geometry_morph_tab,
+            variable=self._morph,
+            text="morph",
+            indicatoron=False
+        )
         self._morph_button.pack(padx=5, pady=10)
 
         tmp_frame = Frame(self._geometry_morph_tab)
         tmp_frame.pack()
-        self._morph_start = LabelEntry(tmp_frame,
-                                       label="from (°)",
-                                       convert=int,
-                                       width=3)
+        self._morph_start = LabelEntry(
+            tmp_frame,
+            label="from (°)",
+            convert=int,
+            width=3
+        )
         self._morph_start.grid(row=0, column=0, sticky=E, padx=5, pady=5)
         self._morph_start.set(0)
 
-        self._morph_end = LabelEntry(tmp_frame,
-                                     label="to (°)",
-                                     convert=int,
-                                     width=3)
+        self._morph_end = LabelEntry(
+            tmp_frame,
+            label="to (°)",
+            convert=int,
+            width=3
+        )
         self._morph_end.grid(row=1, column=0, sticky=E, padx=5, pady=5)
         self._morph_end.set(180)
 
-        self._morph_stable_coeff = LabelEntry(self._geometry_morph_tab,
-                                              label="stable (%)",
-                                              value=20,
-                                              convert=float,
-                                              width=3)
+        self._morph_stable_coeff = LabelEntry(
+            self._geometry_morph_tab,
+            label="stable (%)",
+            value=20,
+            convert=float,
+            width=3
+        )
         self._morph_stable_coeff.pack(padx=5, pady=5)
-
         # >>>4
 
         # result settings       <<<4
@@ -3075,29 +3165,35 @@ class World(LabelFrame):     # <<<2
                 return w, h
             except:
                 raise ValueError
-        self._size = LabelEntry(settings_frame,
-                                label="size",
-                                value="{} x {}".format(OUTPUT_WIDTH,
-                                                       OUTPUT_HEIGHT),
-                                convert=convert_size,
-                                width=12)
+        self._size = LabelEntry(
+            settings_frame,
+            label="size",
+            value="{} x {}".format(OUTPUT_WIDTH,
+                                   OUTPUT_HEIGHT),
+            convert=convert_size,
+            width=12
+        )
         self._size.pack(padx=5, pady=(5, 0))
 
         Label(settings_frame, text="save directory").pack(padx=5, pady=(5, 2))
         self._save_directory = "./"
-        self._save_directory_button = Button(settings_frame,
-                                             text=self._save_directory,
-                                             font="TkNormal 8",
-                                             padx=2, pady=0,
-                                             command=self.change_save_dir)
+        self._save_directory_button = Button(
+            settings_frame,
+            text=self._save_directory,
+            font="TkNormal 8",
+            padx=2, pady=0,
+            command=self.change_save_dir
+        )
         self._save_directory_button.pack(padx=5, pady=(0, 5))
 
-        self._filename_template = LabelEntry(settings_frame,
-                                             label="filename template",
-                                             orientation="V",
-                                             value=FILENAME_TEMPLATE,
-                                             font="TkNormal 8",
-                                             width=24)
+        self._filename_template = LabelEntry(
+            settings_frame,
+            label="filename template",
+            orientation="V",
+            value=FILENAME_TEMPLATE,
+            font="TkNormal 8",
+            width=24
+        )
         self._filename_template.pack(padx=5, pady=5)
         # >>>4
 
@@ -3115,9 +3211,10 @@ class World(LabelFrame):     # <<<2
         else:
             initialdir = "./"
         dir = filedialog.askdirectory(
-                parent=self,
-                title="Create Symmetry: save directory",
-                initialdir=initialdir)
+            parent=self,
+            title="Create Symmetry: save directory",
+            initialdir=initialdir
+        )
         if dir:
             self.save_directory = dir
     # >>>3
@@ -3193,10 +3290,11 @@ class World(LabelFrame):     # <<<2
 
     def choose_sphere_background(self, *args):    # <<<3
         filename = filedialog.askopenfilename(
-                parent=self,
-                title="Create Symmetry: choose background image",
-                initialdir="./",
-                filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")])
+            parent=self,
+            title="Create Symmetry: choose background image",
+            initialdir="./",
+            filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")]
+        )
         if filename:
             self.sphere_background = filename
     # >>>3
@@ -3474,11 +3572,6 @@ class Function(LabelFrame):     # <<<2
     # >>>4
 
     @property
-    def wallpaper_basis(self):      # <<<4
-        return basis(self.current_pattern, *self.lattice_parameters)
-    # >>>4
-
-    @property
     def hyper_nb_steps(self):       # <<<4
         return self._hyper_nb_steps.get()
     # >>>4
@@ -3508,8 +3601,10 @@ class Function(LabelFrame):     # <<<2
         self._tabs = Notebook(self)
         self._tabs.grid(row=0, column=0, rowspan=2, sticky=N+S, padx=5, pady=5)
         # prevent arrows from changing tab
-        self._tabs.bind_all("<<NotebookTabChanged>>",
-                            lambda _: self.focus_set())
+        self._tabs.bind_all(
+            "<<NotebookTabChanged>>",
+            lambda _: self.focus_set()
+        )
 
         self._wallpaper_tab = Frame(self._tabs)
         self._tabs.add(self._wallpaper_tab, text="wallpaper")
@@ -3522,140 +3617,176 @@ class Function(LabelFrame):     # <<<2
         # >>>4
 
         # wallpaper tab      <<<4
-        Label(self._wallpaper_tab,
-              text="symmetry group").pack(padx=5, pady=(20, 0))
+        Label(
+            self._wallpaper_tab,
+            text="symmetry group"
+        ).pack(padx=5, pady=(20, 0))
         self._wallpaper_pattern = StringVar()
         self._wallpaper_combo = Combobox(
-                self._wallpaper_tab, width=24, exportselection=0,
-                textvariable=self._wallpaper_pattern,
-                state="readonly",
-                values=W_NAMES
-                )
+            self._wallpaper_tab, width=24, exportselection=0,
+            textvariable=self._wallpaper_pattern,
+            state="readonly",
+            values=W_NAMES
+        )
         self._wallpaper_combo.pack(padx=5, pady=5)
         self._wallpaper_combo.current(0)
-        self._wallpaper_combo.bind("<<ComboboxSelected>>",
-                                   self.update)
+        self._wallpaper_combo.bind(
+            "<<ComboboxSelected>>",
+            self.update
+        )
         # remove focus to prevent Ctrl-Down from displaying the dropdown menu
-        self._wallpaper_combo.bind("<FocusIn>",
-                                   lambda _: self.focus_set())
+        self._wallpaper_combo.bind(
+            "<FocusIn>",
+            lambda _: self.focus_set()
+        )
 
-        Label(self._wallpaper_tab,
-              text="color symmetry group").pack(padx=5, pady=(5, 0))
+        Label(
+            self._wallpaper_tab,
+            text="color symmetry group"
+        ).pack(padx=5, pady=(5, 0))
         self._wallpaper_color_pattern = StringVar()
         self._wallpaper_color_combo = Combobox(
-                self._wallpaper_tab, width=20, exportselection=0,
-                textvariable=self._wallpaper_color_pattern,
-                state="readonly",
-                values=["--"]
-                )
+            self._wallpaper_tab, width=20, exportselection=0,
+            textvariable=self._wallpaper_color_pattern,
+            state="readonly",
+            values=["--"]
+        )
         self._wallpaper_color_combo.pack(padx=5, pady=5)
         self._wallpaper_color_combo.current(0)
-        self._wallpaper_color_combo.bind("<<ComboboxSelected>>",
-                                         self.update)
+        self._wallpaper_color_combo.bind(
+            "<<ComboboxSelected>>",
+            self.update
+        )
         # remove focus to prevent Ctrl-Down from displaying the dropdown menu
-        self._wallpaper_color_combo.bind("<FocusIn>",
-                                         lambda _: self.focus_set())
+        self._wallpaper_color_combo.bind(
+            "<FocusIn>",
+            lambda _: self.focus_set()
+        )
 
-        self._lattice_parameters = LabelEntry(self._wallpaper_tab,
-                                              orientation="V",
-                                              label="lattice parameters",
-                                              value="",
-                                              convert=str_to_floats,
-                                              width=10)
+        self._lattice_parameters = LabelEntry(
+            self._wallpaper_tab,
+            orientation="V",
+            label="lattice parameters",
+            value="",
+            convert=str_to_floats,
+            width=10
+        )
         self._lattice_parameters.pack(padx=5, pady=5)
 
-        self._wallpaper_N = LabelEntry(self._wallpaper_tab,
-                                       orientation="V",
-                                       label="forced rotational symmetry",
-                                       value=1,
-                                       convert=int,
-                                       width=3)
+        self._wallpaper_N = LabelEntry(
+            self._wallpaper_tab,
+            orientation="V",
+            label="forced rotational symmetry",
+            value=1,
+            convert=int,
+            width=3
+        )
         self._wallpaper_N.pack(padx=5, pady=5)
         self._wallpaper_N.disable()
         self._wallpaper_N.bind(
-                "<Double-Button-1>",
-                sequence(self._wallpaper_N.toggle))
+            "<Double-Button-1>",
+            sequence(self._wallpaper_N.toggle)
+        )
         # # >>>4
 
         # sphere tab        <<<4
-        Label(self._sphere_tab,
-              text="symmetry group").pack(padx=5, pady=(20, 0))
+        Label(
+            self._sphere_tab,
+            text="symmetry group"
+        ).pack(padx=5, pady=(20, 0))
         self._sphere_pattern = StringVar()
-        self._sphere_combo = Combobox(self._sphere_tab, width=20,
-                                      exportselection=0,
-                                      textvariable=self._sphere_pattern,
-                                      state="readonly",
-                                      values=S_NAMES)
+        self._sphere_combo = Combobox(
+            self._sphere_tab,
+            width=20,
+            exportselection=0,
+            textvariable=self._sphere_pattern,
+            state="readonly",
+            values=S_NAMES
+        )
         self._sphere_combo.pack(padx=5, pady=5)
         self._sphere_combo.current(0)
-        self._sphere_combo.bind("<<ComboboxSelected>>",
-                                self.update)
+        self._sphere_combo.bind(
+            "<<ComboboxSelected>>",
+            self.update
+        )
 
-        self._sphere_N = LabelEntry(self._sphere_tab,
-                                    label="N",
-                                    value=7,
-                                    convert=int,
-                                    width=2)
+        self._sphere_N = LabelEntry(
+            self._sphere_tab,
+            label="N",
+            value=7,
+            convert=int,
+            width=2
+        )
         self._sphere_N.pack(padx=5, pady=5)
 
         radio_frame = Frame(self._sphere_tab)
         radio_frame.pack(padx=5, pady=(10, 5))
         self._sphere_mode = StringVar()
         self._sphere_mode.set("sphere")
-        Radiobutton(radio_frame,
-                    indicatoron=0,
-                    text="sphere",
-                    variable=self._sphere_mode,
-                    value="sphere",
-                    command=self.update
-                    ).grid(row=0, column=0, padx=5, pady=5)
-        Radiobutton(radio_frame,
-                    indicatoron=0,
-                    text="rosette",
-                    variable=self._sphere_mode,
-                    value="rosette",
-                    command=self.update
-                    ).grid(row=0, column=1, padx=5, pady=5)
-        Radiobutton(radio_frame,
-                    indicatoron=0,
-                    text="frieze",
-                    variable=self._sphere_mode,
-                    value="frieze",
-                    command=self.update
-                    ).grid(row=0, column=2, padx=5, pady=5)
+        Radiobutton(
+            radio_frame,
+            indicatoron=0,
+            text="sphere",
+            variable=self._sphere_mode,
+            value="sphere",
+            command=self.update
+        ).grid(row=0, column=0, padx=5, pady=5)
+        Radiobutton(
+            radio_frame,
+            indicatoron=0,
+            text="rosette",
+            variable=self._sphere_mode,
+            value="rosette",
+            command=self.update
+        ).grid(row=0, column=1, padx=5, pady=5)
+        Radiobutton(
+            radio_frame,
+            indicatoron=0,
+            text="frieze",
+            variable=self._sphere_mode,
+            value="frieze",
+            command=self.update
+        ).grid(row=0, column=2, padx=5, pady=5)
         # >>>4
 
         # hyperbolic tab        <<<4
         self._hyper_nb_steps = LabelEntry(
-                self._hyper_tab,
-                label="averaging steps",
-                width=5,
-                convert=int,
-                value=25)
+            self._hyper_tab,
+            label="averaging steps",
+            width=5,
+            convert=int,
+            value=25
+        )
         self._hyper_nb_steps.pack(padx=5, pady=(20, 5))
 
         self._hyper_disk_model = BooleanVar()
         self._hyper_disk_model_button = Checkbutton(
-                self._hyper_tab,
-                variable=self._hyper_disk_model,
-                text="disk model",
-                onvalue=True, offvalue=False,
-                indicatoron=False)
+            self._hyper_tab,
+            variable=self._hyper_disk_model,
+            text="disk model",
+            onvalue=True, offvalue=False,
+            indicatoron=False
+        )
         self._hyper_disk_model_button.pack(padx=5, pady=(20, 5))
         self._hyper_disk_model.set(True)
         # >>>4
 
         # display matrix    <<<4
         main_matrix_frame = LabelFrame(self, text="matrix")
-        main_matrix_frame.grid(row=0, column=1,
-                               sticky=N+S+E+W,  padx=5, pady=5)
+        main_matrix_frame.grid(
+            row=0, column=1,
+            sticky=N+S+E+W,
+            padx=5, pady=5
+        )
 
         scroll_matrix_frame = Frame(main_matrix_frame)
         scroll_matrix_frame.pack()
-        self._display_matrix = Listbox(scroll_matrix_frame,
-                                       selectmode=MULTIPLE,
-                                       font="TkFixedFont",
-                                       width=26, height=8)
+        self._display_matrix = Listbox(
+            scroll_matrix_frame,
+            selectmode=MULTIPLE,
+            font="TkFixedFont",
+            width=26, height=8
+        )
         self._display_matrix.pack(side=LEFT)
 
         scrollbar = Scrollbar(scroll_matrix_frame)
@@ -3670,64 +3801,90 @@ class Function(LabelFrame):     # <<<2
         # >>>4
 
         # change entries <<<4
-        self._change_entry = LabelEntry(main_matrix_frame,
-                                        label="change entry", value="",
-                                        width=15, font="TkFixedFont")
+        self._change_entry = LabelEntry(
+            main_matrix_frame,
+            label="change entry",
+            value="",
+            width=15,
+            font="TkFixedFont"
+        )
         self._change_entry.pack(padx=5, pady=5)
         self._change_entry.bind("<Return>", self.add_entry)
 
-        Button(main_matrix_frame, text="make matrix",
-               command=self.make_matrix).pack(side=LEFT, padx=5, pady=10)
+        Button(
+            main_matrix_frame, text="make matrix",
+            command=self.make_matrix
+        ).pack(side=LEFT, padx=5, pady=10)
 
-        Button(main_matrix_frame,
-               text="reset",
-               command=lambda *_: self.change_matrix({})
-               ).pack(side=RIGHT, padx=5, pady=5)
+        Button(
+            main_matrix_frame,
+            text="reset",
+            command=lambda *_: self.change_matrix({})
+        ).pack(side=RIGHT, padx=5, pady=5)
         # >>>4
 
         # random matrix     <<<4
         random_frame = LabelFrame(self, text="random matrix")
         random_frame.grid(row=0, column=2, sticky=N+S, padx=5, pady=5)
 
-        self._random_nb_coeffs = LabelEntry(random_frame, label="nb entries",
-                                            value=3,
-                                            convert=int,
-                                            width=4)
+        self._random_nb_coeffs = LabelEntry(
+            random_frame,
+            label="nb entries",
+            value=3,
+            convert=int,
+            width=4
+        )
         self._random_nb_coeffs.pack(padx=5, pady=5)
 
-        self._random_min_degre = LabelEntry(random_frame, label="min degre",
-                                            value=-3,
-                                            convert=int,
-                                            width=4)
+        self._random_min_degre = LabelEntry(
+            random_frame, label="min degre",
+            value=-3,
+            convert=int,
+            width=4
+        )
         self._random_min_degre.pack(padx=5, pady=5)
 
-        self._random_max_degre = LabelEntry(random_frame, label="max degre",
-                                            value=3,
-                                            convert=int,
-                                            width=4)
+        self._random_max_degre = LabelEntry(
+            random_frame,
+            label="max degre",
+            value=3,
+            convert=int,
+            width=4
+        )
         self._random_max_degre.pack(padx=5, pady=5)
 
-        self._random_modulus = LabelEntry(random_frame, label="modulus",
-                                          value=1,
-                                          convert=float,
-                                          width=4)
+        self._random_modulus = LabelEntry(
+            random_frame,
+            label="modulus",
+            value=1,
+            convert=float,
+            width=4
+        )
         self._random_modulus.pack(padx=5, pady=5)
 
-        generate = Button(random_frame,
-                          text="generate",
-                          command=self.new_random_matrix)
+        generate = Button(
+            random_frame,
+            text="generate",
+            command=self.new_random_matrix
+        )
         generate.pack(padx=5, pady=5)
         # >>>4
 
         # add noise <<<4
-        self._random_noise = LabelEntry(random_frame, label="",
-                                        value=10, convert=float,
-                                        width=3)
+        self._random_noise = LabelEntry(
+            random_frame,
+            label="",
+            value=10,
+            convert=float,
+            width=3)
         self._random_noise.pack(side=RIGHT, padx=5, pady=5)
         self._random_noise.bind("<Return>", self.add_noise)
 
-        random_noise = Button(random_frame, text="noise (%)",
-                              command=self.add_noise)
+        random_noise = Button(
+            random_frame,
+            text="noise (%)",
+            command=self.add_noise
+        )
         random_noise.pack(side=LEFT, padx=5, pady=5)
         # >>>4
 
@@ -3826,16 +3983,20 @@ class Function(LabelFrame):     # <<<2
             if color_pattern:
                 sub = PATTERN[color_pattern, pattern]
                 parity = sub["parity"]
-                M = add_symmetries(M,
-                                   PATTERN[color_pattern, pattern]["recipe"],
-                                   PATTERN[color_pattern, pattern]["parity"])
+                M = add_symmetries(
+                    M,
+                    PATTERN[color_pattern, pattern]["recipe"],
+                    PATTERN[color_pattern, pattern]["parity"]
+                )
             else:
                 M = add_symmetries(M, PATTERN[pattern]["recipe"])
         elif self.pattern_type == "sphere":
-            M = add_symmetries(M,
-                               PATTERN[self.sphere_pattern]["recipe"],
-                               PATTERN[self.sphere_pattern]["parity"]
-                               .replace("N", str(self.sphere_N)))
+            M = add_symmetries(
+                M,
+                PATTERN[self.sphere_pattern]["recipe"],
+                PATTERN[self.sphere_pattern]["parity"]
+                .replace("N", str(self.sphere_N))
+            )
         elif self.pattern_type == "hyperbolic":
             pass
         else:
@@ -3917,8 +4078,8 @@ class Function(LabelFrame):     # <<<2
 
             # color reversing combo
             self._wallpaper_color_combo.configure(
-                    values=["--"] + C_NAMES(self.wallpaper_pattern)
-                    )
+                values=["--"] + C_NAMES(self.wallpaper_pattern)
+            )
             self.wallpaper_color_pattern = color_pattern
 
             if lattice_parameters is not None:
@@ -3944,19 +4105,25 @@ class Function(LabelFrame):     # <<<2
 
             if lattice0 == "general":
                 self._lattice_parameters.enable()
-                self._lattice_parameters.label_widget.config(text=lattice0 + ": x1,y1,x2,y2")
+                self._lattice_parameters.label_widget.config(
+                    text=lattice0 + ": x1,y1,x2,y2"
+                )
                 self._lattice_parameters.convert = det_not_null
                 self.lattice_parameters = [1, 0, 1, 1]
             elif lattice0 == "rhombic":
                 self._lattice_parameters.enable()
-                self._lattice_parameters.label_widget.config(text=lattice0 + ": b")
+                self._lattice_parameters.label_widget.config(
+                    text=lattice0 + ": b"
+                )
                 self._lattice_parameters.convert = not_zero
                 self.lattice_parameters = [.5]
             elif lattice0 == "rectangular":
                 self._lattice_parameters.enable()
                 self._lattice_parameters.convert = not_zero
                 self.lattice_parameters = [.5]
-                self._lattice_parameters.label_widget.config(text=lattice0 + ": H")
+                self._lattice_parameters.label_widget.config(
+                    text=lattice0 + ": H"
+                )
             elif lattice0 == "square":
                 self._lattice_parameters.convert = None
                 self.lattice_parameters = []
@@ -3970,23 +4137,6 @@ class Function(LabelFrame):     # <<<2
             else:
                 assert False
         # >>>4
-    # >>>3
-
-    @property
-    def pattern_params(self):       # <<<3
-        # TODO: remove this function
-        if self.pattern_type == "wallpaper":
-            return {"lattice_basis": self.wallpaper_basis,
-                    "color_pattern": self.wallpaper_color_pattern,
-                    "N": self.wallpaper_N}
-        elif self.pattern_type == "sphere":
-            return {"N": self.sphere_N,
-                    "sphere_mode": self.sphere_mode}
-        elif self.pattern_type == "hyperbolic":
-            return {"nb_steps": self.hyper_nb_steps,
-                    "disk_model": self.hyper_disk_model}
-        else:
-            assert False
     # >>>3
 # >>>2
 
@@ -4037,33 +4187,47 @@ class CreateSymmetry(Tk):      # <<<2
         console_frame.grid(row=1, column=0, padx=0, pady=0)
 
         self._console = Text(
-                console_frame, width=28, height=15,
-                background="black", foreground="white",
-                font="TkFixedFont",
-                borderwidth=3,
-                relief="ridge")
-        self._console.grid(row=1, column=0,
-                           sticky=E+W+N+S, padx=10, pady=(10, 0))
+            console_frame,
+            width=28, height=15,
+            background="black", foreground="white",
+            font="TkFixedFont",
+            borderwidth=3,
+            relief="ridge"
+        )
+        self._console.grid(
+            row=1, column=0,
+            sticky=E+W+N+S,
+            padx=10, pady=(10, 0)
+        )
         self._console.config(state=DISABLED)
 
         self._preview_console = Text(
-                console_frame, width=10, height=1,
-                background="black", foreground="white",
-                font="TkFixedFont",
-                borderwidth=3,
-                relief="ridge")
-        self._preview_console.grid(row=2, column=0, sticky=E+W,
-                                   padx=10, pady=0)
+            console_frame, width=10, height=1,
+            background="black", foreground="white",
+            font="TkFixedFont",
+            borderwidth=3,
+            relief="ridge"
+        )
+        self._preview_console.grid(
+            row=2, column=0,
+            sticky=E+W,
+            padx=10, pady=0
+        )
         self._preview_console.config(state=DISABLED)
 
         self._output_console = Text(
-                console_frame, width=10, height=1,
-                background="black", foreground="white",
-                font="TkFixedFont",
-                borderwidth=3,
-                relief="ridge")
-        self._output_console.grid(row=3, column=0, sticky=E+W,
-                                  padx=10, pady=(0, 10))
+            console_frame,
+            width=10, height=1,
+            background="black", foreground="white",
+            font="TkFixedFont",
+            borderwidth=3,
+            relief="ridge"
+        )
+        self._output_console.grid(
+            row=3, column=0,
+            sticky=E+W,
+            padx=10, pady=(0, 10)
+        )
         self._output_console.config(state=DISABLED)
         # >>>4
 
@@ -4119,8 +4283,9 @@ class CreateSymmetry(Tk):      # <<<2
         self.world._canvas.bind("<Double-Button-1>", self.show_bigger_preview)
 
         self.world._canvas.bind(
-                "<Motion>",
-                lambda e: self.update_pointer_coordinates(e.x, e.y))
+            "<Motion>",
+            lambda e: self.update_pointer_coordinates(e.x, e.y)
+        )
 
         self.world._canvas.bind("<ButtonPress-1>", self.start_zoom_rectangle)
         self.world._canvas.bind("<B1-Motion>", self.update_zoom_rectangle)
@@ -4215,7 +4380,6 @@ class CreateSymmetry(Tk):      # <<<2
         function_menu = Menu(menu, tearoff=False)
         menu.add_cascade(label="function", menu=function_menu)
 
-
         about_menu = Menu(menu, tearoff=False)
         menu.add_cascade(label="about", menu=about_menu)
 
@@ -4232,41 +4396,50 @@ class CreateSymmetry(Tk):      # <<<2
         # >>>4
 
         # updating events <<<4
-        self.function._tabs.bind("<<NotebookTabChanged>>",
-                                 self.update)
+        self.function._tabs.bind(
+            "<<NotebookTabChanged>>",
+            self.update
+        )
         self.function._sphere_mode.trace(
-                "w",
-                callback=self.update)
+            "w",
+            callback=self.update
+        )
 
         # update settings (checkbutton for showing orbifold for color pattern)
         self.function._wallpaper_combo.bind(
-                "<<ComboboxSelected>>",
-                self.update,
-                add="+"
-                )
+            "<<ComboboxSelected>>",
+            self.update,
+            add="+"
+        )
         self.function._wallpaper_color_combo.bind(
-                "<<ComboboxSelected>>",
-                self.update,
-                add="+"
-                )
+            "<<ComboboxSelected>>",
+            self.update,
+            add="+"
+        )
 
         self.world._draw_tile_button.config(
-                command=self.update_world_preview
-                )
+            command=self.update_world_preview
+        )
         self.world._draw_orbifold_button.config(
-                command=self.update_world_preview
-                )
+            command=self.update_world_preview
+        )
         self.world._draw_color_tile_button.config(
-                command=self.update_world_preview
-                )
+            command=self.update_world_preview
+        )
         self.world._draw_mirrors_button.config(
-                command=self.update_world_preview
-                )
+            command=self.update_world_preview
+        )
         self.world._fade_button.config(
-                command=self.update_world_preview
-                )
-        self.world._preview_fade_coeff.bind("<Return>", self.update_world_preview)
-        self.world._preview_fade_coeff.bind("<FocusOut>", self.update_world_preview)
+            command=self.update_world_preview
+        )
+        self.world._preview_fade_coeff.bind(
+            "<Return>",
+            self.update_world_preview
+        )
+        self.world._preview_fade_coeff.bind(
+            "<FocusOut>",
+            self.update_world_preview
+        )
         # >>>4
 
         # initialisations  <<<4
@@ -4298,11 +4471,13 @@ class CreateSymmetry(Tk):      # <<<2
         dialog = Toplevel(self)
         dialog.resizable(width=False, height=False)
 
-        text = Text(dialog,
-                    height=35,
-                    background="lightgrey",
-                    relief=FLAT,
-                    font="TkFixedFont")
+        text = Text(
+            dialog,
+            height=35,
+            background="lightgrey",
+            relief=FLAT,
+            font="TkFixedFont"
+        )
         text.pack()
         text.insert(END, """
 Keyboard shortcuts:
@@ -4345,8 +4520,11 @@ Keyboard shortcuts:
 
         dialog.bind("<Escape>", lambda _: dialog.destroy())
         dialog.bind("<Control-q>", lambda _: dialog.destroy())
-        ok = Button(dialog, text="OK",
-                    command=lambda: dialog.destroy())
+        ok = Button(
+            dialog,
+            text="OK",
+            command=lambda: dialog.destroy()
+        )
         ok.pack(padx=10, pady=10)
         ok.focus_set()
         self.wait_window(dialog)
@@ -4356,12 +4534,14 @@ Keyboard shortcuts:
         dialog = Toplevel(self)
         dialog.resizable(width=False, height=False)
 
-        text = Text(dialog,
-                    background="lightgrey",
-                    height=12,
-                    width=60,
-                    relief=FLAT,
-                    font="TkFixedFont")
+        text = Text(
+            dialog,
+            background="lightgrey",
+            height=12,
+            width=60,
+            relief=FLAT,
+            font="TkFixedFont"
+        )
         text.pack()
         text.insert(END, """
 create symmetry
@@ -4377,8 +4557,11 @@ contact: Pierre.Hyvernat@univ-smb.fr
 
         dialog.bind("<Escape>", lambda _: dialog.destroy())
         dialog.bind("<Control-q>", lambda _: dialog.destroy())
-        ok = Button(dialog, text="OK",
-                    command=lambda: dialog.destroy())
+        ok = Button(
+            dialog,
+            text="OK",
+            command=lambda: dialog.destroy()
+        )
         ok.pack(padx=10, pady=10)
         ok.focus_set()
         self.wait_window(dialog)
@@ -4438,18 +4621,19 @@ contact: Pierre.Hyvernat@univ-smb.fr
             self.world._canvas._pointer_coords
         except:
             self.world._canvas._pointer_coords = self.world._canvas.create_text(
-                    PREVIEW_SIZE, PREVIEW_SIZE,
-                    anchor=SE,
-                    fill="white",
-                    text="")
+                PREVIEW_SIZE, PREVIEW_SIZE,
+                anchor=SE,
+                fill="white",
+                text=""
+            )
 
         x_min, x_max, y_min, y_max = self.world.geometry
         try:
             delta_x = self.world._canvas._image.width / (x_max - x_min)
             delta_y = self.world._canvas._image.height / (y_max - y_min)
             px_center, py_center = self.world._canvas.coords(
-                    self.world._canvas._image_id
-                    )
+                self.world._canvas._image_id
+            )
             x_center = (x_max - x_min) / 2
             y_center = (y_max - y_min) / 2
         except AttributeError:
@@ -4457,8 +4641,9 @@ contact: Pierre.Hyvernat@univ-smb.fr
         x = (px - px_center) / delta_x
         y = (py_center - py) / delta_y
         self.world._canvas.itemconfig(
-                self.world._canvas._pointer_coords,
-                text="{:6.4f} , {:6.4f}".format(x, y))
+            self.world._canvas._pointer_coords,
+            text="{:6.4f} , {:6.4f}".format(x, y)
+        )
     # >>>3
 
     def start_zoom_rectangle(self, event):   # <<<3
@@ -4468,12 +4653,13 @@ contact: Pierre.Hyvernat@univ-smb.fr
         self.start_x = event.x
         self.start_y = event.y
         self.rect = self.world._canvas.create_rectangle(
-                self.start_x,
-                self.start_y,
-                self.start_x,
-                self.start_y,
-                width=3,
-                outline="white")
+            self.start_x,
+            self.start_y,
+            self.start_x,
+            self.start_y,
+            width=3,
+            outline="white"
+        )
     # >>>3
 
     def update_zoom_rectangle(self, event):     # <<<3
@@ -4492,11 +4678,10 @@ contact: Pierre.Hyvernat@univ-smb.fr
         else:
             curY = self.start_y + sy * abs(curX-self.start_x) / ratio
         self.world._canvas.coords(
-                self.rect,
-                self.start_x,
-                self.start_y,
-                curX,
-                curY)
+            self.rect,
+            self.start_x, self.start_y,
+            curX, curY
+        )
         self.update_pointer_coordinates(curX, curY)
     # >>>3
 
@@ -4520,8 +4705,8 @@ contact: Pierre.Hyvernat@univ-smb.fr
             delta_x = self.world._canvas._image.width / (x_max - x_min)
             delta_y = self.world._canvas._image.height / (y_max - y_min)
             px_center, py_center = self.world._canvas.coords(
-                    self.world._canvas._image_id
-                    )
+                self.world._canvas._image_id
+            )
             x_center = (x_max - x_min) / 2
             y_center = (y_max - y_min) / 2
         except AttributeError:
@@ -4544,18 +4729,19 @@ contact: Pierre.Hyvernat@univ-smb.fr
         try:
             if self.world.preview_fade:
                 preview_fade = fade_image(
-                        self.world._canvas._image,
-                        255-self.world.preview_fade_coeff
-                        )
+                    self.world._canvas._image,
+                    255-self.world.preview_fade_coeff
+                )
                 self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(preview_fade)
             else:
                 self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(
-                        self.world._canvas._image
-                        )
+                    self.world._canvas._image
+                )
 
             self.world._canvas._image_id = self.world._canvas.create_image(
-                        (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
-                        image=self.world._canvas.tk_img)
+                (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
+                image=self.world._canvas.tk_img
+            )
         except AttributeError:
             pass
 
@@ -4610,8 +4796,10 @@ contact: Pierre.Hyvernat@univ-smb.fr
         # console messages
         self._console.config(state=NORMAL)
         while not self.message_queue.empty():
-            self._console.insert(END,
-                                 self.message_queue.get(block=False) + "\n")
+            self._console.insert(
+                END,
+                self.message_queue.get(block=False) + "\n"
+            )
         self._console.yview(END)
         self._console.config(state=DISABLED)
 
@@ -4624,9 +4812,9 @@ contact: Pierre.Hyvernat@univ-smb.fr
                     self._preview_console.config(state=NORMAL)
                     self._preview_console.delete(0.0, END)
                     self._preview_console.insert(
-                            0.0,
-                            # "Preview: [{}]".format(m))
-                            "Preview: {}%".format(int(m*100)))
+                        0.0,
+                        "Preview: {}%".format(int(m*100))
+                    )
                     self._preview_console.config(state=DISABLED)
                 elif self.preview_image_queue.empty():
                     self._preview_console.config(state=NORMAL)
@@ -4643,12 +4831,11 @@ contact: Pierre.Hyvernat@univ-smb.fr
                     self._output_console.config(state=NORMAL)
                     self._output_console.delete(0.0, END)
                     self._output_console.insert(
-                            0.0,
-                            # "output ({}): [{}]"
-                            # .format(1+self.output_params_queue.qsize(), m))
-                            "output ({}): {}%"
-                            .format(1+self.output_params_queue.qsize(),
-                                    round(m*100, 3)))
+                        0.0,
+                        "output ({}): {}%"
+                        .format(1+self.output_params_queue.qsize(),
+                                round(m*100, 3))
+                    )
                     self._output_console.config(state=DISABLED)
                 elif not self.pending_output_jobs:
                     self._output_console.config(state=NORMAL)
@@ -4674,82 +4861,89 @@ contact: Pierre.Hyvernat@univ-smb.fr
                         pass
 
                     self.world._canvas._image_id = self.world._canvas.create_image(
-                                    (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
-                                    image=self.world._canvas.tk_img)
+                        (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
+                        image=self.world._canvas.tk_img
+                    )
 
                     if self.function.pattern_type == "wallpaper":
                         # name all argument of make tile and use dictionary here
                         self.world._canvas._tile_img = (
-                                    self.world.geometry,
-                                    (self.world.modulus, self.world.angle),
-                                    self.function.current_pattern,
-                                    self.function.wallpaper_basis,
-                                    image.size,
-                                    True,
-                                    False,
-                                    False,
-                                    False
-                                    )
+                            self.world.geometry,
+                            (self.world.modulus, self.world.angle),
+                            self.function.current_pattern,
+                            basis(self.function.current_pattern,
+                                  *self.function.lattice_parameters),
+                            image.size,
+                            True,
+                            False,
+                            False,
+                            False
+                        )
 
                         self.world._canvas._orbifold_img = (
-                                    self.world.geometry,
-                                    (self.world.modulus, self.world.angle),
-                                    self.function.current_pattern,
-                                    self.function.wallpaper_basis,
-                                    image.size,
-                                    False,
-                                    True,
-                                    False,
-                                    False
-                                    )
+                            self.world.geometry,
+                            (self.world.modulus, self.world.angle),
+                            self.function.current_pattern,
+                            basis(self.function.current_pattern,
+                                  *self.function.lattice_parameters),
+                            image.size,
+                            False,
+                            True,
+                            False,
+                            False
+                        )
 
                         self.world._canvas._mirrors_img = (
-                                    self.world.geometry,
-                                    (self.world.modulus, self.world.angle),
-                                    self.function.current_pattern,
-                                    self.function.wallpaper_basis,
-                                    image.size,
-                                    False,
-                                    True,
-                                    False,
-                                    True
-                                    )
+                            self.world.geometry,
+                            (self.world.modulus, self.world.angle),
+                            self.function.current_pattern,
+                            basis(self.function.current_pattern,
+                                  *self.function.lattice_parameters),
+                            image.size,
+                            False,
+                            True,
+                            False,
+                            True
+                        )
 
                         self.world._canvas._color_tile_img = (
-                                    self.world.geometry,
-                                    (self.world.modulus, self.world.angle),
-                                    self.function.current_pattern,
-                                    self.function.wallpaper_basis,
-                                    image.size,
-                                    True,
-                                    False,
-                                    True,
-                                    False
-                                    )
+                            self.world.geometry,
+                            (self.world.modulus, self.world.angle),
+                            self.function.current_pattern,
+                            basis(self.function.current_pattern,
+                                  *self.function.lattice_parameters),
+                            image.size,
+                            True,
+                            False,
+                            True,
+                            False
+                        )
 
                         self.world._canvas._color_orbifold_img = (
-                                    self.world.geometry,
-                                    (self.world.modulus, self.world.angle),
-                                    self.function.current_pattern,
-                                    self.function.wallpaper_basis,
-                                    image.size,
-                                    False,
-                                    True,
-                                    True,
-                                    False
-                                    )
+                            self.world.geometry,
+                            (self.world.modulus, self.world.angle),
+                            self.function.current_pattern,
+                            basis(self.function.current_pattern,
+                                  *self.function.lattice_parameters),
+                            image.size,
+                            False,
+                            True,
+                            True,
+                            False
+                        )
 
                         self.world._canvas._color_mirrors_img = (
-                                    self.world.geometry,
-                                    (self.world.modulus, self.world.angle),
-                                    self.function.current_pattern,
-                                    self.function.wallpaper_basis,
-                                    image.size,
-                                    False,
-                                    True,
-                                    True,
-                                    True
-                                    )
+                            self.world.geometry,
+                            (self.world.modulus, self.world.angle),
+                            self.function.current_pattern,
+                            basis(self.function.current_pattern,
+                                  *self.function.lattice_parameters),
+                            image.size,
+                            False,
+                            True,
+                            True,
+                            True
+                        )
 
                     self.update_world_preview()
                 break
@@ -4760,8 +4954,6 @@ contact: Pierre.Hyvernat@univ-smb.fr
     def make_output(self, *args):      # <<<3
         self.world.adjust_geometry()
         cfg = self.config
-        cfg["params"] = self.function.pattern_params     # TODO: remove
-        cfg["pattern"] = self.function.current_pattern   # TODO remove
 
         self.output_params_queue.put(cfg)
 
@@ -4803,12 +4995,13 @@ contact: Pierre.Hyvernat@univ-smb.fr
         def make_preview_job():
             cfg = self.config
             cfg["world"]["size"] = (width, height)
-            params = self.function.pattern_params
 
-            image = make_image(color=cfg["color"],
-                               world=cfg["world"],
-                               function=cfg["function"],
-                               message_queue=self.preview_message_queue)
+            image = make_image(
+                color=cfg["color"],
+                world=cfg["world"],
+                function=cfg["function"],
+                message_queue=self.preview_message_queue
+            )
             self.preview_image_queue.put(image)
 
         try:
@@ -4822,9 +5015,6 @@ contact: Pierre.Hyvernat@univ-smb.fr
 
         try:
             self.preview_config = self.config
-            self.preview_config["params"] = self.function.pattern_params
-            self.preview_config["pattern"] = self.function.current_pattern
-            self.preview_config["matrix"] = self.function.matrix
 
             self.preview_process = Process(target=make_preview_job)
             self.preview_process.start()
@@ -4878,9 +5068,9 @@ contact: Pierre.Hyvernat@univ-smb.fr
             width = alpha * width
             height = alpha * height
             big_img = img.resize(
-                    (width, height),
-                    resample=PIL.Image.ANTIALIAS
-                    )
+                (width, height),
+                resample=PIL.Image.ANTIALIAS
+            )
 
             dialog = Toplevel(self)
             dialog.resizable(width=False, height=False)
@@ -4899,10 +5089,10 @@ contact: Pierre.Hyvernat@univ-smb.fr
         img = self.full_preview_image()
 
         save_image(
-                message_queue=self.message_queue,
-                image=img,
-                **self.preview_config
-                )
+            message_queue=self.message_queue,
+            image=img,
+            **self.preview_config
+        )
     # >>>3
 
     def translate_rotate(self, dx, dy, dz=0):   # <<<3
@@ -4933,10 +5123,11 @@ contact: Pierre.Hyvernat@univ-smb.fr
             self._config_dir = "./"
 
         filename = filedialog.askopenfilename(
-                parent=self,
-                title="Create Symmetry: choose configuration file",
-                initialdir=self._config_dir,
-                filetypes=[("ct files", "*.ct"), ("all", "*.*")])
+            parent=self,
+            title="Create Symmetry: choose configuration file",
+            initialdir=self._config_dir,
+            filetypes=[("ct files", "*.ct"), ("all", "*.*")]
+        )
         if not filename:
             return
 
@@ -4967,10 +5158,11 @@ contact: Pierre.Hyvernat@univ-smb.fr
         if not hasattr(self, "_config_dir"):
             self._config_dir = "./"
         filename = filedialog.asksaveasfilename(
-                parent=self,
-                title="Create Symmetry: choose configuration file",
-                initialdir=self._config_dir,
-                filetypes=[("ct files", "*.ct"), ("all", "*.*")])
+            parent=self,
+            title="Create Symmetry: choose configuration file",
+            initialdir=self._config_dir,
+            filetypes=[("ct files", "*.ct"), ("all", "*.*")]
+        )
         cfg = self.config
         cfg["preview"] = True
 
