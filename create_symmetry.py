@@ -1398,16 +1398,26 @@ def make_hyperbolic_image(      # <<<2
     w1, w2 = 0, nb_steps*len(matrix)
 
     if disk_model:
-        zs = 1j * (1-zs) / (1+zs)
-
-        x0 = center_disk.real
-        y0 = center_disk.imag
+        center_disk = 1j
+        p = 1
+        # center_disk = -1/2 + sqrt(3)*1j/2
+        # p = -1/4
 
         # FIXME: add those as parameters in the morph tab
-        x0 = -1/2
-        y0 = -sqrt(3)/2
+        q = center_disk
+        r2 = abs(q-p)**2
 
-        zs = (zs + x0) * y0
+        # cf p 317 and 125 in Needlam (pdf 337 and 145)
+        # zs = np.conj(zs)
+        zs = q + r2 / (zs - q.conjugate())
+
+        a = 1/4
+        zs = (zs - a) / (a*zs - 1)
+
+
+
+        # zs = (1j*zs + 1) / (zs + 1j)
+        # zs = (zs + x0) * y0
 
     def PSL2():
         """generator for elements of the PSL2(Z),
@@ -1431,18 +1441,36 @@ def make_hyperbolic_image(      # <<<2
                 if p == 1:
                     yield a, -b, c, d
 
+    A = np.zeros(res.shape, dtype="complex128")
+    B = np.zeros(res.shape, dtype="complex128")
+    ZS = np.zeros(res.shape, dtype="complex128")
     for a, b, c, d in PSL2():
         if len(done) >= nb_steps:
             break
         if (c, d) in done:
             continue
         assert a*d - b*c == 1
+        if (c, d) in done:
+            continue
         done.add((c, d))
-        ZS = (a*zs + b) / (c*zs + d)
+
+        # ZS = (a*zs + b) / (c*zs + d)
+        np.multiply(a, zs, out=A)
+        np.add(b, A, out=A)
+        np.multiply(c, zs, out=B)
+        np.add(d, B, out=B)
+        np.divide(A, B, out=ZS)
 
         for n, m in matrix:
-            # TODO use in place computation
-            res += ZS.imag**matrix[n, m] * np.exp(2j*pi*(n*ZS.real + m*ZS.imag))
+            # res += ZS.imag**matrix[n, m] * np.exp(2j*pi*(n*ZS.real + m*ZS.imag))
+            np.multiply(n, ZS.real, out=A)
+            np.multiply(m, ZS.imag, out=B)
+            np.add(A, B, out=A)
+            np.multiply(2j*pi, A, out=A)
+            np.exp(A, out=A)
+            np.power(ZS.imag, matrix[n, m], out=ZS)
+            np.multiply(ZS, A, out=ZS)
+            np.add(res, ZS, out=res)
             w1 += 1
             if message_queue is not None:
                 message_queue.put(w1/w2)
@@ -1773,6 +1801,7 @@ def make_image(                 # <<<2
             fade=world["sphere_background_fading"],
             stars=world["sphere_stars"]
         )
+    # TODO
     elif (pattern == "hyperbolic" and function["hyper_disk_model"]):
         return make_sphere_background(
             world["geometry"],
@@ -3202,6 +3231,11 @@ class World(LabelFrame):     # <<<2
         self._preview_button.grid(row=3, column=1, padx=5, pady=5)
         # >>>4
 
+        self._canvas.bind(
+            "<Motion>",
+            lambda e: self.update_pointer_coordinates(e.x, e.y)
+        )
+
         self.adjust_geometry()
     # >>>3
 
@@ -3247,7 +3281,12 @@ class World(LabelFrame):     # <<<2
 
     def zoom(self, alpha):      # <<<3
         def zoom_tmp(*args):
-            self.modulus /= alpha
+            x_min, x_max, y_min, y_max = self.geometry
+            x_c, y_c = (x_min + x_max) / 2, (y_min + y_max) / 2
+            delta_x, delta_y = (x_max - x_min) * alpha, (y_max - y_min) * alpha
+            x_min, x_max = x_c - delta_x/2, x_c + delta_x/2
+            y_min, y_max = y_c - delta_y/2, y_c + delta_y/2
+            self.geometry = x_min, x_max, y_min, y_max
         return zoom_tmp
     # >>>3
 
@@ -3332,6 +3371,43 @@ class World(LabelFrame):     # <<<2
                              x_max,
                              middle_y - delta_y/2,
                              middle_y + delta_y/2)
+    # >>>3
+
+    def pixel_to_xy(self, px, py):      # <<<3
+        x_min, x_max, y_min, y_max = self.geometry
+        try:
+            delta_x = (x_max - x_min) / self._canvas._image.width
+            delta_y = (y_max - y_min) / self._canvas._image.height
+            px_center, py_center = self._canvas.coords(
+                self._canvas._image_id
+            )
+            x_center = (x_max + x_min) / 2
+            y_center = (y_max + y_min) / 2
+        except AttributeError:
+            return
+        x = x_center + (px - px_center) * delta_x
+        y = y_center + (py_center - py) * delta_y
+        return x, y
+    # >>>3
+
+    def update_pointer_coordinates(self, px, py):       # <<<3
+        try:
+            self._canvas._pointer_coords
+        except:
+            self._canvas._pointer_coords = self._canvas.create_text(
+                PREVIEW_SIZE, PREVIEW_SIZE,
+                anchor=SE,
+                fill="white",
+                text=""
+            )
+        try:
+            x, y = self.pixel_to_xy(px, py)
+            self._canvas.itemconfig(
+                self._canvas._pointer_coords,
+                text="{:6.4f} , {:6.4f}".format(x, y)
+            )
+        except TypeError:       # when self.pixel_to_xy returns None
+            pass
     # >>>3
 
     @property
@@ -4282,11 +4358,6 @@ class CreateSymmetry(Tk):      # <<<2
 
         self.world._canvas.bind("<Double-Button-1>", self.show_bigger_preview)
 
-        self.world._canvas.bind(
-            "<Motion>",
-            lambda e: self.update_pointer_coordinates(e.x, e.y)
-        )
-
         self.world._canvas.bind("<ButtonPress-1>", self.start_zoom_rectangle)
         self.world._canvas.bind("<B1-Motion>", self.update_zoom_rectangle)
         self.world._canvas.bind("<ButtonRelease-1>", self.apply_zoom_rectangle)
@@ -4616,40 +4687,9 @@ contact: Pierre.Hyvernat@univ-smb.fr
 
     # >>>3
 
-    def update_pointer_coordinates(self, px, py):       # <<<3
-        try:
-            self.world._canvas._pointer_coords
-        except:
-            self.world._canvas._pointer_coords = self.world._canvas.create_text(
-                PREVIEW_SIZE, PREVIEW_SIZE,
-                anchor=SE,
-                fill="white",
-                text=""
-            )
-
-        x_min, x_max, y_min, y_max = self.world.geometry
-        try:
-            delta_x = self.world._canvas._image.width / (x_max - x_min)
-            delta_y = self.world._canvas._image.height / (y_max - y_min)
-            px_center, py_center = self.world._canvas.coords(
-                self.world._canvas._image_id
-            )
-            x_center = (x_max - x_min) / 2
-            y_center = (y_max - y_min) / 2
-        except AttributeError:
-            return
-        x = (px - px_center) / delta_x
-        y = (py_center - py) / delta_y
-        self.world._canvas.itemconfig(
-            self.world._canvas._pointer_coords,
-            text="{:6.4f} , {:6.4f}".format(x, y)
-        )
-    # >>>3
-
     def start_zoom_rectangle(self, event):   # <<<3
         if not hasattr(self.world._canvas, "_image_id"):
             return
-
         self.start_x = event.x
         self.start_y = event.y
         self.rect = self.world._canvas.create_rectangle(
@@ -4682,7 +4722,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
             self.start_x, self.start_y,
             curX, curY
         )
-        self.update_pointer_coordinates(curX, curY)
+        self.world.update_pointer_coordinates(curX, curY)
     # >>>3
 
     def apply_zoom_rectangle(self, event):     # <<<3
@@ -4700,21 +4740,8 @@ contact: Pierre.Hyvernat@univ-smb.fr
         except AttributeError:
             pass
 
-        x_min, x_max, y_min, y_max = self.world.geometry
-        try:
-            delta_x = self.world._canvas._image.width / (x_max - x_min)
-            delta_y = self.world._canvas._image.height / (y_max - y_min)
-            px_center, py_center = self.world._canvas.coords(
-                self.world._canvas._image_id
-            )
-            x_center = (x_max - x_min) / 2
-            y_center = (y_max - y_min) / 2
-        except AttributeError:
-            return
-        x1 = (self.start_x - px_center) / delta_x
-        x2 = (curX - px_center) / delta_x
-        y1 = -(self.start_y - py_center) / delta_y
-        y2 = -(curY - py_center) / delta_y
+        x1, y1 = self.world.pixel_to_xy(self.start_x, self.start_y)
+        x2, y2 = self.world.pixel_to_xy(curX, curY)
         x_min, x_max = min(x1, x2), max(x1, x2)
         y_min, y_max = min(y1, y2), max(y1, y2)
         self.world.geometry = x_min, x_max, y_min, y_max
@@ -5137,7 +5164,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
             f = open(filename, mode="r")
             cfg = json.load(f)
             try:
-                self.color.config = cfg["color"]
+                self.colorwheel.config = cfg["color"]
             except:
                 pass
             try:
@@ -5401,6 +5428,8 @@ def main():     # <<<1
     # config["function"]["lattice_parameters"] = [2,1,1,-1]
 
     # config["function"]["pattern_type"] = "hyperbolic"
+    # config["color"]["modulus"] = 10
+    # config["color"]["stretch"] = True
     # config["function"]["random_nb_coeffs"] = 1
     # config["world"]["geometry"] = (0,1/2, 0, 1/2)
     # config["function"]["sphere_pattern"] = "532"
