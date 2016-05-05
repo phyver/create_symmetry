@@ -3236,6 +3236,11 @@ class World(LabelFrame):     # <<<2
             lambda e: self.update_pointer_coordinates(e.x, e.y)
         )
 
+        self._canvas.bind("<ButtonPress-1>", self.start_zoom_rectangle)
+        self._canvas.bind("<B1-Motion>", self.update_zoom_rectangle)
+        self._canvas.bind("<ButtonRelease-1>", self.apply_zoom_rectangle)
+        # the last binding is overridden in CreateSymmetry to add make_preview
+
         self.adjust_geometry()
     # >>>3
 
@@ -3408,6 +3413,66 @@ class World(LabelFrame):     # <<<2
             )
         except TypeError:       # when self.pixel_to_xy returns None
             pass
+    # >>>3
+
+    def start_zoom_rectangle(self, event):   # <<<3
+        if not hasattr(self._canvas, "_image_id"):
+            return
+        self.start_x = event.x
+        self.start_y = event.y
+        self.rect = self._canvas.create_rectangle(
+            self.start_x,
+            self.start_y,
+            self.start_x,
+            self.start_y,
+            width=3,
+            outline="white"
+        )
+    # >>>3
+
+    def update_zoom_rectangle(self, event):     # <<<3
+        if not hasattr(self, "rect"):
+            return
+        curX, curY = (event.x, event.y)
+        ratio = self.width / self.height
+        sx = -1 if curX < self.start_x else 1
+        sy = -1 if curY < self.start_y else 1
+        if (curX == self.start_x or curY == self.start_y or
+                (curX < self.start_x and curY < self.start_y)):
+            curX = self.start_x
+            curY = self.start_y
+        elif ratio > abs(curX-self.start_x) / abs(curY-self.start_y):
+            curX = self.start_x + sx * abs(curY-self.start_y) * ratio
+        else:
+            curY = self.start_y + sy * abs(curX-self.start_x) / ratio
+        self._canvas.coords(
+            self.rect,
+            self.start_x, self.start_y,
+            curX, curY
+        )
+        self.update_pointer_coordinates(curX, curY)
+    # >>>3
+
+    def apply_zoom_rectangle(self, event):     # <<<3
+        try:
+            self._canvas.delete(self.rect)
+            del self.rect
+            curX, curY = (event.x, event.y)
+            ratio = self.width / self.height
+            if curX <= self.start_x and curY <= self.start_y:
+                return
+            elif ratio > (curX-self.start_x) / (curY-self.start_y):
+                curX = self.start_x + (curY-self.start_y) * ratio
+            else:
+                curY = self.start_y + (curX-self.start_x) / ratio
+        except AttributeError:
+            pass
+
+        x1, y1 = self.pixel_to_xy(self.start_x, self.start_y)
+        x2, y2 = self.pixel_to_xy(curX, curY)
+        x_min, x_max = min(x1, x2), max(x1, x2)
+        y_min, y_max = min(y1, y2), max(y1, y2)
+        self.geometry = x_min, x_max, y_min, y_max
     # >>>3
 
     @property
@@ -4358,9 +4423,11 @@ class CreateSymmetry(Tk):      # <<<2
 
         self.world._canvas.bind("<Double-Button-1>", self.show_bigger_preview)
 
-        self.world._canvas.bind("<ButtonPress-1>", self.start_zoom_rectangle)
-        self.world._canvas.bind("<B1-Motion>", self.update_zoom_rectangle)
-        self.world._canvas.bind("<ButtonRelease-1>", self.apply_zoom_rectangle)
+        def apply_zoom(event):
+            self.world.apply_zoom_rectangle(event)
+            self.make_preview()
+
+        self.world._canvas.bind("<ButtonRelease-1>", apply_zoom)
         # >>>4
 
         # menu <<<4
@@ -4685,67 +4752,6 @@ contact: Pierre.Hyvernat@univ-smb.fr
                 self.world._draw_color_tile_button.config(state=NORMAL)
             self.world.update()
 
-    # >>>3
-
-    def start_zoom_rectangle(self, event):   # <<<3
-        if not hasattr(self.world._canvas, "_image_id"):
-            return
-        self.start_x = event.x
-        self.start_y = event.y
-        self.rect = self.world._canvas.create_rectangle(
-            self.start_x,
-            self.start_y,
-            self.start_x,
-            self.start_y,
-            width=3,
-            outline="white"
-        )
-    # >>>3
-
-    def update_zoom_rectangle(self, event):     # <<<3
-        if not hasattr(self, "rect"):
-            return
-        curX, curY = (event.x, event.y)
-        ratio = self.world.width / self.world.height
-        sx = -1 if curX < self.start_x else 1
-        sy = -1 if curY < self.start_y else 1
-        if (curX == self.start_x or curY == self.start_y or
-                (curX < self.start_x and curY < self.start_y)):
-            curX = self.start_x
-            curY = self.start_y
-        elif ratio > abs(curX-self.start_x) / abs(curY-self.start_y):
-            curX = self.start_x + sx * abs(curY-self.start_y) * ratio
-        else:
-            curY = self.start_y + sy * abs(curX-self.start_x) / ratio
-        self.world._canvas.coords(
-            self.rect,
-            self.start_x, self.start_y,
-            curX, curY
-        )
-        self.world.update_pointer_coordinates(curX, curY)
-    # >>>3
-
-    def apply_zoom_rectangle(self, event):     # <<<3
-        try:
-            self.world._canvas.delete(self.rect)
-            del self.rect
-            curX, curY = (event.x, event.y)
-            ratio = self.world.width / self.world.height
-            if curX <= self.start_x and curY <= self.start_y:
-                return
-            elif ratio > (curX-self.start_x) / (curY-self.start_y):
-                curX = self.start_x + (curY-self.start_y) * ratio
-            else:
-                curY = self.start_y + (curX-self.start_x) / ratio
-        except AttributeError:
-            pass
-
-        x1, y1 = self.world.pixel_to_xy(self.start_x, self.start_y)
-        x2, y2 = self.world.pixel_to_xy(curX, curY)
-        x_min, x_max = min(x1, x2), max(x1, x2)
-        y_min, y_max = min(y1, y2), max(y1, y2)
-        self.world.geometry = x_min, x_max, y_min, y_max
-        self.make_preview()
     # >>>3
 
     def update_world_preview(self, *args):       # <<<3
