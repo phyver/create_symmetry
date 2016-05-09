@@ -1392,16 +1392,9 @@ def make_hyperbolic_image(      # <<<2
             x, y = matrix[n, m].real, matrix[n, m].imag
             matrix[n, m] = complex(10*abs(x), y)
 
-    done = set([])
-    res = np.zeros(zs.shape, dtype="complex128")
-    c, d = 0, 0
-    w1, w2 = 0, nb_steps*len(matrix)
-
     if disk_model:
         center_disk = 1j
         p = 1
-        # center_disk = -1/2 + sqrt(3)*1j/2
-        # p = -1/4
 
         # FIXME: add those as parameters in the morph tab
         q = center_disk
@@ -1437,10 +1430,16 @@ def make_hyperbolic_image(      # <<<2
                 total += 1
             else:
                 c = c + 1
-            for d in [total-c, c-total]:
-                b, a, p = bezout(c, d)
-                if p == 1:
-                    yield a, -b, c, d
+            d = total - c
+            b, a, p = bezout(c, d)
+            if p == 1:
+                yield a, -b, c, d
+                yield a, b, -c, d
+
+    done = set([])
+    res = np.zeros(zs.shape, dtype="complex128")
+    c, d = 0, 0
+    w1, w2 = 0, nb_steps*len(matrix)
 
     A = np.zeros(res.shape, dtype="complex128")
     B = np.zeros(res.shape, dtype="complex128")
@@ -1448,11 +1447,9 @@ def make_hyperbolic_image(      # <<<2
     for a, b, c, d in PSL2():
         if len(done) >= nb_steps:
             break
-        if (c, d) in done:
+        if (c, d) in done or (-c, -d) in done:
             continue
         assert a*d - b*c == 1
-        if (c, d) in done:
-            continue
         done.add((c, d))
 
         # ZS = (a*zs + b) / (c*zs + d)
@@ -1475,7 +1472,6 @@ def make_hyperbolic_image(      # <<<2
             w1 += 1
             if message_queue is not None:
                 message_queue.put(w1/w2)
-
     return res
 # >>>2
 
