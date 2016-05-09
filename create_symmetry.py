@@ -1411,7 +1411,8 @@ def make_hyperbolic_image(      # <<<2
         # zs = np.conj(zs)
         zs = q + r2 / (zs - q.conjugate())
 
-        a = 1/4
+        # translation in Poincarre disk
+        a = -0.2679491924311227
         zs = (zs - a) / (a*zs - 1)
 
 
@@ -3056,12 +3057,12 @@ class World(LabelFrame):     # <<<2
         Button(
             transformation_frame,
             text="zoom -",
-            command=self.zoom(2**.25)
+            command=self.zoom(2**-.25)
         ).pack(side=LEFT, padx=5, pady=5)
         Button(
             transformation_frame,
             text="zoom +",
-            command=self.zoom(2**-.25)
+            command=self.zoom(2**.25)
         ).pack(side=RIGHT, padx=5, pady=5)
         # >>>4
 
@@ -3288,7 +3289,7 @@ class World(LabelFrame):     # <<<2
         def zoom_tmp(*args):
             x_min, x_max, y_min, y_max = self.geometry
             x_c, y_c = (x_min + x_max) / 2, (y_min + y_max) / 2
-            delta_x, delta_y = (x_max - x_min) * alpha, (y_max - y_min) * alpha
+            delta_x, delta_y = (x_max - x_min) / alpha, (y_max - y_min) / alpha
             x_min, x_max = x_c - delta_x/2, x_c + delta_x/2
             y_min, y_max = y_c - delta_y/2, y_c + delta_y/2
             self.geometry = x_min, x_max, y_min, y_max
@@ -4394,9 +4395,9 @@ class CreateSymmetry(Tk):      # <<<2
         self.bind("<Control-g>", sequence(self.function.new_random_matrix))
         self.bind("<Control-G>", sequence(self.new_random_preview))
 
-        self.bind("<Control-Key-minus>", sequence(self.world.zoom(2**.25),
+        self.bind("<Control-Key-minus>", sequence(self.world.zoom(2**-.25),
                                                   self.make_preview))
-        self.bind("<Control-Key-plus>", sequence(self.world.zoom(2**-.25),
+        self.bind("<Control-Key-plus>", sequence(self.world.zoom(2**.25),
                                                  self.make_preview))
 
         self.bind("<Control-Key-Left>", sequence(self.translate_rotate(1, 0),
@@ -4506,6 +4507,16 @@ class CreateSymmetry(Tk):      # <<<2
         menu.add_cascade(label="world", menu=world_menu)
 
         world_menu.add_command(
+            label="zoom -",
+            accelerator="Ctrl--",
+            command=sequence(self.world.zoom(2**-.25), self.make_preview)
+        )
+        world_menu.add_command(
+            label="zoom +",
+            accelerator="Ctrl-+",
+            command=sequence(self.world.zoom(2**.25), self.make_preview)
+        )
+        world_menu.add_command(
             label="reset world",
             accelerator="Ctrl-0",
             command=sequence(self.world.reset_geometry)
@@ -4515,8 +4526,8 @@ class CreateSymmetry(Tk):      # <<<2
             command=sequence(self.world.change_save_dir)
         )
 
-        function_menu = Menu(menu, tearoff=False)
-        menu.add_cascade(label="function", menu=function_menu)
+        # function_menu = Menu(menu, tearoff=False)
+        # menu.add_cascade(label="function", menu=function_menu)
 
         about_menu = Menu(menu, tearoff=False)
         menu.add_cascade(label="about", menu=about_menu)
