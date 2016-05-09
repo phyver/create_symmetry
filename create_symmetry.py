@@ -3463,7 +3463,7 @@ class World(LabelFrame):     # <<<2
             else:
                 curY = self.start_y + (curX-self.start_x) / ratio
         except AttributeError:
-            pass
+            return
 
         x1, y1 = self.pixel_to_xy(self.start_x, self.start_y)
         x2, y2 = self.pixel_to_xy(curX, curY)
@@ -5054,7 +5054,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
             pass
 
         try:
-            self.preview_config = self.config
+            self.preview_config = copy.deepcopy(self.config)
 
             self.preview_process = Process(target=make_preview_job)
             self.preview_process.start()
@@ -5158,21 +5158,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
         self.make_preview()
     # >>>3
 
-    def load_config(self, *args):   # <<<3
-        if not hasattr(self, "_config_dir"):
-            self._config_dir = "./"
-
-        filename = filedialog.askopenfilename(
-            parent=self,
-            title="Create Symmetry: choose configuration file",
-            initialdir=self._config_dir,
-            filetypes=[("ct files", "*.ct"), ("all", "*.*")]
-        )
-        if not filename:
-            return
-
-        self._config_dir = os.path.dirname(filename)
-
+    def load_config_file(self, filename):       # <<<3
         try:
             f = open(filename, mode="r")
             cfg = json.load(f)
@@ -5194,7 +5180,24 @@ contact: Pierre.Hyvernat@univ-smb.fr
             error("could read config file '{}'".format(filename))
     # >>>3
 
-    def save_config(self, *args):
+    def load_config(self, *args):   # <<<3
+        if not hasattr(self, "_config_dir"):
+            self._config_dir = "./"
+
+        filename = filedialog.askopenfilename(
+            parent=self,
+            title="Create Symmetry: choose configuration file",
+            initialdir=self._config_dir,
+            filetypes=[("ct files", "*.ct"), ("all", "*.*")]
+        )
+        if not filename:
+            return
+
+        self._config_dir = os.path.dirname(filename)
+        self.load_config_file(filename)
+    # >>>3
+
+    def save_config(self, *args):       # <<<3
         if not hasattr(self, "_config_dir"):
             self._config_dir = "./"
         filename = filedialog.asksaveasfilename(
@@ -5213,6 +5216,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
             cfg["function"]["matrix"] = matrix_to_list(cfg["function"]["matrix"])
         json.dump(cfg, config_file, indent=2)
         config_file.close()
+    # >>>3
 
     def undo(self):     # <<<3
         # print(">>", self.undo_index, len(self.undo_list))
@@ -5442,15 +5446,19 @@ def main():     # <<<1
 
     # config["function"]["pattern_type"] = "hyperbolic"
     # config["color"]["modulus"] = 10
+    # config["function"]["hyper_disk_model"] = False
     # config["color"]["stretch"] = True
     # config["function"]["random_nb_coeffs"] = 1
-    # config["world"]["geometry"] = (0,1/2, 0, 1/2)
+    # config["world"]["geometry"] = (-1.5, 1.5, 0, 3)
+    # config["world"]["size"] = (1000,1000)
     # config["function"]["sphere_pattern"] = "532"
 
     gui = CreateSymmetry()
     gui.colorwheel.config = config["color"]
     gui.world.config = config["world"]
     gui.function.config = config["function"]
+
+    # gui.load_config_file("./test.ct")
     if make_preview:
         gui.make_preview()
     gui.mainloop()
