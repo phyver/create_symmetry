@@ -17,7 +17,7 @@ from ast import literal_eval
 
 # math
 from cmath import exp
-from math import sqrt, pi, sin, cos, asin, acos, atan2
+from math import sqrt, pi, sin, cos, asin, acos, atan2, ceil
 from random import randrange, uniform, shuffle, seed
 
 # multiprocessing
@@ -54,6 +54,10 @@ FILENAME_TEMPLATE = "output-{type:}-{name:}~{nb:}"
 UNDO_SIZE = 100
 DEFAULT_SPHERE_BACKGROUND = "#000066"
 STAR_COLOR = "#FFC"
+
+# process images using blocks of that many pixels (0 => process everything at
+# once)
+BLOCK_SIZE = 2000
 
 # keep a random seed to display random pixels in sphere images. The pixels
 # should always be at the same place during a run of the program to prevent
@@ -1332,7 +1336,9 @@ def make_wallpaper_image(   # <<<2
         basis,              # additional parameters for basis
         N=1,                # additional forced symmetry
         color_pattern="",   # color reversing symmetry pattern
-        message_queue=None):
+        message_queue=None,
+        nb_blocks=1,
+        nb_block=0):
     """use the given matrix to make an image for the given pattern
     the ``N`` parameter is used to enforce rotational symmetry around the
     origin but will usually destroy periodicity
@@ -1370,7 +1376,7 @@ def make_wallpaper_image(   # <<<2
             np.exp(_tmp, out=_tmp)
             np.add(ZS, _tmp, out=ZS)
             if message_queue is not None:
-                message_queue.put(w1/w2)
+                message_queue.put(nb_block/nb_blocks+w1/(w2*nb_blocks))
             w1 += 1
         np.divide(ZS, N, out=ZS)
         np.multiply(ZS, matrix[(n, m)], out=ZS)
@@ -1385,7 +1391,9 @@ def make_hyperbolic_image(      # <<<2
         nb_steps=200,           # number of approximations steps to perform
         disk_model=True,        # inverse the result into Pointcarre disk?
         center_disk=1j,         # center for the disk inversion
-        message_queue=None):
+        message_queue=None,
+        nb_blocks=1,
+        nb_block=0):
 
     for n, m in matrix:
         while matrix[n, m].real <= 1:
@@ -1471,7 +1479,7 @@ def make_hyperbolic_image(      # <<<2
             np.add(res, ZS, out=res)
             w1 += 1
             if message_queue is not None:
-                message_queue.put(w1/w2)
+                message_queue.put(nb/block/nb_blocks+w1/(w2*nb_blocks))
     return res
 # >>>2
 
@@ -1482,7 +1490,9 @@ def make_sphere_image(      # <<<2
         pattern,            # name of group
         N=5,                # parameter for cyclic groups
         unwind=False,       # should the result be in stereographic projection?
-        message_queue=None):
+        message_queue=None,
+        nb_blocks=1,
+        nb_block=0):
     """use the given matrix to make an image for the given spherical pattern
 
     the ``N`` parameter is used for cyclic groups
@@ -1523,7 +1533,7 @@ def make_sphere_image(      # <<<2
             for (n, m) in matrix:
                 np.add(res, matrix[(n, m)] * zs**n * zsc**m, out=res)
                 if message_queue is not None:
-                    message_queue.put(w1/w2)
+                    message_queue.put(nb_block/nb_blocks+w1/(w2*nb_blocks))
                 w1 += 1
             np.divide(a*zs + b, c*zs + d, out=zs)
         np.divide(e*zs + f, g*zs + h, out=zs)
@@ -1561,15 +1571,21 @@ def make_sphere_background(     # <<<2
                 size=img.size,
                 color=color
             )
-            seed(RANDOM_SEED)
             width, height = img.size
-            for i in range(stars):
+            for i in range(int(stars)):
                 background_img.putpixel(
                     (randrange(0, width),
                      randrange(0, height)),
                     getrgb(STAR_COLOR)
                 )
-            seed()
+            rest = stars - int(stars)
+            if uniform(0, 1) < rest:
+                background_img.putpixel(
+                    (randrange(0, width),
+                     randrange(0, height)),
+                    getrgb(STAR_COLOR)
+                )
+
         except ValueError:
             background_img = PIL.Image.new(
                 mode="RGB",
@@ -1727,11 +1743,96 @@ def background_output(     # <<<2
 # >>>2
 
 
-def make_image(                 # <<<2
+def make_image(
         color=None,             # configuration of colorwheel
         world=None,             # configuration of output
         function=None,          # configuration for function
-        message_queue=None):
+        message_queue=None,
+        block_size=BLOCK_SIZE):
+
+    seed(RANDOM_SEED)
+
+    if block_size <= 0:
+        return make_image_single_block(
+            color=color,
+            world=world,
+            function=function,
+            message_queue=message_queue,
+            nb_blocks=1,
+            nb_block=0)
+
+    x_min, x_max, y_min, y_max = world["geometry"]
+    delta_x = x_max - x_min
+    delta_y = y_max - y_min
+
+    width, height = world["size"]
+
+    # print("{}x{} from ({},{}) to ({},{}), block size={}"
+    #       .format(width, height,
+    #               x_min, y_min, x_max, y_max,
+    #               block_size))
+    images = {}
+    nb_blocks = ceil(height/block_size) * ceil(width/block_size)
+    nb = 0
+    for y in range(0, height, block_size):
+        for x in range(0, width, block_size):
+            i = x//block_size
+            j = y//block_size
+
+            local_width = min(block_size, width-i*block_size)
+            local_height = min(block_size, height-j*block_size)
+
+            local_x_min = x_min + i * delta_x * block_size / width
+            local_y_max = y_max - j * delta_y * block_size / height
+
+            local_x_max = min(
+                x_min + (i+1) * delta_x * block_size / width,
+                x_max
+            )
+            local_y_min = max(
+                y_max - (j+1) * delta_y * block_size / height,
+                y_min
+            )
+
+            # print("bloc {}/{}: {},{}: {}x{} from ({},{}) to ({},{})"
+            #       .format(nb, nb_blocks,
+            #               i, j,
+            #               local_width, local_height,
+            #               local_x_min, local_y_min, local_x_max, local_y_max))
+
+            local_world = copy.deepcopy(world)
+            local_color = copy.deepcopy(color)
+            local_function = copy.deepcopy(function)
+            local_world["geometry"] = (local_x_min, local_x_max,
+                                       local_y_min, local_y_max)
+            local_world["size"] = (local_width, local_height)
+            local_world["sphere_stars"] /= nb_blocks
+
+            images[i, j] = make_image_single_block(
+                color=local_color,
+                world=local_world,
+                function=local_function,
+                message_queue=message_queue,
+                nb_blocks=nb_blocks,
+                nb_block=nb)
+            nb += 1
+    # print()
+
+    img = PIL.Image.new("RGBA", (width, height), (255, 0, 0, 0))
+    for i, j in images:
+        img.paste(images[i, j], (i*block_size, j*block_size))
+
+    seed()
+    return img
+
+
+def make_image_single_block(                 # <<<2
+        color=None,             # configuration of colorwheel
+        world=None,             # configuration of output
+        function=None,          # configuration for function
+        message_queue=None,
+        nb_blocks=1,
+        nb_block=0):
     """compute an image for a pattern"""
 
     if function["pattern_type"] == "wallpaper":
@@ -1761,7 +1862,9 @@ def make_image(                 # <<<2
             function["matrix"],
             nb_steps=function["hyper_nb_steps"],
             disk_model=function["hyper_disk_model"],
-            message_queue=message_queue
+            message_queue=message_queue,
+            nb_blocks=nb_blocks,
+            nb_block=nb_block
         )
     elif PATTERN[pattern]["type"] in ["plane group",
                                       "color reversing plane group"]:
@@ -1771,7 +1874,9 @@ def make_image(                 # <<<2
             pattern,
             basis(pattern, *function["lattice_parameters"]),
             N=function["wallpaper_N"],
-            message_queue=message_queue
+            message_queue=message_queue,
+            nb_blocks=nb_blocks,
+            nb_block=nb_block
         )
     elif PATTERN[pattern]["type"] in ["sphere group", "frieze", "rosette"]:
         res = make_sphere_image(
@@ -1780,7 +1885,9 @@ def make_image(                 # <<<2
             pattern,
             N=function["sphere_N"],
             unwind=function["sphere_mode"] == "frieze",
-            message_queue=message_queue
+            message_queue=message_queue,
+            nb_blocks=nb_blocks,
+            nb_block=nb_block
         )
     else:
         print(PATTERN[pattern]["type"])
