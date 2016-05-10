@@ -8,6 +8,7 @@
 import copy
 import getopt
 import sys
+import os
 import os.path
 from itertools import product
 import re
@@ -1170,7 +1171,7 @@ def basis(pattern, *params):        # <<<2
 # >>>2
 
 
-def bezout(a, b):
+def bezout(a, b):       # <<<2
     """Compute Bezout number, ie (u, v, p) st a*u + b*v = p and p = gcd(a, b)"""
     if a == 0 and b == 0:
         return (0, 0, 0)
@@ -1178,6 +1179,20 @@ def bezout(a, b):
         return (a//abs(a), 0, abs(a))
     (u, v, p) = bezout(b, a % b)
     return (v, (u - v*(a//b)), p)
+# >>>2
+
+
+def normalize_path(path):       # <<<2
+    # print("path:", path)
+    home = os.path.expanduser("~")
+    # print("home:", home)
+    path = os.path.expanduser(path)
+    # print("path:", path)
+    path = path.replace(home, "~")
+    # print("path:", path)
+    # print()
+    return path
+# >>>2
 # >>>1
 
 
@@ -1265,7 +1280,7 @@ def apply_color(                    # <<<2
     rho = modulus * complex(cos(angle*pi/180), sin(angle*pi/180))
     x_min, x_max, y_min, y_max = geometry
 
-    tmp = PIL.Image.open(filename)
+    tmp = PIL.Image.open(os.path.expanduser(filename))
     width, height = tmp.size
     delta_x = (x_max-x_min) / (width-1)
     delta_y = (y_max-y_min) / (height-1)
@@ -2336,7 +2351,7 @@ class ColorWheel(LabelFrame):   # <<<2
     @property
     def filename(self):     # <<<4
         try:
-            return self._filename
+            return normalize_path(self._filename)
         except AttributeError:
             return None
     # >>>4
@@ -2344,7 +2359,7 @@ class ColorWheel(LabelFrame):   # <<<2
     @filename.setter
     def filename(self, filename):   # <<<4
         if filename is not None:
-            filename = os.path.abspath(filename)
+            filename = normalize_path(filename)
         try:
             if self._filename != filename:
                 self._alt_filename = self._filename
@@ -2495,6 +2510,7 @@ class ColorWheel(LabelFrame):   # <<<2
         if filename is None:
             return
         try:
+            filename = os.path.expanduser(filename)
             if self.stretch:
                 self._x_min.disable()
                 self._x_max.disable()
@@ -2611,7 +2627,7 @@ class ColorWheel(LabelFrame):   # <<<2
     # >>>3
 
     def choose_colorwheel(self, *args):    # <<<3
-        if os.path.isfile(self.filename):
+        if self.filename and os.path.isfile(self.filename):
             initialdir = os.path.dirname(self.filename)
         else:
             initialdir = "./"
@@ -2691,12 +2707,12 @@ class World(LabelFrame):     # <<<2
 
     @property
     def save_directory(self):   # <<<4
-        return self._save_directory
+        return os.path.expanduser(self._save_directory)
     # >>>4
 
     @save_directory.setter
     def save_directory(self, dir):   # <<<4
-        self._save_directory = dir
+        self._save_directory = normalize_path(dir)
         if len(dir) > 30:
             dir = "..." +  dir[-27:]
         self._save_directory_button.configure(text=dir)
@@ -4396,11 +4412,14 @@ class CreateSymmetry(Tk):      # <<<2
     def config(self):       # <<<4
         return {"color": self.colorwheel.config,
                 "function": self.function.config,
-                "world": self.world.config}
+                "world": self.world.config,
+                "working_directory": normalize_path(os.getcwd())}
     # >>>4
 
     @config.setter
     def config(self, cfg):      # <<<4
+        if "working_directory" in cfg:
+            os.chdir(cfg["working_directory"])
         self.colorwheel.config = cfg.get("color", {})
         self.world.config = cfg.get("world", {})
         self.function.config = cfg.get("function", {})
@@ -5272,6 +5291,12 @@ contact: Pierre.Hyvernat@univ-smb.fr
         try:
             f = open(filename, mode="r")
             cfg = json.load(f)
+            try:
+                os.chdir(
+                    os.path.expanduser(cfg.get("working_directory", "./"))
+                )
+            except:
+                pass
             try:
                 self.colorwheel.config = cfg["color"]
             except:
