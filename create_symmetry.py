@@ -1494,7 +1494,7 @@ def make_hyperbolic_image(      # <<<2
             np.add(res, ZS, out=res)
             w1 += 1
             if message_queue is not None:
-                message_queue.put(nb/block/nb_blocks+w1/(w2*nb_blocks))
+                message_queue.put(nb_block/nb_blocks+w1/(w2*nb_blocks))
     return res
 # >>>2
 
@@ -1732,6 +1732,8 @@ def background_output(     # <<<2
         **config):
     """compute an image from the configuration in config, and save it to a file
     used by the GUI for output jobs"""
+
+    # print("PID background_output", os.getpid())
 
     filename_template = config["world"]["filename_template"]
 
@@ -4507,7 +4509,7 @@ class CreateSymmetry(Tk):      # <<<2
         self.bind("?", sequence(self.display_help))
         self.bind("<F1>", sequence(self.display_help))
 
-        self.bind("<Control-q>", sequence(self.destroy))
+        self.bind("<Control-q>", sequence(self.quit))
 
         self.bind("<Control-p>", sequence(self.make_preview))
         self.bind("<Control-s>", sequence(self.make_output))
@@ -4589,7 +4591,7 @@ class CreateSymmetry(Tk):      # <<<2
         file_menu.add_command(
             label="quit",
             accelerator="Ctrl-q",
-            command=sequence(self.destroy)
+            command=sequence(self.quit)
         )
 
         edit_menu = Menu(menu, tearoff=False)
@@ -4739,6 +4741,23 @@ class CreateSymmetry(Tk):      # <<<2
 """)
         self.update_GUI()
     # >>>4
+    # >>>3
+
+    def quit(self, *args):     # <<<3
+        if self.pending_output_jobs:
+            r = messagebox.askokcancel(
+                parent=self,
+                title="Create Symmetry: quit",
+                message="There are pending output job(s). "
+                        "Kill them and quit?")
+            if r:
+                self.output_process.terminate()
+                self.preview_process.terminate()
+                self.destroy()
+            else:
+                return
+        else:
+            self.destroy()
     # >>>3
 
     def display_help(self):     # <<<3
@@ -5135,13 +5154,13 @@ contact: Pierre.Hyvernat@univ-smb.fr
                     break
                 cfg["message_queue"] = self.message_queue
                 cfg["output_message_queue"] = self.output_message_queue
-                p = Process(target=background_output, kwargs=cfg)
-                p.start()
-                p.join()
+                self.output_process = Process(target=background_output, kwargs=cfg)
+                self.output_process.start()
+                self.output_process.join()
             self.pending_output_jobs = False
 
         if not self.pending_output_jobs:
-            Thread(target=output_thread).start()
+            Thread(target=output_thread, daemon=True).start()
     # >>>3
 
     def make_preview(self, *args):      # <<<3
@@ -5162,6 +5181,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
             height = self.world.preview_size
 
         def make_preview_job():
+            # print("make_preview PID", os.getpid())
             cfg = self.config
             cfg["world"]["size"] = (width, height)
 
@@ -5588,6 +5608,7 @@ def main():     # <<<1
     # config["world"]["size"] = (1000,1000)
     # config["function"]["sphere_pattern"] = "532"
 
+    # print("main PID", os.getpid())
     gui = CreateSymmetry()
     gui.colorwheel.config = config["color"]
     gui.world.config = config["world"]
