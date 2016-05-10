@@ -4187,93 +4187,96 @@ class Function(LabelFrame):     # <<<2
 
     def update(self, *args):     # <<<3
         # sphere tab  <<<4
-        if self.pattern_type == "sphere":
-            pattern = self.sphere_pattern
-            if self.sphere_mode in ["frieze", "rosette"]:
-                self._sphere_combo["values"] = F_NAMES
-                pattern = pattern.replace("N", "∞")
-                self.sphere_pattern = pattern
-                self._sphere_N.label_widget.configure(text="period")
+        pattern = self.sphere_pattern
+        if self.sphere_mode in ["frieze", "rosette"]:
+            self._sphere_combo["values"] = F_NAMES
+            pattern = pattern.replace("N", "∞")
+            self.sphere_pattern = pattern
+            self._sphere_N.label_widget.configure(text="period")
+            self._sphere_N.enable()
+        elif self.sphere_mode == "sphere":
+            pattern = pattern.replace("∞", "N")
+            self._sphere_combo["values"] = S_NAMES
+            self.sphere_pattern = pattern
+            self._sphere_N.label_widget.configure(text="N")
+            if "N" in self.sphere_pattern:
                 self._sphere_N.enable()
-            elif self.sphere_mode == "sphere":
-                pattern = pattern.replace("∞", "N")
-                self._sphere_combo["values"] = S_NAMES
-                self.sphere_pattern = pattern
-                self._sphere_N.label_widget.configure(text="N")
-                if "N" in self.sphere_pattern:
-                    self._sphere_N.enable()
-                else:
-                    self._sphere_N.disable()
+            else:
+                self._sphere_N.disable()
         # >>>4
 
         # wallpaper tab     <<<4
-        elif self.pattern_type == "wallpaper":
-            color_pattern = self.wallpaper_color_pattern
+        color_pattern = self.wallpaper_color_pattern
+        try:
+            lattice_parameters = self.lattice_parameters
+        except:
+            lattice_parameters = None
+
+        # color reversing combo
+        self._wallpaper_color_combo.configure(
+            values=["--"] + C_NAMES(self.wallpaper_pattern)
+        )
+        self.wallpaper_color_pattern = color_pattern
+
+        if lattice_parameters is not None:
             try:
-                lattice_parameters = self.lattice_parameters
+                self._lattice_parameters.convert(lattice_parameters)
+                self.lattice_parameters = lattice_parameters
             except:
-                lattice_parameters = None
+                pass
 
-            # color reversing combo
-            self._wallpaper_color_combo.configure(
-                values=["--"] + C_NAMES(self.wallpaper_pattern)
+        if self.wallpaper_color_pattern:
+            pattern = self.wallpaper_pattern, self.wallpaper_color_pattern
+        else:
+            pattern = self.wallpaper_pattern
+
+        lattice = PATTERN[pattern]["description"]
+        lattice0 = lattice.split()[0]
+
+        def not_zero(s):
+            x = float(s)
+            assert x != 0
+            return [x]
+
+        def det_not_null(s):
+            xs = str_to_floats(s)
+            assert len(xs) == 4
+            assert xs[0]*xs[3] - xs[1]*xs[2] != 0
+            return xs
+
+        if lattice0 == "general":
+            self._lattice_parameters.enable()
+            self._lattice_parameters.label_widget.config(
+                text=lattice0 + ": x1,y1,x2,y2"
             )
-            self.wallpaper_color_pattern = color_pattern
-
-            if lattice_parameters is not None:
-                try:
-                    self._lattice_parameters.convert(lattice_parameters)
-                    self.lattice_parameters = lattice_parameters
-                except:
-                    pass
-
-            lattice = PATTERN[self.current_pattern]["description"]
-            lattice0 = lattice.split()[0]
-
-            def not_zero(s):
-                x = float(s)
-                assert x != 0
-                return [x]
-
-            def det_not_null(s):
-                xs = str_to_floats(s)
-                assert len(xs) == 4
-                assert xs[0]*xs[3] - xs[1]*xs[2] != 0
-                return xs
-
-            if lattice0 == "general":
-                self._lattice_parameters.enable()
-                self._lattice_parameters.label_widget.config(
-                    text=lattice0 + ": x1,y1,x2,y2"
-                )
-                self._lattice_parameters.convert = det_not_null
-                self.lattice_parameters = [1, 0, 1, 1]
-            elif lattice0 == "rhombic":
-                self._lattice_parameters.enable()
-                self._lattice_parameters.label_widget.config(
-                    text=lattice0 + ": b"
-                )
-                self._lattice_parameters.convert = not_zero
-                self.lattice_parameters = [.5]
-            elif lattice0 == "rectangular":
-                self._lattice_parameters.enable()
-                self._lattice_parameters.convert = not_zero
-                self.lattice_parameters = [.5]
-                self._lattice_parameters.label_widget.config(
-                    text=lattice0 + ": H"
-                )
-            elif lattice0 == "square":
-                self._lattice_parameters.convert = None
-                self.lattice_parameters = []
-                self._lattice_parameters.label_widget.config(text=lattice0)
-                self._lattice_parameters.disable()
-            elif lattice0 == "hexagonal":
-                self._lattice_parameters.convert = None
-                self.lattice_parameters = []
-                self._lattice_parameters.label_widget.config(text=lattice0)
-                self._lattice_parameters.disable()
-            else:
-                assert False
+            self._lattice_parameters.convert = det_not_null
+            self.lattice_parameters = [1, 0, 1, 1]
+        elif lattice0 == "rhombic":
+            self._lattice_parameters.enable()
+            self._lattice_parameters.label_widget.config(
+                text=lattice0 + ": b"
+            )
+            self._lattice_parameters.convert = not_zero
+            self.lattice_parameters = [.5]
+        elif lattice0 == "rectangular":
+            self._lattice_parameters.enable()
+            self._lattice_parameters.convert = not_zero
+            self.lattice_parameters = [.5]
+            self._lattice_parameters.label_widget.config(
+                text=lattice0 + ": H"
+            )
+        elif lattice0 == "square":
+            self._lattice_parameters.convert = None
+            self.lattice_parameters = []
+            self._lattice_parameters.label_widget.config(text=lattice0)
+            self._lattice_parameters.disable()
+        elif lattice0 == "hexagonal":
+            self._lattice_parameters.convert = None
+            self.lattice_parameters = []
+            self._lattice_parameters.label_widget.config(text=lattice0)
+            self._lattice_parameters.disable()
+        else:
+            assert False
         # >>>4
     # >>>3
 # >>>2
