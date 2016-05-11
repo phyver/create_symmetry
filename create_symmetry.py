@@ -3827,20 +3827,13 @@ class Function(LabelFrame):     # <<<2
     # >>>4
 
     @property
-    def current_pattern(self):          # <<<4
-        if self.pattern_type == "wallpaper":
-            color_pattern = self.wallpaper_color_pattern
-            if color_pattern:
-                return (color_pattern, self.wallpaper_pattern)
-            else:
-                return self.wallpaper_pattern
-            return self.wallpaper_pattern
-        elif self.pattern_type == "sphere":
-            return self.sphere_pattern
-        elif self.pattern_type == "hyperbolic":
-            return "hyperbolic"
+    def full_wallpaper_pattern(self):          # <<<4
+        color_pattern = self.wallpaper_color_pattern
+        if color_pattern:
+            return (color_pattern, self.wallpaper_pattern)
         else:
-            return ""
+            return self.wallpaper_pattern
+        return self.wallpaper_pattern
     # >>>4
 
     @property
@@ -5080,12 +5073,14 @@ contact: Pierre.Hyvernat@univ-smb.fr
                     )
 
                     if self.function.pattern_type == "wallpaper":
+                        pattern = self.function.full_wallpaper_pattern
+
                         # name all argument of make tile and use dictionary here
                         self.world._canvas._tile_img = (
                             self.world.geometry,
                             (self.world.modulus, self.world.angle),
-                            self.function.current_pattern,
-                            basis(self.function.current_pattern,
+                            pattern,
+                            basis(pattern,
                                   *self.function.lattice_parameters),
                             image.size,
                             True,
@@ -5097,8 +5092,8 @@ contact: Pierre.Hyvernat@univ-smb.fr
                         self.world._canvas._orbifold_img = (
                             self.world.geometry,
                             (self.world.modulus, self.world.angle),
-                            self.function.current_pattern,
-                            basis(self.function.current_pattern,
+                            pattern,
+                            basis(pattern,
                                   *self.function.lattice_parameters),
                             image.size,
                             False,
@@ -5110,8 +5105,8 @@ contact: Pierre.Hyvernat@univ-smb.fr
                         self.world._canvas._mirrors_img = (
                             self.world.geometry,
                             (self.world.modulus, self.world.angle),
-                            self.function.current_pattern,
-                            basis(self.function.current_pattern,
+                            pattern,
+                            basis(pattern,
                                   *self.function.lattice_parameters),
                             image.size,
                             False,
@@ -5123,8 +5118,8 @@ contact: Pierre.Hyvernat@univ-smb.fr
                         self.world._canvas._color_tile_img = (
                             self.world.geometry,
                             (self.world.modulus, self.world.angle),
-                            self.function.current_pattern,
-                            basis(self.function.current_pattern,
+                            pattern,
+                            basis(pattern,
                                   *self.function.lattice_parameters),
                             image.size,
                             True,
@@ -5136,8 +5131,8 @@ contact: Pierre.Hyvernat@univ-smb.fr
                         self.world._canvas._color_orbifold_img = (
                             self.world.geometry,
                             (self.world.modulus, self.world.angle),
-                            self.function.current_pattern,
-                            basis(self.function.current_pattern,
+                            pattern,
+                            basis(pattern,
                                   *self.function.lattice_parameters),
                             image.size,
                             False,
@@ -5149,8 +5144,8 @@ contact: Pierre.Hyvernat@univ-smb.fr
                         self.world._canvas._color_mirrors_img = (
                             self.world.geometry,
                             (self.world.modulus, self.world.angle),
-                            self.function.current_pattern,
-                            basis(self.function.current_pattern,
+                            pattern,
+                            basis(pattern,
                                   *self.function.lattice_parameters),
                             image.size,
                             False,
