@@ -4370,7 +4370,7 @@ class Function(LabelFrame):     # <<<2
                 pass
 
         if self.wallpaper_color_pattern:
-            pattern = self.wallpaper_pattern, self.wallpaper_color_pattern
+            pattern = self.wallpaper_color_pattern, self.wallpaper_pattern
         else:
             pattern = self.wallpaper_pattern
 
