@@ -23,7 +23,6 @@ from random import randrange, uniform, shuffle, seed
 
 # multiprocessing
 from multiprocessing import Process, Queue
-from threading import Thread
 import queue
 
 # Tkinter for GUI
@@ -4426,6 +4425,14 @@ class CreateSymmetry(Tk):      # <<<2
         self.world.config = cfg.get("world", {})
         self.function.config = cfg.get("function", {})
     # >>>4
+
+    @property
+    def pending_outputs(self):
+        try:
+            b = self.output_process.is_alive()
+        except AttributeError:
+            b = False
+        return b
     # >>>3
 
     def __init__(self):     # <<<3
@@ -4726,7 +4733,6 @@ class CreateSymmetry(Tk):      # <<<2
         # queue containing parameters for pending output jobs
         self.output_params_queue = Queue()
         # are there pending output jobs?
-        self.pending_output_jobs = False
         self.output_message_queue = Queue()
 
         # queue containing the preview image, computed by make_preview_job
@@ -4744,7 +4750,7 @@ class CreateSymmetry(Tk):      # <<<2
     # >>>3
 
     def quit(self, *args):     # <<<3
-        if self.pending_output_jobs:
+        if self.pending_outputs:
             r = messagebox.askokcancel(
                 parent=self,
                 title="Create Symmetry: quit",
@@ -5025,7 +5031,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
                                 round(m*100, 3))
                     )
                     self._output_console.config(state=DISABLED)
-                elif not self.pending_output_jobs:
+                elif not self.pending_outputs:
                     self._output_console.config(state=NORMAL)
                     self._output_console.delete(0.0, END)
                     self._output_console.config(state=DISABLED)
@@ -5145,8 +5151,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
 
         self.output_params_queue.put(cfg)
 
-        def output_thread():
-            self.pending_output_jobs = True
+        def output_process():
             while True:
                 try:
                     cfg = self.output_params_queue.get(timeout=0.1)
@@ -5154,13 +5159,11 @@ contact: Pierre.Hyvernat@univ-smb.fr
                     break
                 cfg["message_queue"] = self.message_queue
                 cfg["output_message_queue"] = self.output_message_queue
-                self.output_process = Process(target=background_output, kwargs=cfg)
-                self.output_process.start()
-                self.output_process.join()
-            self.pending_output_jobs = False
+                background_output(**cfg)
 
-        if not self.pending_output_jobs:
-            Thread(target=output_thread, daemon=True).start()
+        if not self.pending_outputs:
+            self.output_process = Process(target=output_process)
+            self.output_process.start()
     # >>>3
 
     def make_preview(self, *args):      # <<<3
