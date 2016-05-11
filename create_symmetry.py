@@ -42,18 +42,32 @@ import numpy as np
 
 # >>>1
 
-PREVIEW_SIZE = 400
-STRETCH_DISPLAY_RADIUS = 5
+###
+# default configuration for colorwheel
+COLOR_GEOMETRY = (-1, 1, -1, 1)
+DEFAULT_COLOR = "black"
+
+###
+# default configuration for output
+WORLD_GEOMETRY = (-2, 2, -2, 2)
 OUTPUT_WIDTH = 1280
 OUTPUT_HEIGHT = 960
-COLOR_SIZE = 180
-COLOR_GEOMETRY = (-1, 1, -1, 1)
-WORLD_GEOMETRY = (-2, 2, -2, 2)
-DEFAULT_COLOR = "black"
 FILENAME_TEMPLATE = "output-{type:}-{name:}~{nb:}"
-UNDO_SIZE = 100
+
+###
+# misc options
+
+# color of background for sphere / hyperbolic patterns
 DEFAULT_SPHERE_BACKGROUND = "#000066"
+
+# color of random pixels ("stars") for sphere patterns
 STAR_COLOR = "#FFC"
+
+# misc GUI options
+COLOR_SIZE = 180            # size of colorwheel image in GUI
+PREVIEW_SIZE = 400          # size of preview image in GUI
+STRETCH_DISPLAY_RADIUS = 5  # how much of the "stretched" colorwheel to display
+UNDO_SIZE = 100             # size of undo stack
 
 # process images using blocks of that many pixels (0 => process everything at
 # once)
@@ -64,9 +78,12 @@ BLOCK_SIZE = 2000
 # "jumps" during translatiosn / rotations of the image
 RANDOM_SEED = uniform(0, 1)
 
-# all the recipes and related informations
-PATTERN = {     # <<<1
-    # the 17 wallpaper groups   <<<2
+
+###
+# recipes and related informations
+# <<<1
+PATTERN = {         # <<<2
+    # the 17 wallpaper groups   <<<3
     'o': {
         "alt_name": "p1",
         "recipe": "",
@@ -202,9 +219,9 @@ PATTERN = {     # <<<1
         "type": "plane group",
         "description": "hexagonal lattice",
         # OK
-    },      # >>>2
+    },      # >>>3
 
-    # the 47 color reversing wallpaper groups       <<<2
+    # the 47 color reversing wallpaper groups       <<<3
     ('o', 'o'): {
         "alt_name": "",
         "recipe": "",
@@ -572,9 +589,9 @@ PATTERN = {     # <<<1
         "type": "color reversing plane group",
         "description": "hexagonal lattice, 6-fold symmetry",
         # OK
-    },          # >>>2
+    },          # >>>3
 
-    # the 14 spherical symmetry groups      <<<2
+    # the 14 spherical symmetry groups      <<<3
     '332': {
         "alt_name": "T",
         "recipe": "n,m = -n,-m",
@@ -672,7 +689,7 @@ PATTERN = {     # <<<1
         "parity": "n-m = 0 mod N",
         "type": "sphere group",
         "description": "dihedral symmetry",
-    },      # >>>2
+    },      # >>>3
 
     # the 7 frieze groups are generated from the corresponding cyclic spherical
     # groups
@@ -691,10 +708,10 @@ for p in PATTERN:
         PATTERN[p]["alt_name"] = alt_name1
 PATTERN.update(_F)
 del _F
-# >>>1
+# >>>2
 
 # order of the groups in menus
-NAMES = [       # <<<1
+NAMES = [       # <<<2
     # wallpaper groups
     "o",        # general lattice
     "2222",
@@ -782,6 +799,7 @@ def C_NAMES(s):
                 q = ""
             r.append("{}{} ({}{})".format(p, q, PATTERN[p]["alt_name"], q))
     return r
+# >>>2
 # >>>1
 
 
@@ -1759,12 +1777,13 @@ def background_output(     # <<<2
 # >>>2
 
 
-def make_image(
+def make_image(     # <<<2
         color=None,             # configuration of colorwheel
         world=None,             # configuration of output
         function=None,          # configuration for function
         message_queue=None,
         block_size=BLOCK_SIZE):
+    """compute an image for a pattern"""
 
     seed(RANDOM_SEED)
 
@@ -1840,6 +1859,7 @@ def make_image(
 
     seed()
     return img
+# >>>2
 
 
 def make_image_single_block(                 # <<<2
@@ -1849,7 +1869,7 @@ def make_image_single_block(                 # <<<2
         message_queue=None,
         nb_blocks=1,
         nb_block=0):
-    """compute an image for a pattern"""
+    """compute a subimage for a pattern"""
 
     if function["pattern_type"] == "wallpaper":
         if function["wallpaper_color_pattern"]:
@@ -1937,7 +1957,7 @@ def make_image_single_block(                 # <<<2
 # >>>2
 
 
-# TODO: name all arguments
+# TODO: name all arguments???
 def make_tile(geometry,         # <<<2
               transformation,
               pattern,
@@ -2068,8 +2088,8 @@ def make_tile(geometry,         # <<<2
             x2, y2 = XY_to_pixel(coord[i], coord[i+1])
             draw.line((x1, y1, x2, y2), fill=color, width=width*coeff)
             if caps:
-                draw.rectangle([x1-R, y1-R, x1+R, y1+R], fill=color)
-                draw.rectangle([x2-R, y2-R, x2+R, y2+R], fill=color)
+                draw.ellipse([x1-R, y1-R, x1+R, y1+R], fill=color)
+                draw.ellipse([x2-R, y2-R, x2+R, y2+R], fill=color)
 
     def mirror(X0, Y0, X1, Y1, order, pixels=50):
 
@@ -5396,32 +5416,30 @@ contact: Pierre.Hyvernat@univ-smb.fr
 ###
 # main
 def main():     # <<<1
+    # TODO:
+    #  --batch --gui
+    #  --raw-config=...:...
     def display_help():
         print("""Usage: {} [flags]
 
     -o FILE  /  --output=FILE           choose output file
     -s W,H  /  --size=W,H               choose width and height of output
     -g X,Y,X,Y  /  --geometry=X,Y,X,Y   choose "geometry of output"
-    --modulus  /  --angle               transformation of the result
+    --modulus=...  /  --angle=...       transformation of the result
 
     -c FILE  /  --color=FILE            choose color file
     --color-geometry=X,Y,X,Y            choose "geometry" of the color file
-    --color-modulus  /  --color-angle   transformation of the colorwheel
+    --color-modulus=...                 transformation of the colorwheel
+    --color-angle=...
 
     --matrix=...                        transformation matrix
-    --rotation-symmetry=P               p-fold symmetry around the origin
+    --rotation-symmetry=p               force p-fold symmetry around the origin
 
-    --wallpaper=...                     name of wallpaper group
-    --sphere=...                        name of sphere group
-    --frieze=...                        name of frieze group
-    --rosette=...                       name of frieze group
+    --pattern=...                       name of pattern
     --params=...                        additional parameters:
                                            basis for lattice (for wallpaper)
-                                           nb of rotations for rosettes
+                                           nb of rotations for appropriate spherical patterns
 
-    --color-config=...
-    --world-config=...
-    --function-config=...
     --config=...                        config file
 
     --preview                           compute the initial preview image
@@ -5437,8 +5455,8 @@ def main():     # <<<1
             "output=", "size=", "geometry=", "modulus=", "angle=",
             "matrix=", "rotation-symmetry=",
             "preview",
-            "wallpaper=", "sphere", "frieze=", "rosette=", "params=",
-            "color-config=", "world-config=", "function-config=", "config="]
+            "pattern=", "params=",
+            "config="]
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], short_options, long_options)
@@ -5446,15 +5464,15 @@ def main():     # <<<1
         print(str(err))
         sys.exit(-1)
 
-    rotational_symmetry = 1
-    tab = None
-    pattern = None
     params = None
-    config = {"color": {}, "world": {}, "function": {}}
-    make_preview = False
+    config = {"color": {},
+              "world": {},
+              "function": {},
+              "preview": False,
+              "working_directory": "./"}
 
     def get_config(f):
-        nonlocal config, make_preview
+        nonlocal config
         try:
             f = open(f, mode="r")
             cfg = json.load(f)
@@ -5462,7 +5480,7 @@ def main():     # <<<1
                 for k in cfg[d]:
                     config[d][k] = cfg[d][k]
             if cfg.get("preview", False):
-                make_preview = True
+                config["preview"] = True
         except:
             error("problem while loading configuration from '{}'"
                   .format(a))
@@ -5493,7 +5511,7 @@ def main():     # <<<1
                 sys.exit(1)
         elif o in ["--rotation-symmetry"]:
             try:
-                rotational_symmetry = int(a)
+                config["function"]["wallpaper_N"] = int(a)
             except:
                 error("problem with rotational symmetry '{}'".format(a))
         elif o in ["--modulus"]:
@@ -5529,38 +5547,15 @@ def main():     # <<<1
             except:
                 error("problem with angle '{}'".format(a))
                 sys.exit(1)
-        elif o in ["--wallpaper"]:
+        elif o in ["--pattern"]:
             config["function"]["pattern_type"] = "wallpaper"
             config["function"]["wallpaper_pattern"] = a
-        elif o in ["--sphere"]:
-            config["function"]["pattern_type"] = "sphere"
-            config["function"]["sphere_pattern"] = a
-        elif o in ["--frieze"]:
-            config["function"]["pattern_type"] = "sphere"
-            config["function"]["sphere_pattern"] = a
-            config["function"]["sphere_mode"] = "frieze"
-        elif o in ["--rosette"]:
-            config["function"]["pattern_type"] = "sphere"
-            config["function"]["sphere_pattern"] = a
-            config["function"]["sphere_mode"] = "rosette"
         elif o in ["--params"]:
             params = a
         elif o == "--preview":
-            make_preview = True
+            config["preview"] = True
         elif o in ["--matrix"]:
             config["function"]["matrix"] = parse_matrix(a)
-        elif o == "--color-config":
-            cfg = json.loads(a)
-            for k in cfg:
-                config["color"][k] = cfg[k]
-        elif o == "--world-config":
-            cfg = json.loads(a)
-            for k in cfg:
-                config["world"][k] = cfg[k]
-        elif o == "--function-config":
-            cfg = json.loads(a)
-            for k in cfg:
-                config["function"][k] = cfg[k]
         elif o == "--config":
             get_config(a)
         else:
@@ -5618,7 +5613,7 @@ def main():     # <<<1
     gui.function.config = config["function"]
 
     # gui.load_config_file("./test.ct")
-    if make_preview:
+    if config["preview"]:
         gui.make_preview()
     gui.mainloop()
 # >>>1
