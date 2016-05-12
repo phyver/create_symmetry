@@ -49,10 +49,9 @@ DEFAULT_COLOR = "black"
 
 ###
 # default configuration for output
-WORLD_GEOMETRY = (-2, 2, -2, 2)
-OUTPUT_WIDTH = 1280
-OUTPUT_HEIGHT = 960
-FILENAME_TEMPLATE = "output-{type:}-{name:}~{nb:}"
+WORLD_GEOMETRY = (-1.5, 1.5, -1.5, 1.5)
+OUTPUT_SIZE = (800, 800)
+FILENAME_TEMPLATE = "output-{type:}-{name:}.{nb:}"
 
 ###
 # misc options
@@ -62,6 +61,8 @@ DEFAULT_SPHERE_BACKGROUND = "#000066"
 
 # color of random pixels ("stars") for sphere patterns
 STAR_COLOR = "#FFC"
+NB_STARS = 500
+FADE_COEFF = 200
 
 # misc GUI options
 COLOR_SIZE = 180            # size of colorwheel image in GUI
@@ -920,7 +921,14 @@ def floats_to_str(l):       # <<<2
 # >>>2
 
 
-def complex_to_str(z, precision=4):    # <<<2
+def str_to_complex(s):      # <<<2
+    s = re.sub("\s*", "", s)
+    s = s.replace("i", "j")
+    return complex(s)
+# >>>2
+
+
+def complex_to_str(z, precision=3):    # <<<2
     """transform a complex number into a string"""
     if z == 0:
         return "0"
@@ -937,7 +945,7 @@ def complex_to_str(z, precision=4):    # <<<2
         sign = "+" if z.imag > 0 else "-"
         x = "{x:.{prec:}f}".format(x=z.real, prec=precision)
         x = re.sub("\.0*\s*$", "", x)
-        x = x.rjust(precision + 3)
+        # x = x.rjust(precision + 3)
         y = "{y:.{prec:}f}".format(y=abs(z.imag), prec=precision)
         y = re.sub("\.0*\s*$", "", y)
         y = "" if y == "1" else y
@@ -1174,11 +1182,23 @@ def basis(pattern, *params):        # <<<2
         return None
     lattice = PATTERN[pattern]["description"].split()[0]
     if lattice == "general":
-        return [[params[0], params[1]], [params[2], params[3]]]
+        try:
+            return [[params[0], params[1]], [params[2], params[3]]]
+        except:
+            # FIXME: warning message
+            return [[1, 1], [1, 0]]
     elif lattice == "rhombic":
-        return [[1/2, params[0]/2], [1/2, -params[0]/2]]
+        try:
+            return [[1/2, params[0]/2], [1/2, -params[0]/2]]
+        except:
+            # FIXME: warning message
+            return [[1/2, 1], [1/2, -1]]
     elif lattice == "rectangular":
-        return [[1, 0], [0, 1/params[0]]]
+        try:
+            return [[1, 0], [0, 1/params[0]]]
+        except:
+            # FIXME: warning message
+            return [[1, 0], [0, 1/2]]
     elif lattice == "square":
         return [[1, 0], [0, 1]]
     elif lattice == "hexagonal":
@@ -1189,7 +1209,7 @@ def basis(pattern, *params):        # <<<2
 
 
 def bezout(a, b):       # <<<2
-    """Compute Bezout number, ie (u, v, p) st a*u + b*v = p and p = gcd(a, b)"""
+    """Compute Bezout numbers, ie (u, v, p) st a*u + b*v = p and p = gcd(a, b)"""
     if a == 0 and b == 0:
         return (0, 0, 0)
     if b == 0:
@@ -1210,6 +1230,19 @@ def normalize_path(path):       # <<<2
     # print()
     return path
 # >>>2
+
+
+def fourrier_identity(degre):       # <<<2
+    """Fourrier approximation of the identity function, with period (1,0) / (0,1)"""
+    M = {}
+    for n in range(1, degre+1):
+        M[(n, 0)] = (-1)**(n+1) * -1j/abs(n*pi)
+        M[(-n, 0)] = (-1)**(n+1) * 1j/abs(n*pi)
+    for n in range(1, degre+1):
+        M[(0, n)] = (-1)**(n+1) * 1/abs(n*pi)
+        M[(0, -n)] = (-1)**(n+1) * -1/abs(n*pi)
+    return M
+# >>>2
 # >>>1
 
 
@@ -1217,7 +1250,7 @@ def normalize_path(path):       # <<<2
 # making an image from a transformation and a colorwheel
 # <<<1
 def make_coordinates_array(         # <<<2
-        size=(OUTPUT_WIDTH, OUTPUT_HEIGHT),
+        size=OUTPUT_SIZE,
         geometry=WORLD_GEOMETRY,
         modulus=1,
         angle=0,
@@ -1424,13 +1457,19 @@ def make_hyperbolic_image(      # <<<2
         disk_model=True,        # inverse the result into Pointcarre disk?
         center_disk=1j,         # center for the disk inversion
         message_queue=None,
+        s=5,                    # exponent for imaginary part (should have real part > 1)
         nb_blocks=1,
         nb_block=0):
 
-    for n, m in matrix:
-        while matrix[n, m].real <= 1:
-            x, y = matrix[n, m].real, matrix[n, m].imag
-            matrix[n, m] = complex(10*abs(x), y)
+    # ks = list(matrix.keys())
+    # for n, m in ks:
+    #     if m != 0:
+    #         matrix[n, 0] = matrix[n, m]
+    #         del matrix[n, m]
+    # for n, m in ks:
+    #     if n != 0:
+    #         matrix[0, m] = matrix[n, m]
+    #         del matrix[n, m]
 
     if disk_model:
         center_disk = 1j
@@ -1447,11 +1486,6 @@ def make_hyperbolic_image(      # <<<2
         # translation in Poincarre disk
         a = -0.2679491924311227
         zs = (zs - a) / (a*zs - 1)
-
-
-
-        # zs = (1j*zs + 1) / (zs + 1j)
-        # zs = (zs + x0) * y0
 
     def PSL2():
         """generator for elements of the PSL2(Z),
@@ -1504,11 +1538,12 @@ def make_hyperbolic_image(      # <<<2
             np.multiply(n, ZS.real, out=A)
             np.multiply(m, ZS.imag, out=B)
             np.add(A, B, out=A)
-            np.multiply(2j*pi, A, out=A)
-            np.exp(A, out=A)
-            np.power(ZS.imag, matrix[n, m], out=ZS)
-            np.multiply(ZS, A, out=ZS)
-            np.add(res, ZS, out=res)
+            np.multiply(2j*pi, A, out=B)
+            np.exp(B, out=A)
+            np.power(ZS.imag, complex(s), out=B)
+            np.multiply(A, B, out=ZS)
+            np.multiply(ZS, matrix[n, m], out=A)
+            np.add(res, A, out=res)
             w1 += 1
             if message_queue is not None:
                 message_queue.put(nb_block/nb_blocks+w1/(w2*nb_blocks))
@@ -1738,6 +1773,9 @@ def save_image(         # <<<2
     config_file = open(filename + ".ct", mode="w")
     if "matrix" in cfg["function"]:
         cfg["function"]["matrix"] = matrix_to_list(cfg["function"]["matrix"])
+    if "hyper_s" in cfg["function"]:
+        cfg["function"]["hyper_s"] = str(cfg["function"]["hyper_s"])
+
     json.dump(cfg, config_file, indent=2)
     config_file.close()
 # >>>2
@@ -1766,7 +1804,7 @@ def background_output(     # <<<2
         message_queue=output_message_queue
     )
 
-    if world["preview_fade"]:
+    if world["fade"]:
         image = fade_image(image)
 
     save_image(
@@ -1897,6 +1935,7 @@ def make_image_single_block(                 # <<<2
             zs,
             function["matrix"],
             nb_steps=function["hyper_nb_steps"],
+            s=function["hyper_s"],
             disk_model=function["hyper_disk_model"],
             message_queue=message_queue,
             nb_blocks=nb_blocks,
@@ -2400,7 +2439,7 @@ class ColorWheel(LabelFrame):   # <<<2
     @alt_filename.setter
     def alt_filename(self, filename):   # <<<4
         if filename is not None:
-            if os.path.exists(filename):
+            if os.path.isfile(os.path.expanduser(filename)):
                 self._alt_filename = filename
     # >>>4
     # >>>3
@@ -2586,7 +2625,10 @@ class ColorWheel(LabelFrame):   # <<<2
             tk_img = PIL.ImageTk.PhotoImage(img)
             self._tk_image = tk_img     # prevent garbage collection
             self._canvas.delete(self._colorwheel_id)
-            self._canvas.create_image((COLOR_SIZE//2, COLOR_SIZE//2), image=tk_img)
+            self._canvas.create_image(
+                (COLOR_SIZE//2, COLOR_SIZE//2),
+                image=tk_img
+            )
             self.filename = filename
             self._filename_button.config(text=os.path.basename(filename))
             try:
@@ -2648,8 +2690,8 @@ class ColorWheel(LabelFrame):   # <<<2
     # >>>3
 
     def choose_colorwheel(self, *args):    # <<<3
-        if self.filename and os.path.isfile(self.filename):
-            initialdir = os.path.dirname(self.filename)
+        if self.filename and os.path.isfile(os.path.expanduser(self.filename)):
+            initialdir = os.path.dirname(os.path.expanduser(self.filename))
         else:
             initialdir = "./"
         filename = filedialog.askopenfilename(
@@ -2735,7 +2777,7 @@ class World(LabelFrame):     # <<<2
     def save_directory(self, dir):   # <<<4
         self._save_directory = normalize_path(dir)
         if len(dir) > 30:
-            dir = "..." +  dir[-27:]
+            dir = "..." + dir[-27:]
         self._save_directory_button.configure(text=dir)
     # >>>4
 
@@ -2835,7 +2877,11 @@ class World(LabelFrame):     # <<<2
         s = self._sphere_background.get()
         if is_rgb(s):
             return s
-        elif os.path.exists(self._sphere_background_full_filename):
+        elif os.path.isfile(
+            os.path.expanduser(
+                self._sphere_background_full_filename
+            )
+        ):
             return self._sphere_background_full_filename
         else:
             return s
@@ -2846,8 +2892,8 @@ class World(LabelFrame):     # <<<2
         if is_rgb(s):
             self._sphere_background_full_filename = ""
             self._sphere_background.set(s)
-        elif os.path.exists(s):
-            self._sphere_background_full_filename = s
+        elif os.path.isfile(os.path.expanduser(s)):
+            self._sphere_background_full_filename = os.path.expanduser(s)
             self._sphere_background.set(os.path.basename(s))
         else:
             self._sphere_background_full_filename = ""
@@ -2941,23 +2987,23 @@ class World(LabelFrame):     # <<<2
     # >>>4
 
     @property
-    def preview_fade(self):    # <<<4
+    def fade(self):    # <<<4
         return self._fade.get()
     # >>>4
 
-    @preview_fade.setter
-    def preview_fade(self, b):    # <<<4
+    @fade.setter
+    def fade(self, b):    # <<<4
         self._fade.set(b)
     # >>>4
 
     @property
-    def preview_fade_coeff(self):    # <<<4
-        return self._preview_fade_coeff.get()
+    def fade_coeff(self):    # <<<4
+        return self._fade_coeff.get()
     # >>>4
 
-    @preview_fade_coeff.setter
-    def preview_fade_coeff(self, b):    # <<<4
-        self._preview_fade_coeff.set(b)
+    @fade_coeff.setter
+    def fade_coeff(self, b):    # <<<4
+        self._fade_coeff.set(b)
     # >>>4
 
     @property
@@ -2972,7 +3018,8 @@ class World(LabelFrame):     # <<<2
 
     @property
     def morph(self):    # <<<4
-        return (self._morph_button.cget("state") != DISABLED and self._morph.get())
+        return (self._morph_button.cget("state") != DISABLED and
+                self._morph.get())
     # >>>4
 
     @morph.setter
@@ -3078,13 +3125,13 @@ class World(LabelFrame):     # <<<2
         )
         self._fade_button.pack(side=LEFT, padx=(5, 0), pady=5)
 
-        self._preview_fade_coeff = LabelEntry(
+        self._fade_coeff = LabelEntry(
             canvas_frame,
             convert=int,
             width=3,
             label=""
         )
-        self._preview_fade_coeff.pack(side=LEFT, padx=(0, 5), pady=5)
+        self._fade_coeff.pack(side=LEFT, padx=(0, 5), pady=5)
 
         self._preview_size = LabelEntry(
             canvas_frame,
@@ -3105,7 +3152,7 @@ class World(LabelFrame):     # <<<2
         self._draw_mirrors.set(False)
         self._fade.trace("w", self.update)
         self._fade.set(False)
-        self._preview_fade_coeff.set(100)
+        self._fade_coeff.set(100)
         # >>>4
 
         # geometry of result    <<<4
@@ -3338,8 +3385,7 @@ class World(LabelFrame):     # <<<2
         self._size = LabelEntry(
             settings_frame,
             label="size",
-            value="{} x {}".format(OUTPUT_WIDTH,
-                                   OUTPUT_HEIGHT),
+            value="{} x {}".format(*OUTPUT_SIZE),
             convert=convert_size,
             width=12
         )
@@ -3490,10 +3536,10 @@ class World(LabelFrame):     # <<<2
         else:
             self._draw_mirrors_button.config(state=DISABLED)
 
-        if self.preview_fade:
-            self._preview_fade_coeff.enable()
+        if self.fade:
+            self._fade_coeff.enable()
         else:
-            self._preview_fade_coeff.disable()
+            self._fade_coeff.disable()
     # >>>3
 
     def adjust_geometry(self, *args):       # <<<3
@@ -3624,7 +3670,7 @@ class World(LabelFrame):     # <<<2
                   "size", "filename_template", "save_directory",
                   "preview_size",
                   "draw_tile", "draw_orbifold", "draw_color_tile",
-                  "draw_mirrors", "preview_fade", "preview_fade_coeff",
+                  "draw_mirrors", "fade", "fade_coeff",
                   "sphere_projection", "sphere_rotations",
                   "sphere_background", "sphere_background_fading",
                   "sphere_stars",
@@ -3640,7 +3686,7 @@ class World(LabelFrame):     # <<<2
                   "size", "filename_template", "save_directory",
                   "preview_size",
                   "draw_tile", "draw_orbifold", "draw_color_tile",
-                  "draw_mirrors", "preview_fade", "preview_fade_coeff",
+                  "draw_mirrors", "fade", "fade_coeff",
                   "sphere_projection", "sphere_rotations",
                   "sphere_background", "sphere_background_fading",
                   "sphere_stars",
@@ -3865,6 +3911,19 @@ class Function(LabelFrame):     # <<<2
     def hyper_disk_model(self, b):
         self._hyper_disk_model.set(b)
     # >>>4
+
+    @property
+    def hyper_s(self):       # <<<4
+        return self._hyper_s.get()
+    # >>>4
+
+    @hyper_s.setter          # <<<4
+    def hyper_s(self, s):
+        z = complex(s)
+        s = complex_to_str(z)
+        print(repr(s))
+        self._hyper_s.set(s)
+    # >>>4
     # >>>3
 
     def __init__(self, root):      # <<<3
@@ -4034,6 +4093,15 @@ class Function(LabelFrame):     # <<<2
         )
         self._hyper_nb_steps.pack(padx=5, pady=(20, 5))
 
+        self._hyper_s = LabelEntry(
+            self._hyper_tab,
+            label="s",
+            convert=str_to_complex,
+            value=3,
+            width=6,
+        )
+        self._hyper_s.pack(padx=5, pady=5)
+
         self._hyper_disk_model = BooleanVar()
         self._hyper_disk_model_button = Checkbutton(
             self._hyper_tab,
@@ -4149,7 +4217,7 @@ class Function(LabelFrame):     # <<<2
         self._random_noise = LabelEntry(
             random_frame,
             label="",
-            value=10,
+            value=25,
             convert=float,
             width=3)
         self._random_noise.pack(side=RIGHT, padx=5, pady=5)
@@ -4206,9 +4274,7 @@ class Function(LabelFrame):     # <<<2
             m = m.strip(" ()")
             n = int(n)
             m = int(m)
-            z = re.sub("\s*", "", z)
-            z = z.replace("i", "j")
-            z = complex(z)
+            z = str_to_complex(z)
             if z == 0:
                 if (n, m) in self.matrix:
                     del self.matrix[n, m]
@@ -4289,7 +4355,7 @@ class Function(LabelFrame):     # <<<2
                   "wallpaper_pattern", "lattice_parameters",
                   "wallpaper_color_pattern", "wallpaper_N",
                   "sphere_pattern", "sphere_N", "sphere_mode",
-                  "hyper_nb_steps", "hyper_disk_model"]:
+                  "hyper_nb_steps", "hyper_disk_model", "hyper_s"]:
             cfg[k] = getattr(self, k)
         return cfg
     # >>>3
@@ -4299,10 +4365,10 @@ class Function(LabelFrame):     # <<<2
         for k in ["random_nb_coeffs", "random_min_degre",
                   "random_max_degre", "random_modulus", "random_noise",
                   "pattern_type",
-                  "wallpaper_pattern",  "wallpaper_N", # "lattice_parameters",
+                  "wallpaper_pattern",  "wallpaper_N",  # "lattice_parameters",
                   # "wallpaper_color_pattern",
                   "sphere_pattern", "sphere_N", "sphere_mode",
-                  "hyper_nb_steps", "hyper_disk_model"]:
+                  "hyper_nb_steps", "hyper_disk_model", "hyper_s"]:
             if k in cfg:
                 setattr(self, k, cfg[k])
         self.update()
@@ -4314,7 +4380,7 @@ class Function(LabelFrame):     # <<<2
         # we need to update again to configure the lattice parameters correctly
         self.update()
         # we can now set the lattice_parameters
-        if "lattice_parameters" in cfg:
+        if "lattice_parameters" in cfg and cfg["lattice_parameters"]:
             self.lattice_parameters = cfg["lattice_parameters"]
 
         if "matrix" in cfg:
@@ -4433,11 +4499,20 @@ class CreateSymmetry(Tk):      # <<<2
     @config.setter
     def config(self, cfg):      # <<<4
         if "working_directory" in cfg:
-            os.chdir(cfg["working_directory"])
+            os.chdir(os.path.expanduser(cfg["working_directory"]))
         self.colorwheel.config = cfg.get("color", {})
         self.world.config = cfg.get("world", {})
         self.function.config = cfg.get("function", {})
     # >>>4
+
+    @property
+    def pending_preview(self):
+        try:
+            b = self.preview_process.is_alive()
+        except AttributeError:
+            b = False
+        return b
+    # >>>3
 
     @property
     def pending_outputs(self):
@@ -4728,11 +4803,11 @@ class CreateSymmetry(Tk):      # <<<2
         self.world._fade_button.config(
             command=self.update_world_preview
         )
-        self.world._preview_fade_coeff.bind(
+        self.world._fade_coeff.bind(
             "<Return>",
             self.update_world_preview
         )
-        self.world._preview_fade_coeff.bind(
+        self.world._fade_coeff.bind(
             "<FocusOut>",
             self.update_world_preview
         )
@@ -4900,26 +4975,25 @@ contact: Pierre.Hyvernat@univ-smb.fr
             self.world.disable_geometry_sphere_tab()
             self.world.disable_geometry_morph_tab()
 
-
         # enable / disable tiling / orbifold drawing buttons
         if self.function.pattern_type in ["sphere", "hyperbolic"]:
             self.world.draw_tile = False
             self.world.draw_orbifold = False
             self.world.draw_mirrors = False
-            self.world.preview_fade = False
+            self.world.fade = False
             self.world._draw_tile_button.config(state=DISABLED)
             self.world._draw_orbifold_button.config(state=DISABLED)
             self.world._draw_color_tile_button.config(state=DISABLED)
             self.world._draw_mirrors_button.config(state=DISABLED)
             self.world._fade_button.config(state=DISABLED)
-            self.world._preview_fade_coeff.disable()
+            self.world._fade_coeff.disable()
         else:
             self.world._draw_tile_button.config(state=NORMAL)
             self.world._draw_orbifold_button.config(state=NORMAL)
             self.world._draw_color_tile_button.config(state=NORMAL)
             self.world._draw_mirrors_button.config(state=NORMAL)
             self.world._fade_button.config(state=NORMAL)
-            self.world._preview_fade_coeff.enable()
+            self.world._fade_coeff.enable()
             if self.function.wallpaper_color_pattern == "":
                 self.world._draw_color_tile_button.config(state=DISABLED)
             else:
@@ -4934,12 +5008,12 @@ contact: Pierre.Hyvernat@univ-smb.fr
         except AttributeError:
             pass
         try:
-            if self.world.preview_fade:
-                preview_fade = fade_image(
+            if self.world.fade:
+                fade = fade_image(
                     self.world._canvas._image,
-                    255-self.world.preview_fade_coeff
+                    255-self.world.fade_coeff
                 )
-                self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(preview_fade)
+                self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(fade)
             else:
                 self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(
                     self.world._canvas._image
@@ -5023,7 +5097,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
                         "Preview: {}%".format(int(m*100))
                     )
                     self._preview_console.config(state=DISABLED)
-                elif self.preview_image_queue.empty():
+                elif not self.pending_preview:
                     self._preview_console.config(state=NORMAL)
                     self._preview_console.delete(0.0, END)
                     self._preview_console.config(state=DISABLED)
@@ -5240,7 +5314,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
         """paste the preview, tile, orbifold and mirror images together"""
         img = self.world._canvas._image
         width, height = img.size
-        if self.world.preview_fade:
+        if self.world.fade:
             img = fade_image(img)
 
         def paste_tile(name):
@@ -5387,6 +5461,8 @@ contact: Pierre.Hyvernat@univ-smb.fr
         config_file = open(filename, mode="w")
         if "matrix" in cfg["function"]:
             cfg["function"]["matrix"] = matrix_to_list(cfg["function"]["matrix"])
+        if "hyper_s" in cfg["function"]:
+            cfg["function"]["hyper_s"] = str(cfg["function"]["hyper_s"])
         json.dump(cfg, config_file, indent=2)
         config_file.close()
     # >>>3
@@ -5412,7 +5488,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
 # main
 def main():     # <<<1
     # TODO:
-    #  --batch --gui
+    #  --batch
     #  --raw-config=...:...
     def display_help():
         print("""Usage: {} [flags]
@@ -5431,13 +5507,14 @@ def main():     # <<<1
     --rotation-symmetry=p               force p-fold symmetry around the origin
 
     --pattern=...                       name of pattern
-    --params=...                        additional parameters:
-                                           basis for lattice (for wallpaper)
-                                           nb of rotations for appropriate spherical patterns
+    --params=...                        lattice parameters (only used when appropriate)
+    --N=...                             nb of rotations for appropriate spherical patterns
 
     --config=...                        config file
 
     --preview                           compute the initial preview image
+
+    --batch                             do not run GUI
 
     -h  /  --help                       this message
 """)
@@ -5451,7 +5528,7 @@ def main():     # <<<1
             "matrix=", "rotation-symmetry=",
             "preview",
             "pattern=", "params=",
-            "config="]
+            "config=", "batch"]
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], short_options, long_options)
@@ -5459,12 +5536,60 @@ def main():     # <<<1
         print(str(err))
         sys.exit(-1)
 
-    params = None
-    config = {"color": {},
-              "world": {},
-              "function": {},
-              "preview": False,
-              "working_directory": "./"}
+    config = {
+        "color": {
+            # "filename": None,
+            "color": DEFAULT_COLOR,
+            "geometry": COLOR_GEOMETRY,
+            "modulus": 1,
+            "angle": 0,
+            "stretch": False,
+        },
+        "world": {
+                "size": OUTPUT_SIZE,
+                "geometry": WORLD_GEOMETRY,
+                "modulus": 1,
+                "angle": 0,
+                "filename_template": FILENAME_TEMPLATE,
+                "save_directory": "./",
+                "draw_tile": False,
+                "draw_orbifold": False,
+                "draw_color_tile": False,
+                "draw_mirrors": False,
+                "fade": False,
+                "fade_coeff": FADE_COEFF,
+                "sphere_projection": True,
+                "sphere_rotations": (15, 15, 0),
+                "sphere_background": DEFAULT_SPHERE_BACKGROUND,
+                "sphere_background_fading": 100,
+                "sphere_stars": NB_STARS,
+                "morph": False,
+                "morph_start": 0,
+                "morph_end": 180,
+                "morph_stable_coeff": 20,
+        },
+        "function": {
+                "matrix": None,
+                "pattern_type": "wallpaper",
+                "wallpaper_pattern": "o",
+                "wallpaper_color_pattern": "",
+                "lattice_parameters": [],
+                "sphere_pattern": "332",
+                "random_nb_coeffs": 3,
+                "random_min_degre": -3,
+                "random_max_degre": 3,
+                "random_modulus": 1,
+                "random_noise": 25,
+                "wallpaper_N": 1,
+                "sphere_N": 5,
+                "sphere_mode": "sphere",
+                "hyper_nb_steps": 25,
+                "hyper_disk_model": True,
+                "hyper_s": 3,
+        },
+        "preview": False,
+        "working_directory": "./"}
+    batch = False
 
     def get_config(f):
         nonlocal config
@@ -5490,7 +5615,7 @@ def main():     # <<<1
             config["world"]["filename_template"] = a
         elif o in ["-s", "--size"]:
             try:
-                tmp = map(int, a.split(","))
+                tmp = map(int, re.split("[,x]", a))
                 width, height = tmp
                 config["world"]["size"] = (width, height)
             except:
@@ -5498,8 +5623,7 @@ def main():     # <<<1
                 sys.exit(1)
         elif o in ["-g", "--geometry"]:
             try:
-                tmp = map(float, a.split(","))
-                x_min, x_max, y_min, y_max = tmp
+                x_min, x_max, y_min, y_max = str_to_floats(a)
                 config["world"]["geometry"] = x_min, x_max, y_min, y_max
             except:
                 error("problem with geometry '{}' for output".format(a))
@@ -5524,8 +5648,7 @@ def main():     # <<<1
                 sys.exit(1)
         elif o in ["--color-geometry"]:
             try:
-                tmp = map(float, a.split(","))
-                color_x_min, color_x_max, color_y_min, color_y_max = tmp
+                x_min, x_max, y_min, y_max = str_to_floats(a)
                 config["color"]["geometry"] = x_min, x_max, y_min, y_max
             except:
                 error("problem with geometry '{}' for color image".format(a))
@@ -5543,16 +5666,40 @@ def main():     # <<<1
                 error("problem with angle '{}'".format(a))
                 sys.exit(1)
         elif o in ["--pattern"]:
-            config["function"]["pattern_type"] = "wallpaper"
-            config["function"]["wallpaper_pattern"] = a
+            pattern = a
+            print("pattern:", pattern)
+            if "/" in pattern:
+                color_pattern, pattern = pattern.split("/")
+                config["function"]["pattern_type"] = "wallpaper"
+                config["function"]["wallpaper_pattern"] = pattern
+                config["function"]["wallpaper_color_pattern"] = color_pattern
+                config["world"]["sphere_projection"] = True
+            elif pattern in W_NAMES:
+                config["function"]["pattern_type"] = "wallpaper"
+                config["function"]["wallpaper_pattern"] = pattern
+                config["world"]["sphere_projection"] = True
+            elif pattern in S_NAMES:
+                config["function"]["pattern_type"] = "sphere"
+                config["function"]["sphere_pattern"] = pattern
+                config["world"]["sphere_projection"] = False
+            elif pattern == "hyperbolic":
+                config["function"]["pattern_type"] = "hyperbolic"
+                config["world"]["sphere_projection"] = True
+
         elif o in ["--params"]:
-            params = a
+            config["function"]["lattice_parameters"] = str_to_floats(a)
+        elif o in ["--N"]:
+            config["function"]["sphere_N"] = int(a)
         elif o == "--preview":
             config["preview"] = True
         elif o in ["--matrix"]:
             config["function"]["matrix"] = parse_matrix(a)
         elif o == "--config":
             get_config(a)
+        elif o == "--batch":
+            batch = True
+        elif o == "--gui":
+            batch = False
         else:
             assert False
 
@@ -5563,54 +5710,32 @@ def main():     # <<<1
               .format(args))
         sys.exit(1)
 
-    # the "identity" function with waves, with period (1,0) / (0,1)
-    # t = 10
-    # M = {}
-    # for n in range(1, t+1):
-    #     M[(n, 0)] = (-1)**(n+1) * -1j/abs(n*pi)
-    #     M[(-n, 0)] = (-1)**(n+1) * 1j/abs(n*pi)
-    # for n in range(1, t+1):
-    #     M[(0, n)] = (-1)**(n+1) * 1/abs(n*pi)
-    #     M[(0, -n)] = (-1)**(n+1) * -1/abs(n*pi)
-
-    # config["function"]["matrix"] = M
-    # config["color"]["modulus"] = 1.5
-
-    # config["color"]["filename"] = "Images/flame-sym.jpg"
-    # config["color"]["alt_filename"] = "Images/flame-sym-gray.jpg"
-    # config["color"]["modulus"] = .5
-
-    # config["function"]["wallpaper_pattern"] = '2222'
-    # config["function"]["wallpaper_color_pattern"] = '22×'
-    # config["function"]["random_nb_coeffs"] = 10
-
-    # config["world"]["draw_orbifold"] = True
-    # config["world"]["draw_tile"] = True
-    # config["world"]["draw_mirrors"] = True
-    # config["world"]["draw_color_tile"] = False
-    # config["world"]["preview_fade"] = False
-    # config["world"]["modulus"] = 1.5
-    # config["function"]["lattice_parameters"] = [2,1,1,-1]
-
-    # config["function"]["pattern_type"] = "hyperbolic"
-    # config["color"]["modulus"] = 10
-    # config["function"]["hyper_disk_model"] = False
-    # config["color"]["stretch"] = True
-    # config["function"]["random_nb_coeffs"] = 1
-    # config["world"]["geometry"] = (-1.5, 1.5, 0, 3)
-    # config["world"]["size"] = (1000,1000)
-    # config["function"]["sphere_pattern"] = "532"
-
     # print("main PID", os.getpid())
-    gui = CreateSymmetry()
-    gui.colorwheel.config = config["color"]
-    gui.world.config = config["world"]
-    gui.function.config = config["function"]
+    if batch:
 
-    # gui.load_config_file("./test.ct")
-    if config["preview"]:
-        gui.make_preview()
-    gui.mainloop()
+        if config["function"]["matrix"] is None:
+            config["function"]["matrix"] = random_matrix(
+                config["function"]["random_nb_coeffs"],
+                config["function"]["random_min_degre"],
+                config["function"]["random_max_degre"],
+                config["function"]["random_modulus"],
+            )
+
+        img = make_image(
+            color=config["color"],
+            world=config["world"],
+            function=config["function"]
+        )
+        save_image(image=img, **config)
+
+    else:
+        gui = CreateSymmetry()
+        gui.config = config
+        if os.path.isfile(".create_symmetry.ct"):
+            gui.load_config_file(".create_symmetry.ct")
+        if config["preview"]:
+            gui.make_preview()
+        gui.mainloop()
 # >>>1
 
 
