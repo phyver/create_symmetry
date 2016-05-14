@@ -3278,36 +3278,17 @@ class World(LabelFrame):     # <<<2
                      self.enable_geometry_morph_tab)
         )
 
-        self._sphere_projection = StringVar()
-        self._sphere_projection.set("plain")
+        self._sphere_projection = BooleanVar()
+        self._sphere_projection.set(True)
 
-        tmp = Frame(self._geometry_sphere_tab)
-        tmp.pack()
-
-        Radiobutton(
-            tmp,
-            text="plain",
+        sphere_projection = Checkbutton(
+            self._geometry_sphere_tab,
+            text="stereographic projection",
             variable=self._sphere_projection,
-            value="plain",
+            onvalue=True, offvalue=False,
             indicatoron=False,
-        ).pack(side=LEFT, padx=5, pady=10)
-
-        Radiobutton(
-            tmp,
-            text="sphere",
-            variable=self._sphere_projection,
-            value="sphere",
-            indicatoron=False,
-        ).pack(side=LEFT, padx=5, pady=10)
-
-        Radiobutton(
-            tmp,
-            text="inversion",
-            variable=self._sphere_projection,
-            value="inversion",
-            indicatoron=False,
-        ).pack(side=LEFT, padx=5, pady=10)
-
+        )
+        sphere_projection.pack(padx=5, pady=10)
 
         self._rotations = LabelEntry(
             self._geometry_sphere_tab,
@@ -3318,17 +3299,6 @@ class World(LabelFrame):     # <<<2
             width=15
         )
         self._rotations.pack(padx=5, pady=10)
-
-        self._inversion_center = LabelEntry(
-            self._geometry_sphere_tab,
-            label="inversion center",
-            orientation="V",
-            value="i",
-            convert=str_to_complex,
-            width=10
-        )
-        self._inversion_center.pack(padx=5, pady=10)
-
 
         background_frame = Frame(self._geometry_sphere_tab)
         background_frame.pack(padx=5, pady=5)
