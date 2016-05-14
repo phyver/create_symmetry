@@ -1331,34 +1331,39 @@ def apply_color(                    # <<<2
     x_min, x_max, y_min, y_max = geometry
 
     tmp = PIL.Image.open(os.path.expanduser(filename))
-    width, height = tmp.size
-    delta_x = (x_max-x_min) / (width-1)
-    delta_y = (y_max-y_min) / (height-1)
+    color_width, color_height = tmp.size
+    delta_x = (x_max-x_min) / (color_width-1)
+    delta_y = (y_max-y_min) / (color_height-1)
 
     # morphing
     if morph_angle:
+        # print("morph from {} to {} ({}%)".format(morph_start_angle, morph_end_angle, morph_stable))
         width = res.shape[0]
-        morph = np.arange(0, width)
+        morph = np.arange(0, width, dtype="complex128")
 
         if morph_stable >= 50:
             morph_stable = 50 - 1e-10
         x = 100*morph_stable / ((100-2*morph_stable)*width)
-        morph = -x + morph * (1+2*x) / width
+        # morph = -x + morph * (1+2*x) / width
+        np.multiply(morph, (1+2*x)/width, out=morph)
+        np.add(-x, morph, out=morph)
         np.place(morph, morph < 0, 0)
         np.place(morph, morph > 1, 1)
 
         a1 = morph_start_angle
         a2 = morph_end_angle
-        morph = a1 + morph * (a2 - a1)
-        morph = np.exp(1j * pi * morph / 180)
+        # morph = a1 + morph * (a2 - a1)
+        np.multiply(morph, a2-a1, out=morph)
+        np.add(morph, a1, out=morph)
+        np.exp(1j * pi * morph / 180, out=morph)
 
-        res = morph[:, None] * res
+        np.multiply(morph[:, None], res, out=res)
 
     # we add a one pixel border to the top / right of the color image, using
     # the default color
     color_im = PIL.Image.new("RGB",
-                             (width+1,
-                              height+1),
+                             (color_width+1,
+                              color_height+1),
                              color=color)
     color_im.paste(tmp, box=(1, 1))
 
@@ -1377,14 +1382,14 @@ def apply_color(                    # <<<2
 
     # replace too big / too small values with 0, to get the ``color``
     np.place(xs, xs < 0, [0])
-    np.place(xs, xs >= width, [0])
+    np.place(xs, xs >= color_width, [0])
     np.place(ys, ys < 0, [0])
-    np.place(ys, ys >= height, [0])
+    np.place(ys, ys >= color_height, [0])
 
     res = np.dstack([xs, ys])
 
     # get array of pixels colors, and reshape the array to be 3 dimensional
-    color = np.asarray(color_im).reshape(height+1, width+1, 3)
+    color = np.asarray(color_im).reshape(color_height+1, color_width+1, 3)
 
     # apply color to the pixel coordinates and convert to appropriate type
     # transpose the first two dimensions because images have [y][x] and arrays
@@ -1965,10 +1970,20 @@ def make_image_single_block(                 # <<<2
             nb_block=nb_block
         )
     else:
-        print(PATTERN[pattern]["type"])
+        # print(PATTERN[pattern]["type"])
         assert False
 
-    img = apply_color(res, color.pop("filename"), **color)
+    img = apply_color(
+        res, color["filename"],
+        geometry=color["geometry"],
+        modulus=color["modulus"],
+        angle=color["angle"],
+        color=color["color"],
+        morph_angle=world["morph"],
+        morph_start_angle=world["morph_start"],
+        morph_end_angle=world["morph_end"],
+        morph_stable=world["morph_stable_coeff"],
+    )
 
     if (world["sphere_background"] and not world["sphere_projection"]):
         return make_sphere_background(
@@ -2441,6 +2456,9 @@ class ColorWheel(LabelFrame):   # <<<2
         if filename is not None:
             if os.path.isfile(os.path.expanduser(filename)):
                 self._alt_filename = filename
+                self._alt_filename_label.config(
+                    text="alt:" + os.path.basename(filename)
+                )
     # >>>4
     # >>>3
 
@@ -2449,7 +2467,7 @@ class ColorWheel(LabelFrame):   # <<<2
         self.root = root
 
         LabelFrame.__init__(self, root)
-        self.configure(text="Color Wheel")
+        self.configure(text="Colorwheel")
 
         self._color = LabelEntry(
             self,
@@ -3063,7 +3081,7 @@ class World(LabelFrame):     # <<<2
         self.root = root
 
         LabelFrame.__init__(self, root)
-        self.configure(text="World")
+        self.configure(text="Output")
 
         # the preview image     <<<4
         canvas_frame = Frame(self)
@@ -3260,17 +3278,36 @@ class World(LabelFrame):     # <<<2
                      self.enable_geometry_morph_tab)
         )
 
-        self._sphere_projection = BooleanVar()
-        self._sphere_projection.set(True)
+        self._sphere_projection = StringVar()
+        self._sphere_projection.set("plain")
 
-        sphere_projection = Checkbutton(
-            self._geometry_sphere_tab,
-            text="stereographic projection",
+        tmp = Frame(self._geometry_sphere_tab)
+        tmp.pack()
+
+        Radiobutton(
+            tmp,
+            text="plain",
             variable=self._sphere_projection,
-            onvalue=True, offvalue=False,
+            value="plain",
             indicatoron=False,
-        )
-        sphere_projection.pack(padx=5, pady=10)
+        ).pack(side=LEFT, padx=5, pady=10)
+
+        Radiobutton(
+            tmp,
+            text="sphere",
+            variable=self._sphere_projection,
+            value="sphere",
+            indicatoron=False,
+        ).pack(side=LEFT, padx=5, pady=10)
+
+        Radiobutton(
+            tmp,
+            text="inversion",
+            variable=self._sphere_projection,
+            value="inversion",
+            indicatoron=False,
+        ).pack(side=LEFT, padx=5, pady=10)
+
 
         self._rotations = LabelEntry(
             self._geometry_sphere_tab,
@@ -3281,6 +3318,17 @@ class World(LabelFrame):     # <<<2
             width=15
         )
         self._rotations.pack(padx=5, pady=10)
+
+        self._inversion_center = LabelEntry(
+            self._geometry_sphere_tab,
+            label="inversion center",
+            orientation="V",
+            value="i",
+            convert=str_to_complex,
+            width=10
+        )
+        self._inversion_center.pack(padx=5, pady=10)
+
 
         background_frame = Frame(self._geometry_sphere_tab)
         background_frame.pack(padx=5, pady=5)
@@ -3702,7 +3750,7 @@ class Function(LabelFrame):     # <<<2
     # setters and getters <<<3
     @property
     def pattern_type(self):      # <<<4
-        if ("wallpaper" in self._tabs.tab(self._tabs.select(), "text")):
+        if ("plane" in self._tabs.tab(self._tabs.select(), "text")):
             return "wallpaper"
         elif ("sphere" in self._tabs.tab(self._tabs.select(), "text")):
             return "sphere"
@@ -3715,7 +3763,7 @@ class Function(LabelFrame):     # <<<2
     @pattern_type.setter
     def pattern_type(self, tab):      # <<<4
         tab = tab.lower().strip()
-        if tab == "wallpaper":
+        if tab == "plane":
             self._tabs.select(self._wallpaper_tab)
         elif tab == "sphere":
             self._tabs.select(self._sphere_tab)
@@ -3921,7 +3969,6 @@ class Function(LabelFrame):     # <<<2
     def hyper_s(self, s):
         z = complex(s)
         s = complex_to_str(z)
-        print(repr(s))
         self._hyper_s.set(s)
     # >>>4
     # >>>3
@@ -3929,7 +3976,7 @@ class Function(LabelFrame):     # <<<2
     def __init__(self, root):      # <<<3
         self.root = root
         LabelFrame.__init__(self, root)
-        self.configure(text="Function")
+        self.configure(text="Pattern")
 
         # tabs for the different kinds of functions / symmetries  <<<4
         self._tabs = Notebook(self)
@@ -3941,7 +3988,7 @@ class Function(LabelFrame):     # <<<2
         )
 
         self._wallpaper_tab = Frame(self._tabs)
-        self._tabs.add(self._wallpaper_tab, text="wallpaper")
+        self._tabs.add(self._wallpaper_tab, text="plane")
 
         self._sphere_tab = Frame(self._tabs)
         self._tabs.add(self._sphere_tab, text="sphere")
@@ -4084,6 +4131,8 @@ class Function(LabelFrame):     # <<<2
         # >>>4
 
         # hyperbolic tab        <<<4
+        Label(self._hyper_tab, text="modular group").pack(padx=5, pady=(20, 5))
+
         self._hyper_nb_steps = LabelEntry(
             self._hyper_tab,
             label="averaging steps",
@@ -4091,7 +4140,7 @@ class Function(LabelFrame):     # <<<2
             convert=int,
             value=25
         )
-        self._hyper_nb_steps.pack(padx=5, pady=(20, 5))
+        self._hyper_nb_steps.pack(padx=5, pady=5)
 
         self._hyper_s = LabelEntry(
             self._hyper_tab,
@@ -4707,7 +4756,7 @@ class CreateSymmetry(Tk):      # <<<2
         menu.add_cascade(label="colorwheel", menu=color_menu)
 
         color_menu.add_command(
-            label="open colorwheel",
+            label="choose colorwheel",
             command=sequence(self.colorwheel.choose_colorwheel)
         )
         color_menu.add_command(
@@ -5667,7 +5716,7 @@ def main():     # <<<1
                 sys.exit(1)
         elif o in ["--pattern"]:
             pattern = a
-            print("pattern:", pattern)
+            # print("pattern:", pattern)
             if "/" in pattern:
                 color_pattern, pattern = pattern.split("/")
                 config["function"]["pattern_type"] = "wallpaper"
