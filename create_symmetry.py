@@ -50,6 +50,12 @@ DEFAULT_COLOR = "black"
 ###
 # default configuration for output
 WORLD_GEOMETRY = (-1.5, 1.5, -1.5, 1.5)
+SPHERE_ROTATIONS = (15, 0, 0)
+TRANSLATION_INVERSION_DELTA = 0.1
+TRANSLATION_DELTA = 0.1
+ROTATION_DELTA = 1
+ZOOM_FACTOR = 2**(1/4)
+INVERSION_CENTER = complex(-1/2, sqrt(3)/2)
 OUTPUT_SIZE = (800, 800)
 FILENAME_TEMPLATE = "output-{type:}-{name:}.{nb:}"
 
@@ -1459,8 +1465,8 @@ def make_hyperbolic_image(      # <<<2
         zs,                     # input coordinates
         matrix=None,            # transformation matrix
         nb_steps=200,           # number of approximations steps to perform
-        disk_model=True,        # inverse the result into Pointcarre disk?
-        center_disk=1j,         # center for the disk inversion
+        # disk_model=True,        # inverse the result into Pointcarre disk?
+        # center_disk=1j,         # center for the disk inversion
         message_queue=None,
         s=5,                    # exponent for imaginary part (should have real part > 1)
         nb_blocks=1,
@@ -1476,21 +1482,21 @@ def make_hyperbolic_image(      # <<<2
     #         matrix[0, m] = matrix[n, m]
     #         del matrix[n, m]
 
-    if disk_model:
-        center_disk = 1j
-        p = 1
+    # if disk_model:
+    #     center_disk = 1j
+    #     p = 1
 
-        # FIXME: add those as parameters in the morph tab
-        q = center_disk
-        r2 = abs(q-p)**2
+    #     # FIXME: add those as parameters in the morph tab
+    #     q = center_disk
+    #     r2 = abs(q-p)**2
 
-        # cf p 317 and 125 in Needlam (pdf 337 and 145)
-        # zs = np.conj(zs)
-        zs = q + r2 / (zs - q.conjugate())
+    #     # cf p 317 and 125 in Needlam (pdf 337 and 145)
+    #     # zs = np.conj(zs)
+    #     zs = q + r2 / (zs - q.conjugate())
 
-        # translation in Poincarre disk
-        a = -0.2679491924311227
-        zs = (zs - a) / (a*zs - 1)
+    #     # translation in Poincarre disk
+    #     a = -0.2679491924311227
+    #     zs = (zs - a) / (a*zs - 1)
 
     def PSL2():
         """generator for elements of the PSL2(Z),
@@ -1932,8 +1938,17 @@ def make_image_single_block(                 # <<<2
         world["angle"]
     )
 
-    if not world["sphere_projection"]:
+    if world["display_mode"] == "sphere":
         zs = plane_coordinates_to_sphere(zs, world["sphere_rotations"])
+    elif world["display_mode"] == "inversion":
+        x = world["inversion_center"].real
+        y = world["inversion_center"].imag
+
+        # cf p 317 and 125 in Needlam (pdf 337 and 145)
+        # zs = np.conj(zs)
+        zs = 1j + 2 / (np.conj(zs) + 1j)
+        zs = zs + x
+        zs = zs * y
 
     if pattern == "hyperbolic":
         res = make_hyperbolic_image(
@@ -1941,7 +1956,7 @@ def make_image_single_block(                 # <<<2
             function["matrix"],
             nb_steps=function["hyper_nb_steps"],
             s=function["hyper_s"],
-            disk_model=function["hyper_disk_model"],
+            # disk_model=function["hyper_disk_model"],
             message_queue=message_queue,
             nb_blocks=nb_blocks,
             nb_block=nb_block
@@ -1985,7 +2000,7 @@ def make_image_single_block(                 # <<<2
         morph_stable=world["morph_stable_coeff"],
     )
 
-    if (world["sphere_background"] and not world["sphere_projection"]):
+    if (world["display_mode"] in ["sphere", "inversion"]):
         return make_sphere_background(
             world["geometry"],
             world["modulus"],
@@ -1994,17 +2009,6 @@ def make_image_single_block(                 # <<<2
             background=world["sphere_background"],
             fade=world["sphere_background_fading"],
             stars=world["sphere_stars"]
-        )
-    # TODO
-    elif (pattern == "hyperbolic" and function["hyper_disk_model"]):
-        return make_sphere_background(
-            world["geometry"],
-            world["modulus"],
-            world["angle"],
-            img,
-            background=world["sphere_background"],
-            fade=0,
-            stars=0
         )
     else:
         return img
@@ -2871,13 +2875,13 @@ class World(LabelFrame):     # <<<2
     # >>>4
 
     @property
-    def sphere_projection(self):    # <<<4
-        return self._sphere_projection.get()
+    def display_mode(self):    # <<<4
+        return self._display_mode.get()
     # >>>4
 
-    @sphere_projection.setter
-    def sphere_projection(self, b):    # <<<4
-        self._sphere_projection.set(b)
+    @display_mode.setter
+    def display_mode(self, m):    # <<<4
+        self._display_mode.set(m)
     # >>>4
 
     @property
@@ -2888,6 +2892,16 @@ class World(LabelFrame):     # <<<2
     @sphere_rotations.setter
     def sphere_rotations(self, rotations):    # <<<4
         self._rotations.set(floats_to_str(rotations))
+    # >>>4
+
+    @property
+    def inversion_center(self):    # <<<4
+        return self._inversion_center.get()
+    # >>>4
+
+    @inversion_center.setter
+    def inversion_center(self, z):    # <<<4
+        self._inversion_center.set(complex_to_str(z))
     # >>>4
 
     @property
@@ -2940,12 +2954,12 @@ class World(LabelFrame):     # <<<2
 
     @property
     def geometry_tab(self):     # <<<4
-        if ("sphere" in self._geometry_tabs.tab(self._geometry_tabs.select(),
+        if ("mode" in self._geometry_tabs.tab(self._geometry_tabs.select(),
                                                 "text")):
-            return "sphere"
-        elif ("plane" in self._geometry_tabs.tab(self._geometry_tabs.select(),
+            return "mode"
+        elif ("geometry" in self._geometry_tabs.tab(self._geometry_tabs.select(),
                                                  "text")):
-            return "plane"
+            return "geometry"
         elif ("morph" in self._geometry_tabs.tab(self._geometry_tabs.select(),
                                                  "text")):
             return "morph"
@@ -2956,10 +2970,10 @@ class World(LabelFrame):     # <<<2
     @geometry_tab.setter
     def geometry_tab(self, tab):     # <<<4
         tab = tab.lower().strip()
-        if tab == "sphere":
-            self._geometry_tabs.select(self._geometry_sphere_tab)
-        elif tab == "plane":
-            self._geometry_tabs.select(self._geometry_plane_tab)
+        if tab == "mode":
+            self._geometry_tabs.select(self._geometry_display_tab)
+        elif tab == "geometry":
+            self._geometry_tabs.select(self._geometry_geometry_tab)
         elif tab == "morph":
             self._geometry_tabs.select(self._geometry_morph_tab)
     # >>>4
@@ -3182,17 +3196,17 @@ class World(LabelFrame):     # <<<2
             lambda _: self.focus_set()
         )
 
-        self._geometry_plane_tab = Frame(self._geometry_tabs)
-        self._geometry_tabs.add(self._geometry_plane_tab, text="plane")
+        self._geometry_geometry_tab = Frame(self._geometry_tabs)
+        self._geometry_tabs.add(self._geometry_geometry_tab, text="geometry")
 
-        self._geometry_sphere_tab = Frame(self._geometry_tabs)
-        self._geometry_tabs.add(self._geometry_sphere_tab, text="sphere")
+        self._geometry_display_tab = Frame(self._geometry_tabs)
+        self._geometry_tabs.add(self._geometry_display_tab, text="mode")
 
         self._geometry_morph_tab = Frame(self._geometry_tabs)
         self._geometry_tabs.add(self._geometry_morph_tab, text="morph")
 
         # geometry tab ###4
-        coord_frame = LabelFrame(self._geometry_plane_tab, text="coordinates")
+        coord_frame = LabelFrame(self._geometry_geometry_tab, text="coordinates")
         coord_frame.pack(padx=5, pady=5)
         # coord_frame.grid(row=0, column=1, sticky=E+W, padx=5, pady=5)
         coord_frame.columnconfigure(0, weight=1)
@@ -3235,7 +3249,7 @@ class World(LabelFrame):     # <<<2
         self._y_max.grid(row=1, column=1, padx=5, pady=5)
 
         transformation_frame = LabelFrame(
-            self._geometry_plane_tab,
+            self._geometry_geometry_tab,
             text="transformation"
         )
         transformation_frame.pack(padx=5, pady=5, fill=BOTH)
@@ -3262,61 +3276,93 @@ class World(LabelFrame):     # <<<2
         Button(
             transformation_frame,
             text="zoom -",
-            command=self.zoom(2**-.25)
+            command=self.zoom(1/ZOOM_FACTOR)
         ).pack(side=LEFT, padx=5, pady=5)
         Button(
             transformation_frame,
             text="zoom +",
-            command=self.zoom(2**.25)
+            command=self.zoom(ZOOM_FACTOR)
         ).pack(side=RIGHT, padx=5, pady=5)
         # >>>4
 
         # sphere parameters     <<<4
         self._geometry_tabs.bind(
             "<Triple-Button-1>",
-            sequence(self.enable_geometry_sphere_tab,
+            sequence(self.enable_mode_tab,
                      self.enable_geometry_morph_tab)
         )
 
-        self._sphere_projection = BooleanVar()
-        self._sphere_projection.set(True)
+        self._display_mode = StringVar()
 
-        sphere_projection = Checkbutton(
-            self._geometry_sphere_tab,
-            text="stereographic projection",
-            variable=self._sphere_projection,
-            onvalue=True, offvalue=False,
+        tmp = Frame(self._geometry_display_tab)
+        tmp.pack()
+
+        plain_button = Radiobutton(
+            tmp,
+            text="plain",
+            variable=self._display_mode,
+            value="plain",
             indicatoron=False,
         )
-        sphere_projection.pack(padx=5, pady=10)
+        plain_button.pack(side=LEFT, padx=5, pady=10)
+
+        sphere_button = Radiobutton(
+            tmp,
+            text="sphere",
+            variable=self._display_mode,
+            value="sphere",
+            indicatoron=False,
+        )
+        sphere_button.pack(side=LEFT, padx=5, pady=10)
+
+        inversion_button = Radiobutton(
+            tmp,
+            text="inversion",
+            variable=self._display_mode,
+            value="inversion",
+            indicatoron=False,
+        )
+        inversion_button.pack(side=LEFT, padx=5, pady=10)
 
         self._rotations = LabelEntry(
-            self._geometry_sphere_tab,
+            self._geometry_display_tab,
             label="rotations x, y, z (°)",
             orientation="V",
-            value="15, 15, 0",
+            value=SPHERE_ROTATIONS,
             convert=str_to_floats,
             width=15
         )
         self._rotations.pack(padx=5, pady=10)
 
-        background_frame = Frame(self._geometry_sphere_tab)
+        self._inversion_center = LabelEntry(
+            self._geometry_display_tab,
+            label="inversion center",
+            orientation="V",
+            value="i",
+            convert=str_to_complex,
+            width=10
+        )
+        self._inversion_center.pack(padx=5, pady=10)
+
+        background_frame = Frame(self._geometry_display_tab)
         background_frame.pack(padx=5, pady=5)
 
         self._sphere_background_full_filename = ""
         self._sphere_background = StringVar()
 
-        Button(
+        background_button = Button(
             background_frame,
             text="background",
             command=self.choose_sphere_background,
             padx=1, pady=1
-        ).grid(row=0, column=0, sticky=E)
-        Entry(
+        )
+        background_button.grid(row=0, column=0, sticky=E)
+        background_entry = Entry(
             background_frame,
             textvar=self._sphere_background,
             width=10
-        ).grid(row=0, column=1, padx=5, pady=10, sticky=E)
+        )
+        background_entry.grid(row=0, column=1, padx=5, pady=10, sticky=E)
         self.sphere_background = DEFAULT_SPHERE_BACKGROUND
 
         self._sphere_background_fading = LabelEntry(
@@ -3344,6 +3390,35 @@ class World(LabelFrame):     # <<<2
             padx=5, pady=5,
             sticky=E
         )
+
+        def update_tab(*args):
+            s = self._display_mode.get()
+            if s == "plain":
+                self._sphere_stars.disable()
+                self._sphere_background_fading.disable()
+                self._inversion_center.pack_forget()
+                self._rotations.pack_forget()
+                background_button.config(state=DISABLED)
+                background_entry.config(state=DISABLED)
+            elif s == "sphere":
+                self._sphere_stars.enable()
+                self._sphere_background_fading.enable()
+                self._inversion_center.pack_forget()
+                self._rotations.pack()
+                background_button.config(state=NORMAL)
+                background_entry.config(state=NORMAL)
+            elif s == "inversion":
+                self._sphere_stars.enable()
+                self._sphere_background_fading.enable()
+                self._inversion_center.pack()
+                self._rotations.pack_forget()
+                background_button.config(state=NORMAL)
+                background_entry.config(state=NORMAL)
+            else:
+                assert False
+
+        self._display_mode.trace("w", callback=update_tab)
+        self._display_mode.set("plain")
         # >>>4
 
         # morph parameters      ###4
@@ -3463,9 +3538,9 @@ class World(LabelFrame):     # <<<2
             self.save_directory = dir
     # >>>3
 
-    def disable_geometry_sphere_tab(self, *args):  # <<<3
-        self.sphere_projection = True
-        self._geometry_tabs.tab(self._geometry_sphere_tab, state=DISABLED)
+    def disable_mode_tab(self, *args):  # <<<3
+        self.display_mode = "plain"
+        self._geometry_tabs.tab(self._geometry_display_tab, state=DISABLED)
     # >>>3
 
     def disable_geometry_morph_tab(self, *args):  # <<<3
@@ -3473,8 +3548,8 @@ class World(LabelFrame):     # <<<2
         self._geometry_tabs.tab(self._geometry_morph_tab, state=DISABLED)
     # >>>3
 
-    def enable_geometry_sphere_tab(self, *args):   # <<<3
-        self._geometry_tabs.tab(self._geometry_sphere_tab, state=NORMAL)
+    def enable_mode_tab(self, *args):   # <<<3
+        self._geometry_tabs.tab(self._geometry_display_tab, state=NORMAL)
     # >>>3
 
     def enable_geometry_morph_tab(self, *args):   # <<<3
@@ -3483,6 +3558,8 @@ class World(LabelFrame):     # <<<2
 
     def reset_geometry(self, *args):        # <<<3
         self.geometry = WORLD_GEOMETRY
+        self.sphere_rotations = SPHERE_ROTATIONS
+        self.inversion_center = INVERSION_CENTER
         self.adjust_geometry()
         self.angle = 0
         self.modulus = 1
@@ -3689,7 +3766,7 @@ class World(LabelFrame):     # <<<2
                   "preview_size",
                   "draw_tile", "draw_orbifold", "draw_color_tile",
                   "draw_mirrors", "fade", "fade_coeff",
-                  "sphere_projection", "sphere_rotations",
+                  "display_mode", "sphere_rotations", "inversion_center",
                   "sphere_background", "sphere_background_fading",
                   "sphere_stars",
                   "morph", "morph_start", "morph_end", "morph_stable_coeff"]:
@@ -3705,7 +3782,7 @@ class World(LabelFrame):     # <<<2
                   "preview_size",
                   "draw_tile", "draw_orbifold", "draw_color_tile",
                   "draw_mirrors", "fade", "fade_coeff",
-                  "sphere_projection", "sphere_rotations",
+                  "display_mode", "sphere_rotations", "inversion_center",
                   "sphere_background", "sphere_background_fading",
                   "sphere_stars",
                   "morph", "morph_start", "morph_end", "morph_stable_coeff"]:
@@ -4121,6 +4198,7 @@ class Function(LabelFrame):     # <<<2
         )
         self._hyper_s.pack(padx=5, pady=5)
 
+        # TODO remove
         self._hyper_disk_model = BooleanVar()
         self._hyper_disk_model_button = Checkbutton(
             self._hyper_tab,
@@ -4636,9 +4714,9 @@ class CreateSymmetry(Tk):      # <<<2
         self.bind("<Control-g>", sequence(self.function.new_random_matrix))
         self.bind("<Control-G>", sequence(self.new_random_preview))
 
-        self.bind("<Control-Key-minus>", sequence(self.world.zoom(2**-.25),
+        self.bind("<Control-Key-minus>", sequence(self.world.zoom(1/ZOOM_FACTOR),
                                                   self.make_preview))
-        self.bind("<Control-Key-plus>", sequence(self.world.zoom(2**.25),
+        self.bind("<Control-Key-plus>", sequence(self.world.zoom(ZOOM_FACTOR),
                                                  self.make_preview))
 
         self.bind("<Control-Key-Left>", sequence(self.translate_rotate(1, 0),
@@ -4750,12 +4828,12 @@ class CreateSymmetry(Tk):      # <<<2
         world_menu.add_command(
             label="zoom -",
             accelerator="Ctrl--",
-            command=sequence(self.world.zoom(2**-.25), self.make_preview)
+            command=sequence(self.world.zoom(1/ZOOM_FACTOR), self.make_preview)
         )
         world_menu.add_command(
             label="zoom +",
             accelerator="Ctrl-+",
-            command=sequence(self.world.zoom(2**.25), self.make_preview)
+            command=sequence(self.world.zoom(ZOOM_FACTOR), self.make_preview)
         )
         world_menu.add_command(
             label="reset world",
@@ -4974,25 +5052,35 @@ contact: Pierre.Hyvernat@univ-smb.fr
     # >>>3
 
     def update(self, *args):       # <<<3
+        # TODO, fix
         if self.function.pattern_type in ["sphere"]:
-            if self.function.sphere_mode in ["rosette", "frieze"]:
-                self.world.disable_geometry_sphere_tab()
-                self.world.sphere_projection = True
-                self.world.geometry_tab = "plane"
+            if self.function.sphere_mode == "rosette":
+                self.world.enable_mode_tab()
+                self.world.display_mode = "plain"
+                self.world.geometry_tab = "mode"
+                self.world.disable_geometry_morph_tab()
+            elif self.function.sphere_mode == "frieze":
+                self.world.disable_mode_tab()
+                self.world.display_mode = "plain"
+                self.world.geometry_tab = "geometry"
                 self.world.disable_geometry_morph_tab()
             elif self.function.sphere_mode == "sphere":
-                self.world.enable_geometry_sphere_tab()
-                self.world.sphere_projection = False
-                self.world.geometry_tab = "sphere"
+                self.world.enable_mode_tab()
+                self.world.display_mode = "sphere"
+                self.world.geometry_tab = "mode"
                 self.world.disable_geometry_morph_tab()
+                self.world.sphere_stars = NB_STARS
             else:
                 assert False
         elif self.function.pattern_type in ["wallpaper"]:
-            self.world.disable_geometry_sphere_tab()
+            self.world.disable_mode_tab()
+            self.world.display_mode = "plain"
             self.world.enable_geometry_morph_tab()
         elif self.function.pattern_type in ["hyperbolic"]:
-            self.world.disable_geometry_sphere_tab()
+            self.world.enable_mode_tab()
+            self.world.display_mode = "inversion"
             self.world.disable_geometry_morph_tab()
+            self.world.sphere_stars = 0
 
         # enable / disable tiling / orbifold drawing buttons
         if self.function.pattern_type in ["sphere", "hyperbolic"]:
@@ -5396,17 +5484,31 @@ contact: Pierre.Hyvernat@univ-smb.fr
     # >>>3
 
     def translate_rotate(self, dx, dy, dz=0):   # <<<3
+        # TODO translate in hyperbolic mode: change inversion center
         def translate_rotate_tmp(*args):
-            if self.world.geometry_tab == "sphere":
+            if (self.world.geometry_tab == "mode" and
+                    self.world.display_mode == "sphere"):
                 if dx != 0 or dy != 0 or dz != 0:
-                    self.world.rotate(dx, dy, dz)
-            elif self.world.geometry_tab == "plane":
-                if dx != 0 or dy != 0:
-                    self.world.translate(dx/10, dy/10)
-                elif dz != 0:
-                    self.world.angle -= dz
+                    self.world.rotate(
+                        dx*ROTATION_DELTA,
+                        dy*ROTATION_DELTA,
+                        dz*ROTATION_DELTA)
+            elif (self.world.geometry_tab == "mode" and
+                  self.world.display_mode == "inversion"):
+                if dx != 0 or dy != 0 or dz != 0:
+                    x = self.world.inversion_center.real
+                    y = self.world.inversion.imag
+                    x += dx*TRANSLATION_INVERSION_DELTA
+                    y += dy*TRANSLATION_INVERSION_DELTA
+                    self.world.inversion_center = complex(x, y)
             else:
-                assert False
+                if dx != 0 or dy != 0:
+                    self.world.translate(
+                        dx*TRANSLATION_DELTA,
+                        dy*TRANSLATION_DELTA
+                    )
+                elif dz != 0:
+                    self.world.angle -= dz * ROTATION_DELTA
         return translate_rotate_tmp
     # >>>3
 
@@ -5482,6 +5584,8 @@ contact: Pierre.Hyvernat@univ-smb.fr
             cfg["function"]["matrix"] = matrix_to_list(cfg["function"]["matrix"])
         if "hyper_s" in cfg["function"]:
             cfg["function"]["hyper_s"] = str(cfg["function"]["hyper_s"])
+        if "inversion_center" in cfg["world"]:
+            cfg["world"]["inversion_center"] = str(cfg["world"]["inversion_center"])
         json.dump(cfg, config_file, indent=2)
         config_file.close()
     # >>>3
@@ -5577,8 +5681,9 @@ def main():     # <<<1
                 "draw_mirrors": False,
                 "fade": False,
                 "fade_coeff": FADE_COEFF,
-                "sphere_projection": True,
-                "sphere_rotations": (15, 15, 0),
+                "display_mode": "plain",
+                "sphere_rotations": SPHERE_ROTATIONS,
+                "inversion_center": INVERSION_CENTER,
                 "sphere_background": DEFAULT_SPHERE_BACKGROUND,
                 "sphere_background_fading": 100,
                 "sphere_stars": NB_STARS,
@@ -5692,18 +5797,20 @@ def main():     # <<<1
                 config["function"]["pattern_type"] = "wallpaper"
                 config["function"]["wallpaper_pattern"] = pattern
                 config["function"]["wallpaper_color_pattern"] = color_pattern
-                config["world"]["sphere_projection"] = True
+                config["world"]["display_mode"] = "plain"
             elif pattern in W_NAMES:
                 config["function"]["pattern_type"] = "wallpaper"
                 config["function"]["wallpaper_pattern"] = pattern
-                config["world"]["sphere_projection"] = True
+                config["world"]["display_mode"] = "plain"
             elif pattern in S_NAMES:
                 config["function"]["pattern_type"] = "sphere"
                 config["function"]["sphere_pattern"] = pattern
-                config["world"]["sphere_projection"] = False
+                config["world"]["display_mode"] = "sphere"
+                config["world"]["sphere_stars"] = NB_STARS
             elif pattern == "hyperbolic":
                 config["function"]["pattern_type"] = "hyperbolic"
-                config["world"]["sphere_projection"] = True
+                config["world"]["display_mode"] = "inversion"
+                config["world"]["sphere_stars"] = 0
 
         elif o in ["--params"]:
             config["function"]["lattice_parameters"] = str_to_floats(a)
