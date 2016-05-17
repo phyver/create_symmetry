@@ -1465,8 +1465,6 @@ def make_hyperbolic_image(      # <<<2
         zs,                     # input coordinates
         matrix=None,            # transformation matrix
         nb_steps=200,           # number of approximations steps to perform
-        # disk_model=True,        # inverse the result into Pointcarre disk?
-        # center_disk=1j,         # center for the disk inversion
         message_queue=None,
         s=5,                    # exponent for imaginary part (should have real part > 1)
         nb_blocks=1,
@@ -1481,22 +1479,6 @@ def make_hyperbolic_image(      # <<<2
     #     if n != 0:
     #         matrix[0, m] = matrix[n, m]
     #         del matrix[n, m]
-
-    # if disk_model:
-    #     center_disk = 1j
-    #     p = 1
-
-    #     # FIXME: add those as parameters in the morph tab
-    #     q = center_disk
-    #     r2 = abs(q-p)**2
-
-    #     # cf p 317 and 125 in Needlam (pdf 337 and 145)
-    #     # zs = np.conj(zs)
-    #     zs = q + r2 / (zs - q.conjugate())
-
-    #     # translation in Poincarre disk
-    #     a = -0.2679491924311227
-    #     zs = (zs - a) / (a*zs - 1)
 
     def PSL2():
         """generator for elements of the PSL2(Z),
@@ -1956,7 +1938,6 @@ def make_image_single_block(                 # <<<2
             function["matrix"],
             nb_steps=function["hyper_nb_steps"],
             s=function["hyper_s"],
-            # disk_model=function["hyper_disk_model"],
             message_queue=message_queue,
             nb_blocks=nb_blocks,
             nb_block=nb_block
@@ -2501,7 +2482,8 @@ class ColorWheel(LabelFrame):   # <<<2
             self,
             width=COLOR_SIZE,
             height=COLOR_SIZE,
-            bg="white"
+            bg="white",
+            cursor="tcross"
         )
         self._canvas.pack(padx=5, pady=5)
         for i in range(5, COLOR_SIZE, 10):
@@ -2522,30 +2504,30 @@ class ColorWheel(LabelFrame):   # <<<2
         self._alt_filename_label = Label(self, text="alt: ", font="TkNormal 8")
         self._alt_filename_label.pack(padx=5, pady=(0, 5))
 
-        coord_frame = LabelFrame(self, text="coordinates")
-        coord_frame.pack(fill=X, padx=5, pady=5)
-        coord_frame.columnconfigure(0, weight=1)
-        coord_frame.columnconfigure(1, weight=1)
+        self._coord_frame = LabelFrame(self, text="coordinates")
+        self._coord_frame.pack(fill=X, padx=5, pady=5)
+        self._coord_frame.columnconfigure(0, weight=1)
+        self._coord_frame.columnconfigure(1, weight=1)
 
-        self._x_min = LabelEntry(coord_frame, label="x min",
+        self._x_min = LabelEntry(self._coord_frame, label="x min",
                                  value=COLOR_GEOMETRY[0],
                                  convert=float,
                                  width=4, justify=RIGHT)
         self._x_min.grid(row=0, column=0, padx=5, pady=5)
 
-        self._x_max = LabelEntry(coord_frame, label="x max",
+        self._x_max = LabelEntry(self._coord_frame, label="x max",
                                  value=COLOR_GEOMETRY[1],
                                  convert=float,
                                  width=4, justify=RIGHT)
         self._x_max.grid(row=0, column=1, padx=5, pady=5)
 
-        self._y_min = LabelEntry(coord_frame, label="y min",
+        self._y_min = LabelEntry(self._coord_frame, label="y min",
                                  value=COLOR_GEOMETRY[2],
                                  convert=float,
                                  width=4, justify=RIGHT)
         self._y_min.grid(row=1, column=0, padx=5, pady=5)
 
-        self._y_max = LabelEntry(coord_frame, label="y max",
+        self._y_max = LabelEntry(self._coord_frame, label="y max",
                                  value=COLOR_GEOMETRY[3],
                                  convert=float,
                                  width=4, justify=RIGHT)
@@ -2563,8 +2545,16 @@ class ColorWheel(LabelFrame):   # <<<2
             width=6
         )
         self._modulus.grid(row=0, column=0, sticky=E, padx=5, pady=(5, 2))
-        self._modulus.bind("<Return>", self.draw_unit_circle, add="+")
-        self._modulus.bind("<FocusOut>", self.draw_unit_circle, add="+")
+        self._modulus.bind(
+            "<Return>",
+            lambda _: self.change_colorwheel(self.filename),
+            add="+"
+        )
+        self._modulus.bind(
+            "<FocusOut>",
+            lambda _: self.change_colorwheel(self.filename),
+            add="+"
+        )
 
         self._angle = LabelEntry(
             tmp_frame, label="angle (°)",
@@ -2573,6 +2563,16 @@ class ColorWheel(LabelFrame):   # <<<2
             width=4
         )
         self._angle.grid(row=1, column=0, sticky=E, padx=5, pady=(2, 5))
+        self._angle.bind(
+            "<Return>",
+            lambda _: self.change_colorwheel(self.filename),
+            add="+"
+        )
+        self._angle.bind(
+            "<FocusOut>",
+            lambda _: self.change_colorwheel(self.filename),
+            add="+"
+        )
 
         self.update_defaultcolor()
 
@@ -2594,13 +2594,13 @@ class ColorWheel(LabelFrame):   # <<<2
         try:
             filename = os.path.expanduser(filename)
             if self.stretch:
+                self._coord_frame.config(foreground="#a3a3a3")
                 self._x_min.disable()
                 self._x_max.disable()
                 self._y_min.disable()
                 self._y_max.disable()
-                self._modulus.disable()
-                self._angle.disable()
-                # self._reset_button.configure(state=DISABLED)
+                # self._modulus.disable()
+                # self._angle.disable()
                 zs = make_coordinates_array(
                         size=(PREVIEW_SIZE, PREVIEW_SIZE),
                         geometry=(-STRETCH_DISPLAY_RADIUS,
@@ -2618,6 +2618,7 @@ class ColorWheel(LabelFrame):   # <<<2
                     color=self.rgb_color
                 )
             else:
+                self._coord_frame.config(foreground="black")
                 self._x_min.enable()
                 self._x_max.enable()
                 self._y_min.enable()
@@ -2646,10 +2647,11 @@ class ColorWheel(LabelFrame):   # <<<2
             self._image = img
             tk_img = PIL.ImageTk.PhotoImage(img)
             self._tk_image = tk_img     # prevent garbage collection
-            self._canvas.delete(self._colorwheel_id)
+            self._canvas.delete("colorwheel")
             self._canvas.create_image(
                 (COLOR_SIZE//2, COLOR_SIZE//2),
-                image=tk_img
+                image=tk_img,
+                tag="colorwheel"
             )
             self.filename = filename
             self._filename_button.config(text=os.path.basename(filename))
@@ -2661,7 +2663,7 @@ class ColorWheel(LabelFrame):   # <<<2
             except:
                 pass
 
-            self.draw_unit_circle()
+            self.draw_axes()
 
         except Exception as e:
             error("problem while loading {} for color image: {}"
@@ -2676,12 +2678,8 @@ class ColorWheel(LabelFrame):   # <<<2
             pass
     # >>>3
 
-    def draw_unit_circle(self, *args):      # <<<3
-        try:
-            self._canvas.delete(self._unit_circle)
-            self._canvas.delete(self._center)
-        except:
-            pass
+    def draw_axes(self, *args):      # <<<3
+        self._canvas.delete("axes")
 
         if self.stretch:
             x_min = -STRETCH_DISPLAY_RADIUS
@@ -2699,16 +2697,70 @@ class ColorWheel(LabelFrame):   # <<<2
         self._unit_circle = self._canvas.create_oval(
             x0-r+1, y0-r+1,
             x0+r, y0+r,
-            width=2,
-            outline="gray"
-        )
-        self._center = self._canvas.create_oval(
-            x0-5, y0-5,
-            x0+5, y0+5,
             width=1,
-            fill="gray",
-            outline="red"
+            outline="gray",
+            tag="axes"
         )
+
+        alpha = ((self.angle % 360) + 360) % 360
+        beta = (alpha % 90)
+        beta = beta * pi / 180 if beta < 45 else (beta-90) * pi / 180
+
+        a, b = cos(beta), sin(beta)
+        d = a*x0 + b*y0
+        p_top = int(d/a)
+        p_bottom = int((d-b*COLOR_SIZE)/a)
+
+        a, b = b, -a
+        d = a*x0 + b*y0
+        p_left = int(d/b)
+        p_right = int((d-a*COLOR_SIZE)/b)
+
+        if 0 <= alpha < 45 or 315 <= alpha < 360:
+            l_plus = [p_top, 0, x0, y0, COLOR_SIZE, p_right]
+            l_minus = [p_bottom, COLOR_SIZE, x0, y0, 0, p_left]
+        elif 45 <= alpha < 135:
+            l_plus = [COLOR_SIZE, p_right, x0, y0, p_bottom, COLOR_SIZE]
+            l_minus = [0, p_left, x0, y0, p_top, 0]
+        elif 135 <= alpha < 225:
+            l_plus = [p_bottom, COLOR_SIZE, x0, y0, 0, p_left]
+            l_minus = [p_top, 0, x0, y0, COLOR_SIZE, p_right]
+        elif 225 <= alpha < 315:
+            l_plus = [0, p_left, x0, y0, p_top, 0]
+            l_minus = [COLOR_SIZE, p_right, x0, y0, p_bottom, COLOR_SIZE]
+        else:
+            assert False
+
+        x1, y1 = l_plus[0], l_plus[1]
+        x2, y2 = l_plus[-2], l_plus[-1]
+        R = 5
+        self._canvas.create_line(
+            *l_plus,
+            fill="gray",
+            width=2,
+            tags=("axes", "colorwheel")
+        )
+        self._canvas.create_line(
+            *l_minus,
+            fill="gray",
+            width=1,
+            tags=("axes", "colorwheel")
+        )
+        # self._canvas.create_oval(
+        #     x1-R, y1-R,
+        #     x1+R+1, y1+R+1,
+        #     # fill="gray",
+        #     outline="gray",
+        #     tags=("axes", "colorwheel")
+        #     tag="axes"
+        # )
+        # self._canvas.create_oval(
+        #     x2-R, y2-R,
+        #     x2+R+1, y2+R+1,
+        #     # fill="gray",
+        #     outline="gray",
+        #     tags=("axes", "colorwheel")
+        # )
     # >>>3
 
     def choose_colorwheel(self, *args):    # <<<3
@@ -2740,7 +2792,7 @@ class ColorWheel(LabelFrame):   # <<<2
         y_min = y_max - delta_y
         self.geometry = x_min, x_max, y_min, y_max
 
-        self.draw_unit_circle()
+        self.draw_axes()
     # >>>3
 
     def reset_geometry(self, *args):        # <<<3
@@ -3105,7 +3157,8 @@ class World(LabelFrame):     # <<<2
             canvas_frame,
             width=PREVIEW_SIZE,
             height=PREVIEW_SIZE,
-            bg="light gray"
+            bg="light gray",
+            cursor="tcross"
         )
         for i in range(5, PREVIEW_SIZE, 10):
             for j in range(5, PREVIEW_SIZE, 10):
@@ -3515,11 +3568,18 @@ class World(LabelFrame):     # <<<2
             "<Motion>",
             lambda e: self.update_pointer_coordinates(e.x, e.y)
         )
+        self._canvas.bind(
+            "<Leave>",
+            lambda e: self._canvas.itemconfig(
+                self._canvas._pointer_coords,
+                text=""
+            )
+        )
 
-        self._canvas.bind("<ButtonPress-1>", self.start_zoom_rectangle)
-        self._canvas.bind("<B1-Motion>", self.update_zoom_rectangle)
-        self._canvas.bind("<ButtonRelease-1>", self.apply_zoom_rectangle)
-        # the last binding is overridden in CreateSymmetry to add make_preview
+        # this binding is overridden in CreateSymmetry to add make_preview
+        self._canvas.bind("<Button-1>", self.start_apply_zoom_rectangle)
+        self._canvas.bind("<Button-3>", self.cancel_zoom_rectangle)
+        self._canvas.bind("<Motion>", self.update_zoom_rectangle, add="+")
 
         self.adjust_geometry()
     # >>>3
@@ -3678,38 +3738,57 @@ class World(LabelFrame):     # <<<2
     # >>>3
 
     def update_pointer_coordinates(self, px, py):       # <<<3
-        try:
-            self._canvas._pointer_coords
-        except:
+        if not hasattr(self._canvas, "_pointer_coords"):
             self._canvas._pointer_coords = self._canvas.create_text(
                 PREVIEW_SIZE, PREVIEW_SIZE,
                 anchor=SE,
                 fill="white",
                 text=""
             )
-        try:
-            x, y = self.pixel_to_xy(px, py)
-            self._canvas.itemconfig(
-                self._canvas._pointer_coords,
-                text="{:6.4f} , {:6.4f}".format(x, y)
-            )
-        except TypeError:       # when self.pixel_to_xy returns None
-            pass
+        else:
+            try:
+                x, y = self.pixel_to_xy(px, py)
+                self._canvas.itemconfig(
+                    self._canvas._pointer_coords,
+                    text="{:6.4f} , {:6.4f}".format(x, y)
+                )
+                self._canvas.tag_raise(self._canvas._pointer_coords)
+            except TypeError:       # when self.pixel_to_xy returns None
+                pass
     # >>>3
 
-    def start_zoom_rectangle(self, event):   # <<<3
+    def start_apply_zoom_rectangle(self, event):   # <<<3
         if not hasattr(self._canvas, "_image_id"):
-            return
-        self.start_x = event.x
-        self.start_y = event.y
-        self.rect = self._canvas.create_rectangle(
-            self.start_x,
-            self.start_y,
-            self.start_x,
-            self.start_y,
-            width=3,
-            outline="white"
-        )
+            return False
+
+        if hasattr(self, "rect"):
+            self._canvas.delete(self.rect)
+            del self.rect
+            curX, curY = (event.x, event.y)
+            ratio = self.width / self.height
+            if ratio > abs(curX-self.start_x) / abs(curY-self.start_y):
+                curX = self.start_x + (curY-self.start_y) * ratio
+            else:
+                curY = self.start_y + (curX-self.start_x) / ratio
+
+            x1, y1 = self.pixel_to_xy(self.start_x, self.start_y)
+            x2, y2 = self.pixel_to_xy(curX, curY)
+            x_min, x_max = min(x1, x2), max(x1, x2)
+            y_min, y_max = min(y1, y2), max(y1, y2)
+            self.geometry = x_min, x_max, y_min, y_max
+            return True
+        else:
+            self.start_x = event.x
+            self.start_y = event.y
+            self.rect = self._canvas.create_rectangle(
+                self.start_x,
+                self.start_y,
+                self.start_x,
+                self.start_y,
+                width=2,
+                outline="white"
+            )
+            return False
     # >>>3
 
     def update_zoom_rectangle(self, event):     # <<<3
@@ -3719,8 +3798,7 @@ class World(LabelFrame):     # <<<2
         ratio = self.width / self.height
         sx = -1 if curX < self.start_x else 1
         sy = -1 if curY < self.start_y else 1
-        if (curX == self.start_x or curY == self.start_y or
-                (curX < self.start_x and curY < self.start_y)):
+        if curX == self.start_x or curY == self.start_y:
             curX = self.start_x
             curY = self.start_y
         elif ratio > abs(curX-self.start_x) / abs(curY-self.start_y):
@@ -3735,26 +3813,12 @@ class World(LabelFrame):     # <<<2
         self.update_pointer_coordinates(curX, curY)
     # >>>3
 
-    def apply_zoom_rectangle(self, event):     # <<<3
-        try:
+    def cancel_zoom_rectangle(self, event):     # <<<3
+        if hasattr(self, "rect"):
             self._canvas.delete(self.rect)
             del self.rect
-            curX, curY = (event.x, event.y)
-            ratio = self.width / self.height
-            if curX <= self.start_x and curY <= self.start_y:
-                return
-            elif ratio > (curX-self.start_x) / (curY-self.start_y):
-                curX = self.start_x + (curY-self.start_y) * ratio
-            else:
-                curY = self.start_y + (curX-self.start_x) / ratio
-        except AttributeError:
+        else:
             return
-
-        x1, y1 = self.pixel_to_xy(self.start_x, self.start_y)
-        x2, y2 = self.pixel_to_xy(curX, curY)
-        x_min, x_max = min(x1, x2), max(x1, x2)
-        y_min, y_max = min(y1, y2), max(y1, y2)
-        self.geometry = x_min, x_max, y_min, y_max
     # >>>3
 
     @property
@@ -3998,16 +4062,6 @@ class Function(LabelFrame):     # <<<2
     # >>>4
 
     @property
-    def hyper_disk_model(self):       # <<<4
-        return self._hyper_disk_model.get()
-    # >>>4
-
-    @hyper_disk_model.setter          # <<<4
-    def hyper_disk_model(self, b):
-        self._hyper_disk_model.set(b)
-    # >>>4
-
-    @property
     def hyper_s(self):       # <<<4
         return self._hyper_s.get()
     # >>>4
@@ -4197,18 +4251,6 @@ class Function(LabelFrame):     # <<<2
             width=6,
         )
         self._hyper_s.pack(padx=5, pady=5)
-
-        # TODO remove
-        self._hyper_disk_model = BooleanVar()
-        self._hyper_disk_model_button = Checkbutton(
-            self._hyper_tab,
-            variable=self._hyper_disk_model,
-            text="disk model",
-            onvalue=True, offvalue=False,
-            indicatoron=False
-        )
-        self._hyper_disk_model_button.pack(padx=5, pady=(20, 5))
-        self._hyper_disk_model.set(True)
         # >>>4
 
         # display matrix    <<<4
@@ -4452,7 +4494,7 @@ class Function(LabelFrame):     # <<<2
                   "wallpaper_pattern", "lattice_parameters",
                   "wallpaper_color_pattern", "wallpaper_N",
                   "sphere_pattern", "sphere_N", "sphere_mode",
-                  "hyper_nb_steps", "hyper_disk_model", "hyper_s"]:
+                  "hyper_nb_steps", "hyper_s"]:
             cfg[k] = getattr(self, k)
         return cfg
     # >>>3
@@ -4465,7 +4507,7 @@ class Function(LabelFrame):     # <<<2
                   "wallpaper_pattern",  "wallpaper_N",  # "lattice_parameters",
                   # "wallpaper_color_pattern",
                   "sphere_pattern", "sphere_N", "sphere_mode",
-                  "hyper_nb_steps", "hyper_disk_model", "hyper_s"]:
+                  "hyper_nb_steps", "hyper_s"]:
             if k in cfg:
                 setattr(self, k, cfg[k])
         self.update()
@@ -4605,19 +4647,17 @@ class CreateSymmetry(Tk):      # <<<2
     @property
     def pending_preview(self):
         try:
-            b = self.preview_process.is_alive()
+            return self.preview_process.is_alive()
         except AttributeError:
-            b = False
-        return b
+            return False
     # >>>3
 
     @property
     def pending_outputs(self):
         try:
-            b = self.output_process.is_alive()
+            return self.output_process.is_alive()
         except AttributeError:
-            b = False
-        return b
+            return False
     # >>>3
 
     def __init__(self):     # <<<3
@@ -4744,10 +4784,10 @@ class CreateSymmetry(Tk):      # <<<2
         self.world._canvas.bind("<Double-Button-1>", self.show_bigger_preview)
 
         def apply_zoom(event):
-            self.world.apply_zoom_rectangle(event)
-            self.make_preview()
+            if self.world.start_apply_zoom_rectangle(event):
+                self.make_preview()
 
-        self.world._canvas.bind("<ButtonRelease-1>", apply_zoom)
+        self.world._canvas.bind("<Button-1>", apply_zoom)
         # >>>4
 
         # menu <<<4
@@ -5052,7 +5092,6 @@ contact: Pierre.Hyvernat@univ-smb.fr
     # >>>3
 
     def update(self, *args):       # <<<3
-        # TODO, fix
         if self.function.pattern_type in ["sphere"]:
             if self.function.sphere_mode == "rosette":
                 self.world.enable_mode_tab()
@@ -5110,10 +5149,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
     # >>>3
 
     def update_world_preview(self, *args):       # <<<3
-        try:
-            self.world._canvas.delete(self.world._canvas._image_id)
-        except AttributeError:
-            pass
+        self.world._canvas.delete("preview")
         try:
             if self.world.fade:
                 fade = fade_image(
@@ -5128,17 +5164,11 @@ contact: Pierre.Hyvernat@univ-smb.fr
 
             self.world._canvas._image_id = self.world._canvas.create_image(
                 (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
-                image=self.world._canvas.tk_img
+                image=self.world._canvas.tk_img,
+                tags="preview"
             )
         except AttributeError:
             pass
-
-        def rm_tile(name):
-            try:
-                img_id = getattr(self.world._canvas, name + "_id")
-                self.world._canvas.delete(img_id)
-            except AttributeError:
-                pass
 
         def put_tile(name):
             try:
@@ -5149,28 +5179,25 @@ contact: Pierre.Hyvernat@univ-smb.fr
                     setattr(self.world._canvas, "tk" + name, tk_img)
                 img_id = self.world._canvas.create_image(
                     (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
-                    image=getattr(self.world._canvas, "tk" + name)
+                    image=getattr(self.world._canvas, "tk" + name),
+                    tags="preview"
                 )
                 setattr(self.world._canvas, name + "_id", img_id)
             except AttributeError:
                 pass
 
-        rm_tile("_tile_img")
-        rm_tile("_color_tile_img")
         if self.world.draw_tile:
             if self.world.draw_color_tile:
                 put_tile("_color_tile_img")
             else:
                 put_tile("_tile_img")
 
-        rm_tile("_orbifold_img")
         if self.world.draw_orbifold:
             if self.world.draw_color_tile:
                 put_tile("_color_orbifold_img")
             else:
                 put_tile("_orbifold_img")
 
-        rm_tile("_mirrors_img")
         if self.world.draw_orbifold and self.world.draw_mirrors:
             if self.world.draw_color_tile:
                 put_tile("_color_mirrors_img")
@@ -5242,11 +5269,6 @@ contact: Pierre.Hyvernat@univ-smb.fr
 
                     self.world._canvas._image = image
                     self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
-
-                    try:
-                        self.world._canvas.delete(self.world._canvas._image_id)
-                    except AttributeError:
-                        pass
 
                     self.world._canvas._image_id = self.world._canvas.create_image(
                         (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
@@ -5484,7 +5506,6 @@ contact: Pierre.Hyvernat@univ-smb.fr
     # >>>3
 
     def translate_rotate(self, dx, dy, dz=0):   # <<<3
-        # TODO translate in hyperbolic mode: change inversion center
         def translate_rotate_tmp(*args):
             if (self.world.geometry_tab == "mode" and
                     self.world.display_mode == "sphere"):
@@ -5708,7 +5729,6 @@ def main():     # <<<1
                 "sphere_N": 5,
                 "sphere_mode": "sphere",
                 "hyper_nb_steps": 25,
-                "hyper_disk_model": True,
                 "hyper_s": 3,
         },
         "preview": False,
@@ -5859,6 +5879,7 @@ def main():     # <<<1
         gui.config = config
         if os.path.isfile(".create_symmetry.ct"):
             gui.load_config_file(".create_symmetry.ct")
+            # gui.function.change_matrix(fourrier_identity(20))
         if config["preview"]:
             gui.make_preview()
         gui.mainloop()
