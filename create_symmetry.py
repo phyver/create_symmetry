@@ -13,12 +13,11 @@ import os.path
 from itertools import product
 import re
 import json
-import time
 from ast import literal_eval
 
 # math
 from cmath import exp
-from math import sqrt, pi, sin, cos, asin, acos, atan2, ceil
+from math import sqrt, pi, sin, cos, asin, atan2, ceil
 from random import randrange, uniform, shuffle, seed
 
 # multiprocessing
@@ -31,14 +30,14 @@ from tkinter.ttk import Combobox, Notebook, Style
 import tkinter.font
 from tkinter import filedialog, messagebox
 
+# vectorized arrays
+import numpy as np
+
 # image manipulation (Pillow)
 import PIL
 from PIL import ImageDraw
 import PIL.ImageTk
 from PIL.ImageColor import getrgb
-
-# vectorized arrays
-import numpy as np
 
 # >>>1
 
@@ -1007,7 +1006,7 @@ def parse_matrix(s):        # <<<2
 def is_rgb(s):  # <<<2
     """check if a string is a color"""
     try:
-        color = getrgb(s)
+        getrgb(s)
         return True
     except:
         return False
@@ -1795,12 +1794,9 @@ def background_output(     # <<<2
 
     # print("PID background_output", os.getpid())
 
-    filename_template = config["output"]["filename_template"]
-
     colorwheel = config["colorwheel"]
     output = config["output"]
     function = config["function"]
-    matrix = function["matrix"]
 
     image = make_image(
         color=colorwheel,
@@ -2750,9 +2746,6 @@ class ColorWheel(LabelFrame):   # <<<2
         else:
             assert False
 
-        x1, y1 = l_plus[0], l_plus[1]
-        x2, y2 = l_plus[-2], l_plus[-1]
-        R = 5
         self._canvas.create_line(
             *l_plus,
             fill="lightgray",
@@ -4476,8 +4469,6 @@ class Function(LabelFrame):     # <<<2
             pattern = self.wallpaper_pattern
             color_pattern = self.wallpaper_color_pattern
             if color_pattern:
-                sub = PATTERN[color_pattern, pattern]
-                parity = sub["parity"]
                 M = add_symmetries(
                     M,
                     PATTERN[color_pattern, pattern]["recipe"],
@@ -5835,7 +5826,6 @@ def main():     # <<<1
                 sys.exit(1)
         elif o in ["--angle"]:
             try:
-                angle = float(a)
                 config["output"]["angle"] = float(a)
             except:
                 error("problem with angle '{}'".format(a))
