@@ -49,7 +49,7 @@ DEFAULT_COLOR = "black"
 
 ###
 # default configuration for output
-WORLD_GEOMETRY = (-1.5, 1.5, -1.5, 1.5)
+OUTPUT_GEOMETRY = (-1.5, 1.5, -1.5, 1.5)
 SPHERE_ROTATIONS = (15, 0, 0)
 TRANSLATION_INVERSION_DELTA = 0.1
 TRANSLATION_DELTA = 0.1
@@ -913,11 +913,13 @@ def float_to_str(x):       # <<<2
     """transform a float into a string, removing trailing decimal 0s
     and decimal points if possible
     """
-    s = re.sub("\.0*\s*$", "", str(x))
+    s = str(x)
+    if "." in s:
+        s = re.sub("0*\s*$", "", s)
+    s = s.rstrip(".")
     if s == "":
-        return "0"
-    else:
-        return s
+        s = "0"
+    return s
 # >>>2
 
 
@@ -934,26 +936,26 @@ def str_to_complex(s):      # <<<2
 # >>>2
 
 
-def complex_to_str(z, precision=3):    # <<<2
+def complex_to_str(z, precision=16):    # <<<2
     """transform a complex number into a string"""
     if z == 0:
         return "0"
     elif z == z.real:
         x = "{x:.{prec:}f}".format(x=z.real, prec=precision)
-        x = re.sub("\.0*\s*$", "", x)
+        x = float_to_str(x)
         return x
     elif z == z - z.real:
         y = "{y:.{prec:}f}".format(y=z.imag, prec=precision)
-        y = re.sub("\.0*\s*$", "", y)
+        y = float_to_str(y)
         y = "" if y == "1" else y
         return y + "i"
     else:
         sign = "+" if z.imag > 0 else "-"
         x = "{x:.{prec:}f}".format(x=z.real, prec=precision)
-        x = re.sub("\.0*\s*$", "", x)
+        x = float_to_str(x)
         # x = x.rjust(precision + 3)
         y = "{y:.{prec:}f}".format(y=abs(z.imag), prec=precision)
-        y = re.sub("\.0*\s*$", "", y)
+        y = float_to_str(y)
         y = "" if y == "1" else y
         return "{} {} {}i".format(x, sign, y)
 # >>>2
@@ -1257,7 +1259,7 @@ def fourrier_identity(degre):       # <<<2
 # <<<1
 def make_coordinates_array(         # <<<2
         size=OUTPUT_SIZE,
-        geometry=WORLD_GEOMETRY,
+        geometry=OUTPUT_GEOMETRY,
         modulus=1,
         angle=0,
         ):
@@ -1679,11 +1681,11 @@ def save_image(         # <<<2
     program with the exact same parameters
     ``config`` should contain the whole configuration of the program
     """
-    save_directory = config["world"]["save_directory"]
-    filename_template = config["world"]["filename_template"]
+    save_directory = config["output"]["save_directory"]
+    filename_template = config["output"]["filename_template"]
 
-    color = config["color"]
-    world = config["world"]
+    colorwheel = config["colorwheel"]
+    output = config["output"]
     function = config["function"]
 
     if function["pattern_type"] == "wallpaper":
@@ -1698,19 +1700,21 @@ def save_image(         # <<<2
         pattern = "hyperbolic"
 
     # put the tile and / or orbifold into the image
-    if ((world["draw_tile"] or world["draw_orbifold"]) and
+    if ((output["draw_tile"] or output["draw_orbifold"]) and
             PATTERN[pattern]["type"] in ["plane group",
-                                         "color reversing plane group"]):
+                                         "color reversing plane group"] and
+            output["display_mode"] == "plain" and
+            not output["morph"]):
         tile = make_tile(
-            world["geometry"],
-            (world["modulus"], world["angle"]),
+            output["geometry"],
+            (output["modulus"], output["angle"]),
             pattern,
             basis(pattern, *function["lattice_parameters"]),
             image.size,
-            draw_tile=world["draw_tile"],
-            draw_orbifold=world["draw_orbifold"],
-            color_tile=world["draw_color_tile"],
-            draw_mirrors=world["draw_mirrors"]
+            draw_tile=output["draw_tile"],
+            draw_orbifold=output["draw_orbifold"],
+            color_tile=output["draw_color_tile"],
+            draw_mirrors=output["draw_mirrors"]
         )
         image.paste(tile, mask=tile)
 
@@ -1758,8 +1762,8 @@ def save_image(         # <<<2
         message_queue.put("saved file {}".format(filename+".jpg"))
 
     cfg = {
-        "color": config["color"],
-        "world": config["world"],
+        "colorwheel": config["colorwheel"],
+        "output": config["output"],
         "function": config["function"],
         "preview": True
     }
@@ -1768,6 +1772,8 @@ def save_image(         # <<<2
         cfg["function"]["matrix"] = matrix_to_list(cfg["function"]["matrix"])
     if "hyper_s" in cfg["function"]:
         cfg["function"]["hyper_s"] = str(cfg["function"]["hyper_s"])
+    if "inversion_center" in cfg["output"]:
+        cfg["output"]["inversion_center"] = complex_to_str(cfg["output"]["inversion_center"])
 
     json.dump(cfg, config_file, indent=2)
     config_file.close()
@@ -1783,21 +1789,21 @@ def background_output(     # <<<2
 
     # print("PID background_output", os.getpid())
 
-    filename_template = config["world"]["filename_template"]
+    filename_template = config["output"]["filename_template"]
 
-    color = config["color"]
-    world = config["world"]
+    colorwheel = config["colorwheel"]
+    output = config["output"]
     function = config["function"]
     matrix = function["matrix"]
 
     image = make_image(
-        color=color,
-        world=world,
+        color=colorwheel,
+        output=output,
         function=function,
         message_queue=output_message_queue
     )
 
-    if world["fade"]:
+    if output["fade"]:
         image = fade_image(image)
 
     save_image(
@@ -1810,7 +1816,7 @@ def background_output(     # <<<2
 
 def make_image(     # <<<2
         color=None,             # configuration of colorwheel
-        world=None,             # configuration of output
+        output=None,             # configuration of output
         function=None,          # configuration for function
         message_queue=None,
         block_size=BLOCK_SIZE):
@@ -1821,17 +1827,17 @@ def make_image(     # <<<2
     if block_size <= 0:
         return make_image_single_block(
             color=color,
-            world=world,
+            output=output,
             function=function,
             message_queue=message_queue,
             nb_blocks=1,
             nb_block=0)
 
-    x_min, x_max, y_min, y_max = world["geometry"]
+    x_min, x_max, y_min, y_max = output["geometry"]
     delta_x = x_max - x_min
     delta_y = y_max - y_min
 
-    width, height = world["size"]
+    width, height = output["size"]
 
     # print("{}x{} from ({},{}) to ({},{}), block size={}"
     #       .format(width, height,
@@ -1866,17 +1872,17 @@ def make_image(     # <<<2
             #               local_width, local_height,
             #               local_x_min, local_y_min, local_x_max, local_y_max))
 
-            local_world = copy.deepcopy(world)
+            local_output = copy.deepcopy(output)
             local_color = copy.deepcopy(color)
             local_function = copy.deepcopy(function)
-            local_world["geometry"] = (local_x_min, local_x_max,
+            local_output["geometry"] = (local_x_min, local_x_max,
                                        local_y_min, local_y_max)
-            local_world["size"] = (local_width, local_height)
-            local_world["sphere_stars"] /= nb_blocks
+            local_output["size"] = (local_width, local_height)
+            local_output["sphere_stars"] /= nb_blocks
 
             images[i, j] = make_image_single_block(
                 color=local_color,
-                world=local_world,
+                output=local_output,
                 function=local_function,
                 message_queue=message_queue,
                 nb_blocks=nb_blocks,
@@ -1895,7 +1901,7 @@ def make_image(     # <<<2
 
 def make_image_single_block(                 # <<<2
         color=None,             # configuration of colorwheel
-        world=None,             # configuration of output
+        output=None,             # configuration of output
         function=None,          # configuration for function
         message_queue=None,
         nb_blocks=1,
@@ -1914,17 +1920,17 @@ def make_image_single_block(                 # <<<2
         pattern = "hyperbolic"
 
     zs = make_coordinates_array(
-        world["size"],
-        world["geometry"],
-        world["modulus"],
-        world["angle"]
+        output["size"],
+        output["geometry"],
+        output["modulus"],
+        output["angle"]
     )
 
-    if world["display_mode"] == "sphere":
-        zs = plane_coordinates_to_sphere(zs, world["sphere_rotations"])
-    elif world["display_mode"] == "inversion":
-        x = world["inversion_center"].real
-        y = world["inversion_center"].imag
+    if output["display_mode"] == "sphere":
+        zs = plane_coordinates_to_sphere(zs, output["sphere_rotations"])
+    elif output["display_mode"] == "inversion":
+        x = output["inversion_center"].real
+        y = output["inversion_center"].imag
 
         # cf p 317 and 125 in Needlam (pdf 337 and 145)
         # zs = np.conj(zs)
@@ -1974,22 +1980,22 @@ def make_image_single_block(                 # <<<2
         geometry=color["geometry"],
         modulus=color["modulus"],
         angle=color["angle"],
-        color=color["color"],
-        morph_angle=world["morph"],
-        morph_start_angle=world["morph_start"],
-        morph_end_angle=world["morph_end"],
-        morph_stable=world["morph_stable_coeff"],
+        color=color["default_color"],
+        morph_angle=output["morph"],
+        morph_start_angle=output["morph_start"],
+        morph_end_angle=output["morph_end"],
+        morph_stable=output["morph_stable_coeff"],
     )
 
-    if (world["display_mode"] in ["sphere", "inversion"]):
+    if (output["display_mode"] in ["sphere", "inversion"]):
         return make_sphere_background(
-            world["geometry"],
-            world["modulus"],
-            world["angle"],
+            output["geometry"],
+            output["modulus"],
+            output["angle"],
             img,
-            background=world["sphere_background"],
-            fade=world["sphere_background_fading"],
-            stars=world["sphere_stars"]
+            background=output["sphere_background"],
+            fade=output["sphere_background_fading"],
+            stars=output["sphere_stars"]
         )
     else:
         return img
@@ -2379,23 +2385,23 @@ class ColorWheel(LabelFrame):   # <<<2
 
     @property
     def rgb_color(self):    # <<<4
-        return self._color.get()
+        return self._default_color.get()
     # >>>4
 
     @rgb_color.setter
     def rgb_color(self, color):    # <<<4
-        self._color.set("#{:02x}{:02x}{:02x}"
-                        .format(color[0], color[1], color[2]))
+        self._default_color.set("#{:02x}{:02x}{:02x}"
+                                .format(color[0], color[1], color[2]))
     # >>>4
 
     @property
-    def color(self):    # <<<4
-        return self._color.entry_widget.get()
+    def default_color(self):    # <<<4
+        return self._default_color.entry_widget.get()
     # >>>4
 
-    @color.setter
-    def color(self, color):    # <<<4
-        self._color.set(color)
+    @default_color.setter
+    def default_color(self, color):    # <<<4
+        self._default_color.set(color)
     # >>>4
 
     @property
@@ -2454,16 +2460,16 @@ class ColorWheel(LabelFrame):   # <<<2
         LabelFrame.__init__(self, root)
         self.configure(text="Colorwheel")
 
-        self._color = LabelEntry(
+        self._default_color = LabelEntry(
             self,
             label="default color",
             value=DEFAULT_COLOR,
             width=10,
             convert=getrgb
         )
-        self._color.pack(padx=5, pady=5)
-        self._color.bind("<Return>", self.update_defaultcolor)
-        self._color.bind("<FocusOut>", self.update_defaultcolor)
+        self._default_color.pack(padx=5, pady=5)
+        self._default_color.bind("<Return>", self.update_default_color)
+        self._default_color.bind("<FocusOut>", self.update_default_color)
 
         self._stretch_color = BooleanVar()
         self._stretch_color.set(False)
@@ -2574,7 +2580,7 @@ class ColorWheel(LabelFrame):   # <<<2
             add="+"
         )
 
-        self.update_defaultcolor()
+        self.update_default_color()
 
         if os.path.exists("./colorwheel.jpg"):
             self.change_colorwheel("colorwheel.jpg")
@@ -2582,8 +2588,8 @@ class ColorWheel(LabelFrame):   # <<<2
             self.filename = None
     # >>>3
 
-    def update_defaultcolor(self, *args):     # <<<3
-        if self._color.validate():
+    def update_default_color(self, *args):     # <<<3
+        if self._default_color.validate():
             self._canvas.config(bg="#{:02x}{:02x}{:02x}"
                                 .format(*self.rgb_color))
     # >>>3
@@ -2809,7 +2815,7 @@ class ColorWheel(LabelFrame):   # <<<2
     @property
     def config(self):           # <<<3
         cfg = {}
-        for k in ["filename", "alt_filename", "color", "geometry", "modulus",
+        for k in ["filename", "alt_filename", "default_color", "geometry", "modulus",
                   "angle", "stretch"]:
             cfg[k] = getattr(self, k)
         return cfg
@@ -2817,7 +2823,7 @@ class ColorWheel(LabelFrame):   # <<<2
 
     @config.setter
     def config(self, cfg):      # <<<3
-        for k in ["color", "geometry", "modulus",
+        for k in ["default_color", "geometry", "modulus",
                   "angle", "stretch"]:
             if k in cfg:
                 setattr(self, k, cfg[k])
@@ -2825,11 +2831,13 @@ class ColorWheel(LabelFrame):   # <<<2
             self.change_colorwheel(cfg["filename"])
         if "alt_filename" in cfg:
             self.alt_filename = cfg["alt_filename"]
+        if "default_color" in cfg:
+            self.update_default_color()
     # >>>3
 # >>>2
 
 
-class World(LabelFrame):     # <<<2
+class Output(LabelFrame):     # <<<2
 
     # getters and setters   <<<3
     @property
@@ -2953,7 +2961,8 @@ class World(LabelFrame):     # <<<2
 
     @inversion_center.setter
     def inversion_center(self, z):    # <<<4
-        self._inversion_center.set(complex_to_str(z))
+        z = complex(z)
+        self._inversion_center.set(complex_to_str(z, precision=3))
     # >>>4
 
     @property
@@ -3268,7 +3277,7 @@ class World(LabelFrame):     # <<<2
         self._x_min = LabelEntry(
             coord_frame,
             label="x min",
-            value=WORLD_GEOMETRY[0],
+            value=OUTPUT_GEOMETRY[0],
             convert=float,
             width=4, justify=RIGHT
         )
@@ -3277,7 +3286,7 @@ class World(LabelFrame):     # <<<2
         self._x_max = LabelEntry(
             coord_frame,
             label="x max",
-            value=WORLD_GEOMETRY[1],
+            value=OUTPUT_GEOMETRY[1],
             convert=float,
             width=4, justify=RIGHT
         )
@@ -3286,7 +3295,7 @@ class World(LabelFrame):     # <<<2
         self._y_min = LabelEntry(
             coord_frame,
             label="y min",
-            value=WORLD_GEOMETRY[2],
+            value=OUTPUT_GEOMETRY[2],
             convert=float,
             width=4, justify=RIGHT
         )
@@ -3295,7 +3304,7 @@ class World(LabelFrame):     # <<<2
         self._y_max = LabelEntry(
             coord_frame,
             label="y max",
-            value=WORLD_GEOMETRY[3],
+            value=OUTPUT_GEOMETRY[3],
             convert=float,
             width=4, justify=RIGHT
         )
@@ -3350,6 +3359,7 @@ class World(LabelFrame):     # <<<2
         tmp = Frame(self._geometry_display_tab)
         tmp.pack()
 
+        # TODO use grid so that we can "grid_forget" and "grid" widget in the same place
         plain_button = Radiobutton(
             tmp,
             text="plain",
@@ -3617,7 +3627,7 @@ class World(LabelFrame):     # <<<2
     # >>>3
 
     def reset_geometry(self, *args):        # <<<3
-        self.geometry = WORLD_GEOMETRY
+        self.geometry = OUTPUT_GEOMETRY
         self.sphere_rotations = SPHERE_ROTATIONS
         self.inversion_center = INVERSION_CENTER
         self.adjust_geometry()
@@ -4388,7 +4398,7 @@ class Function(LabelFrame):     # <<<2
             self._display_matrix.insert(
                     END,
                     "{:2}, {:2} : {}"
-                    .format(n, m, complex_to_str(M[(n, m)])))
+                    .format(n, m, complex_to_str(M[(n, m)], precision=3)))
     # >>>3
 
     def new_random_matrix(self, *args):     # <<<3
@@ -4629,9 +4639,9 @@ class CreateSymmetry(Tk):      # <<<2
     # getters and setters <<<3
     @property
     def config(self):       # <<<4
-        return {"color": self.colorwheel.config,
+        return {"colorwheel": self.colorwheel.config,
                 "function": self.function.config,
-                "world": self.world.config,
+                "output": self.output.config,
                 "working_directory": normalize_path(os.getcwd())}
     # >>>4
 
@@ -4639,8 +4649,8 @@ class CreateSymmetry(Tk):      # <<<2
     def config(self, cfg):      # <<<4
         if "working_directory" in cfg:
             os.chdir(os.path.expanduser(cfg["working_directory"]))
-        self.colorwheel.config = cfg.get("color", {})
-        self.world.config = cfg.get("world", {})
+        self.colorwheel.config = cfg.get("colorwheel", {})
+        self.output.config = cfg.get("output", {})
         self.function.config = cfg.get("function", {})
     # >>>4
 
@@ -4676,12 +4686,12 @@ class CreateSymmetry(Tk):      # <<<2
         # components    <<<4
         self.colorwheel = ColorWheel(self)
 
-        self.world = World(self)
+        self.output = Output(self)
 
         self.function = Function(self)
 
         self.colorwheel.grid(row=0, column=0, sticky=N+S, padx=10, pady=10)
-        self.world.grid(row=0, column=1, sticky=N+S, padx=10, pady=10)
+        self.output.grid(row=0, column=1, sticky=N+S, padx=10, pady=10)
         self.function.grid(row=1, column=1, sticky=E+W, padx=10, pady=10)
 
         console_frame = Frame(self)
@@ -4733,7 +4743,7 @@ class CreateSymmetry(Tk):      # <<<2
         # >>>4
 
         # attach appropriate actions to buttons     <<<4
-        self.world._preview_button.config(command=sequence(self.make_preview))
+        self.output._preview_button.config(command=sequence(self.make_preview))
         # >>>4
 
         # keybindings       <<<4
@@ -4754,9 +4764,9 @@ class CreateSymmetry(Tk):      # <<<2
         self.bind("<Control-g>", sequence(self.function.new_random_matrix))
         self.bind("<Control-G>", sequence(self.new_random_preview))
 
-        self.bind("<Control-Key-minus>", sequence(self.world.zoom(1/ZOOM_FACTOR),
+        self.bind("<Control-Key-minus>", sequence(self.output.zoom(1/ZOOM_FACTOR),
                                                   self.make_preview))
-        self.bind("<Control-Key-plus>", sequence(self.world.zoom(ZOOM_FACTOR),
+        self.bind("<Control-Key-plus>", sequence(self.output.zoom(ZOOM_FACTOR),
                                                  self.make_preview))
 
         self.bind("<Control-Key-Left>", sequence(self.translate_rotate(1, 0),
@@ -4771,7 +4781,7 @@ class CreateSymmetry(Tk):      # <<<2
                                           self.make_preview))
         self.bind("<Control-Z>", sequence(self.translate_rotate(0, 0, 1),
                                           self.make_preview))
-        self.bind("<Control-0>", sequence(self.world.reset_geometry,
+        self.bind("<Control-0>", sequence(self.output.reset_geometry,
                                           self.make_preview))
 
         self.bind("<Control-u>", sequence(self.undo))
@@ -4781,13 +4791,13 @@ class CreateSymmetry(Tk):      # <<<2
         self.bind("<Control-R>", sequence(self.redo,
                                           self.make_preview))
 
-        self.world._canvas.bind("<Double-Button-1>", self.show_bigger_preview)
+        self.output._canvas.bind("<Double-Button-1>", self.show_bigger_preview)
 
         def apply_zoom(event):
-            if self.world.start_apply_zoom_rectangle(event):
+            if self.output.start_apply_zoom_rectangle(event):
                 self.make_preview()
 
-        self.world._canvas.bind("<Button-1>", apply_zoom)
+        self.output._canvas.bind("<Button-1>", apply_zoom)
         # >>>4
 
         # menu <<<4
@@ -4862,27 +4872,27 @@ class CreateSymmetry(Tk):      # <<<2
             variable=self.colorwheel._stretch_color
         )
 
-        world_menu = Menu(menu, tearoff=False)
-        menu.add_cascade(label="world", menu=world_menu)
+        output_menu = Menu(menu, tearoff=False)
+        menu.add_cascade(label="output", menu=output_menu)
 
-        world_menu.add_command(
+        output_menu.add_command(
             label="zoom -",
             accelerator="Ctrl--",
-            command=sequence(self.world.zoom(1/ZOOM_FACTOR), self.make_preview)
+            command=sequence(self.output.zoom(1/ZOOM_FACTOR), self.make_preview)
         )
-        world_menu.add_command(
+        output_menu.add_command(
             label="zoom +",
             accelerator="Ctrl-+",
-            command=sequence(self.world.zoom(ZOOM_FACTOR), self.make_preview)
+            command=sequence(self.output.zoom(ZOOM_FACTOR), self.make_preview)
         )
-        world_menu.add_command(
-            label="reset world",
+        output_menu.add_command(
+            label="reset output",
             accelerator="Ctrl-0",
-            command=sequence(self.world.reset_geometry)
+            command=sequence(self.output.reset_geometry)
         )
-        world_menu.add_command(
+        output_menu.add_command(
             label="change save dir",
-            command=sequence(self.world.change_save_dir)
+            command=sequence(self.output.change_save_dir)
         )
 
         # function_menu = Menu(menu, tearoff=False)
@@ -4925,28 +4935,28 @@ class CreateSymmetry(Tk):      # <<<2
             add="+"
         )
 
-        self.world._draw_tile_button.config(
-            command=self.update_world_preview
+        self.output._draw_tile_button.config(
+            command=self.update_output_preview
         )
-        self.world._draw_orbifold_button.config(
-            command=self.update_world_preview
+        self.output._draw_orbifold_button.config(
+            command=self.update_output_preview
         )
-        self.world._draw_color_tile_button.config(
-            command=self.update_world_preview
+        self.output._draw_color_tile_button.config(
+            command=self.update_output_preview
         )
-        self.world._draw_mirrors_button.config(
-            command=self.update_world_preview
+        self.output._draw_mirrors_button.config(
+            command=self.update_output_preview
         )
-        self.world._fade_button.config(
-            command=self.update_world_preview
+        self.output._fade_button.config(
+            command=self.update_output_preview
         )
-        self.world._fade_coeff.bind(
+        self.output._fade_coeff.bind(
             "<Return>",
-            self.update_world_preview
+            self.update_output_preview
         )
-        self.world._fade_coeff.bind(
+        self.output._fade_coeff.bind(
             "<FocusOut>",
-            self.update_world_preview
+            self.update_output_preview
         )
         # >>>4
 
@@ -5094,112 +5104,115 @@ contact: Pierre.Hyvernat@univ-smb.fr
     def update(self, *args):       # <<<3
         if self.function.pattern_type in ["sphere"]:
             if self.function.sphere_mode == "rosette":
-                self.world.enable_mode_tab()
-                self.world.display_mode = "plain"
-                self.world.geometry_tab = "mode"
-                self.world.disable_geometry_morph_tab()
+                self.output.enable_mode_tab()
+                self.output.display_mode = "plain"
+                self.output.geometry_tab = "mode"
+                self.output.disable_geometry_morph_tab()
             elif self.function.sphere_mode == "frieze":
-                self.world.disable_mode_tab()
-                self.world.display_mode = "plain"
-                self.world.geometry_tab = "geometry"
-                self.world.disable_geometry_morph_tab()
+                self.output.disable_mode_tab()
+                self.output.display_mode = "plain"
+                self.output.geometry_tab = "geometry"
+                self.output.disable_geometry_morph_tab()
             elif self.function.sphere_mode == "sphere":
-                self.world.enable_mode_tab()
-                self.world.display_mode = "sphere"
-                self.world.geometry_tab = "mode"
-                self.world.disable_geometry_morph_tab()
-                self.world.sphere_stars = NB_STARS
+                self.output.enable_mode_tab()
+                self.output.display_mode = "sphere"
+                self.output.geometry_tab = "mode"
+                self.output.disable_geometry_morph_tab()
+                self.output.sphere_stars = NB_STARS
             else:
                 assert False
         elif self.function.pattern_type in ["wallpaper"]:
-            self.world.disable_mode_tab()
-            self.world.display_mode = "plain"
-            self.world.enable_geometry_morph_tab()
+            self.output.disable_mode_tab()
+            self.output.display_mode = "plain"
+            self.output.enable_geometry_morph_tab()
         elif self.function.pattern_type in ["hyperbolic"]:
-            self.world.enable_mode_tab()
-            self.world.display_mode = "inversion"
-            self.world.disable_geometry_morph_tab()
-            self.world.sphere_stars = 0
+            self.output.enable_mode_tab()
+            self.output.display_mode = "inversion"
+            self.output.disable_geometry_morph_tab()
+            self.output.sphere_stars = 0
 
         # enable / disable tiling / orbifold drawing buttons
         if self.function.pattern_type in ["sphere", "hyperbolic"]:
-            self.world.draw_tile = False
-            self.world.draw_orbifold = False
-            self.world.draw_mirrors = False
-            self.world.fade = False
-            self.world._draw_tile_button.config(state=DISABLED)
-            self.world._draw_orbifold_button.config(state=DISABLED)
-            self.world._draw_color_tile_button.config(state=DISABLED)
-            self.world._draw_mirrors_button.config(state=DISABLED)
-            self.world._fade_button.config(state=DISABLED)
-            self.world._fade_coeff.disable()
+            self.output.draw_tile = False
+            self.output.draw_orbifold = False
+            self.output.draw_mirrors = False
+            self.output.fade = False
+            self.output._draw_tile_button.config(state=DISABLED)
+            self.output._draw_orbifold_button.config(state=DISABLED)
+            self.output._draw_color_tile_button.config(state=DISABLED)
+            self.output._draw_mirrors_button.config(state=DISABLED)
+            self.output._fade_button.config(state=DISABLED)
+            self.output._fade_coeff.disable()
         else:
-            self.world._draw_tile_button.config(state=NORMAL)
-            self.world._draw_orbifold_button.config(state=NORMAL)
-            self.world._draw_color_tile_button.config(state=NORMAL)
-            self.world._draw_mirrors_button.config(state=NORMAL)
-            self.world._fade_button.config(state=NORMAL)
-            self.world._fade_coeff.enable()
+            self.output._draw_tile_button.config(state=NORMAL)
+            self.output._draw_orbifold_button.config(state=NORMAL)
+            self.output._draw_color_tile_button.config(state=NORMAL)
+            self.output._draw_mirrors_button.config(state=NORMAL)
+            self.output._fade_button.config(state=NORMAL)
+            self.output._fade_coeff.enable()
             if self.function.wallpaper_color_pattern == "":
-                self.world._draw_color_tile_button.config(state=DISABLED)
+                self.output._draw_color_tile_button.config(state=DISABLED)
             else:
-                self.world._draw_color_tile_button.config(state=NORMAL)
-            self.world.update()
+                self.output._draw_color_tile_button.config(state=NORMAL)
+            self.output.update()
 
     # >>>3
 
-    def update_world_preview(self, *args):       # <<<3
-        self.world._canvas.delete("preview")
+    def update_output_preview(self, *args):       # <<<3
+        self.output._canvas.delete("preview")
         try:
-            if self.world.fade:
+            if self.output.fade:
                 fade = fade_image(
-                    self.world._canvas._image,
-                    255-self.world.fade_coeff
+                    self.output._canvas._image,
+                    255-self.output.fade_coeff
                 )
-                self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(fade)
+                self.output._canvas.tk_img = PIL.ImageTk.PhotoImage(fade)
             else:
-                self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(
-                    self.world._canvas._image
+                self.output._canvas.tk_img = PIL.ImageTk.PhotoImage(
+                    self.output._canvas._image
                 )
 
-            self.world._canvas._image_id = self.world._canvas.create_image(
+            self.output._canvas._image_id = self.output._canvas.create_image(
                 (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
-                image=self.world._canvas.tk_img,
+                image=self.output._canvas.tk_img,
                 tags="preview"
             )
         except AttributeError:
             pass
 
+        if self.output.display_mode != "plain" or self.output.morph:
+            return
+
         def put_tile(name):
             try:
-                if isinstance(getattr(self.world._canvas, name), tuple):
-                    img = make_tile(*getattr(self.world._canvas, name))
+                if isinstance(getattr(self.output._canvas, name), tuple):
+                    img = make_tile(*getattr(self.output._canvas, name))
                     tk_img = PIL.ImageTk.PhotoImage(img)
-                    setattr(self.world._canvas, name, img)
-                    setattr(self.world._canvas, "tk" + name, tk_img)
-                img_id = self.world._canvas.create_image(
+                    setattr(self.output._canvas, name, img)
+                    setattr(self.output._canvas, "tk" + name, tk_img)
+                img_id = self.output._canvas.create_image(
                     (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
-                    image=getattr(self.world._canvas, "tk" + name),
+                    image=getattr(self.output._canvas, "tk" + name),
                     tags="preview"
                 )
-                setattr(self.world._canvas, name + "_id", img_id)
+                setattr(self.output._canvas, name + "_id", img_id)
             except AttributeError:
                 pass
 
-        if self.world.draw_tile:
-            if self.world.draw_color_tile:
+        if self.output.draw_tile:
+            if self.output.draw_color_tile:
                 put_tile("_color_tile_img")
             else:
                 put_tile("_tile_img")
 
-        if self.world.draw_orbifold:
-            if self.world.draw_color_tile:
+        if self.output.draw_orbifold:
+            if self.output.draw_color_tile:
                 put_tile("_color_orbifold_img")
             else:
                 put_tile("_orbifold_img")
 
-        if self.world.draw_orbifold and self.world.draw_mirrors:
-            if self.world.draw_color_tile:
+        if self.output.draw_orbifold and self.output.draw_mirrors:
+            if self.output.draw_color_tile:
                 put_tile("_color_mirrors_img")
             else:
                 put_tile("_mirrors_img")
@@ -5265,23 +5278,23 @@ contact: Pierre.Hyvernat@univ-smb.fr
                 image = self.preview_image_queue.get(block=False)
             except queue.Empty:
                 if image is not None:
-                    # FIXME: methode change_preview in World class
+                    # FIXME: methode change_preview in Output class
 
-                    self.world._canvas._image = image
-                    self.world._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
+                    self.output._canvas._image = image
+                    self.output._canvas.tk_img = PIL.ImageTk.PhotoImage(image)
 
-                    self.world._canvas._image_id = self.world._canvas.create_image(
+                    self.output._canvas._image_id = self.output._canvas.create_image(
                         (PREVIEW_SIZE//2, PREVIEW_SIZE//2),
-                        image=self.world._canvas.tk_img
+                        image=self.output._canvas.tk_img
                     )
 
                     if self.function.pattern_type == "wallpaper":
                         pattern = self.function.full_wallpaper_pattern
 
                         # name all argument of make tile and use dictionary here
-                        self.world._canvas._tile_img = (
-                            self.world.geometry,
-                            (self.world.modulus, self.world.angle),
+                        self.output._canvas._tile_img = (
+                            self.output.geometry,
+                            (self.output.modulus, self.output.angle),
                             pattern,
                             basis(pattern,
                                   *self.function.lattice_parameters),
@@ -5292,9 +5305,9 @@ contact: Pierre.Hyvernat@univ-smb.fr
                             False
                         )
 
-                        self.world._canvas._orbifold_img = (
-                            self.world.geometry,
-                            (self.world.modulus, self.world.angle),
+                        self.output._canvas._orbifold_img = (
+                            self.output.geometry,
+                            (self.output.modulus, self.output.angle),
                             pattern,
                             basis(pattern,
                                   *self.function.lattice_parameters),
@@ -5305,9 +5318,9 @@ contact: Pierre.Hyvernat@univ-smb.fr
                             False
                         )
 
-                        self.world._canvas._mirrors_img = (
-                            self.world.geometry,
-                            (self.world.modulus, self.world.angle),
+                        self.output._canvas._mirrors_img = (
+                            self.output.geometry,
+                            (self.output.modulus, self.output.angle),
                             pattern,
                             basis(pattern,
                                   *self.function.lattice_parameters),
@@ -5318,9 +5331,9 @@ contact: Pierre.Hyvernat@univ-smb.fr
                             True
                         )
 
-                        self.world._canvas._color_tile_img = (
-                            self.world.geometry,
-                            (self.world.modulus, self.world.angle),
+                        self.output._canvas._color_tile_img = (
+                            self.output.geometry,
+                            (self.output.modulus, self.output.angle),
                             pattern,
                             basis(pattern,
                                   *self.function.lattice_parameters),
@@ -5331,9 +5344,9 @@ contact: Pierre.Hyvernat@univ-smb.fr
                             False
                         )
 
-                        self.world._canvas._color_orbifold_img = (
-                            self.world.geometry,
-                            (self.world.modulus, self.world.angle),
+                        self.output._canvas._color_orbifold_img = (
+                            self.output.geometry,
+                            (self.output.modulus, self.output.angle),
                             pattern,
                             basis(pattern,
                                   *self.function.lattice_parameters),
@@ -5344,9 +5357,9 @@ contact: Pierre.Hyvernat@univ-smb.fr
                             False
                         )
 
-                        self.world._canvas._color_mirrors_img = (
-                            self.world.geometry,
-                            (self.world.modulus, self.world.angle),
+                        self.output._canvas._color_mirrors_img = (
+                            self.output.geometry,
+                            (self.output.modulus, self.output.angle),
                             pattern,
                             basis(pattern,
                                   *self.function.lattice_parameters),
@@ -5357,14 +5370,14 @@ contact: Pierre.Hyvernat@univ-smb.fr
                             True
                         )
 
-                    self.update_world_preview()
+                    self.update_output_preview()
                 break
 
         self.after(100, self.update_GUI)
     # >>>3
 
     def make_output(self, *args):      # <<<3
-        self.world.adjust_geometry()
+        self.output.adjust_geometry()
         cfg = self.config
 
         self.output_params_queue.put(cfg)
@@ -5386,29 +5399,29 @@ contact: Pierre.Hyvernat@univ-smb.fr
 
     def make_preview(self, *args):      # <<<3
 
-        self.world.adjust_geometry()
+        self.output.adjust_geometry()
         if not self.function.matrix:
             return
-        ratio = self.world.width / self.world.height
-        if (self.world.width < self.world.preview_size and
-                self.world.height < self.world.preview_size):
-            width = self.world.width
-            height = self.world.height
+        ratio = self.output.width / self.output.height
+        if (self.output.width < self.output.preview_size and
+                self.output.height < self.output.preview_size):
+            width = self.output.width
+            height = self.output.height
         elif ratio > 1:
-            width = self.world.preview_size
-            height = round(self.world.preview_size / ratio)
+            width = self.output.preview_size
+            height = round(self.output.preview_size / ratio)
         else:
-            width = round(self.world.preview_size * ratio)
-            height = self.world.preview_size
+            width = round(self.output.preview_size * ratio)
+            height = self.output.preview_size
 
         def make_preview_job():
             # print("make_preview PID", os.getpid())
             cfg = self.config
-            cfg["world"]["size"] = (width, height)
+            cfg["output"]["size"] = (width, height)
 
             image = make_image(
-                color=cfg["color"],
-                world=cfg["world"],
+                color=cfg["colorwheel"],
+                output=cfg["output"],
                 function=cfg["function"],
                 message_queue=self.preview_message_queue
             )
@@ -5441,30 +5454,30 @@ contact: Pierre.Hyvernat@univ-smb.fr
 
     def full_preview_image(self):       # <<<3
         """paste the preview, tile, orbifold and mirror images together"""
-        img = self.world._canvas._image
+        img = self.output._canvas._image
         width, height = img.size
-        if self.world.fade:
+        if self.output.fade:
             img = fade_image(img)
 
         def paste_tile(name):
             try:
-                tile = getattr(self.world._canvas, name)
+                tile = getattr(self.output._canvas, name)
                 img.paste(tile, mask=tile)
             except:
                 pass
 
-        if self.world.draw_tile:
-            if self.world.draw_color_tile:
+        if self.output.draw_tile:
+            if self.output.draw_color_tile:
                 paste_tile("_color_tile_img")
             else:
                 paste_tile("_tile_img")
-        if self.world.draw_orbifold:
-            if self.world.draw_color_tile:
+        if self.output.draw_orbifold:
+            if self.output.draw_color_tile:
                 paste_tile("_color_orbifold_img")
             else:
                 paste_tile("_orbifold_img")
-        if self.world.draw_mirrors:
-            if self.world.draw_color_tile:
+        if self.output.draw_mirrors:
+            if self.output.draw_color_tile:
                 paste_tile("_color_mirrors_img")
             else:
                 paste_tile("_mirrors_img")
@@ -5507,29 +5520,29 @@ contact: Pierre.Hyvernat@univ-smb.fr
 
     def translate_rotate(self, dx, dy, dz=0):   # <<<3
         def translate_rotate_tmp(*args):
-            if (self.world.geometry_tab == "mode" and
-                    self.world.display_mode == "sphere"):
+            if (self.output.geometry_tab == "mode" and
+                    self.output.display_mode == "sphere"):
                 if dx != 0 or dy != 0 or dz != 0:
-                    self.world.rotate(
+                    self.output.rotate(
                         dx*ROTATION_DELTA,
                         dy*ROTATION_DELTA,
                         dz*ROTATION_DELTA)
-            elif (self.world.geometry_tab == "mode" and
-                  self.world.display_mode == "inversion"):
+            elif (self.output.geometry_tab == "mode" and
+                  self.output.display_mode == "inversion"):
                 if dx != 0 or dy != 0 or dz != 0:
-                    x = self.world.inversion_center.real
-                    y = self.world.inversion.imag
+                    x = self.output.inversion_center.real
+                    y = self.output.inversion_center.imag
                     x += dx*TRANSLATION_INVERSION_DELTA
                     y += dy*TRANSLATION_INVERSION_DELTA
-                    self.world.inversion_center = complex(x, y)
+                    self.output.inversion_center = complex(x, y)
             else:
                 if dx != 0 or dy != 0:
-                    self.world.translate(
+                    self.output.translate(
                         dx*TRANSLATION_DELTA,
                         dy*TRANSLATION_DELTA
                     )
                 elif dz != 0:
-                    self.world.angle -= dz * ROTATION_DELTA
+                    self.output.angle -= dz * ROTATION_DELTA
         return translate_rotate_tmp
     # >>>3
 
@@ -5552,11 +5565,11 @@ contact: Pierre.Hyvernat@univ-smb.fr
             except:
                 pass
             try:
-                self.colorwheel.config = cfg["color"]
+                self.colorwheel.config = cfg["colorwheel"]
             except:
                 pass
             try:
-                self.world.config = cfg["world"]
+                self.output.config = cfg["output"]
             except:
                 pass
             try:
@@ -5605,8 +5618,8 @@ contact: Pierre.Hyvernat@univ-smb.fr
             cfg["function"]["matrix"] = matrix_to_list(cfg["function"]["matrix"])
         if "hyper_s" in cfg["function"]:
             cfg["function"]["hyper_s"] = str(cfg["function"]["hyper_s"])
-        if "inversion_center" in cfg["world"]:
-            cfg["world"]["inversion_center"] = str(cfg["world"]["inversion_center"])
+        if "inversion_center" in cfg["output"]:
+            cfg["output"]["inversion_center"] = str(cfg["output"]["inversion_center"])
         json.dump(cfg, config_file, indent=2)
         config_file.close()
     # >>>3
@@ -5681,17 +5694,17 @@ def main():     # <<<1
         sys.exit(-1)
 
     config = {
-        "color": {
+        "colorwheel": {
             # "filename": None,
-            "color": DEFAULT_COLOR,
+            "default_color": DEFAULT_COLOR,
             "geometry": COLOR_GEOMETRY,
             "modulus": 1,
             "angle": 0,
             "stretch": False,
         },
-        "world": {
+        "output": {
                 "size": OUTPUT_SIZE,
-                "geometry": WORLD_GEOMETRY,
+                "geometry": OUTPUT_GEOMETRY,
                 "modulus": 1,
                 "angle": 0,
                 "filename_template": FILENAME_TEMPLATE,
@@ -5734,41 +5747,43 @@ def main():     # <<<1
         "preview": False,
         "working_directory": "./"}
     batch = False
+    config_files = []
 
-    def get_config(f):
-        nonlocal config
+    def get_config(file):
+        nonlocal config, config_files
         try:
-            f = open(f, mode="r")
+            config_files.append(file)
+            f = open(file, mode="r")
             cfg = json.load(f)
-            for d in ["color", "world", "function"]:
+            for d in ["colorwheel", "output", "function"]:
                 for k in cfg[d]:
                     config[d][k] = cfg[d][k]
             if cfg.get("preview", False):
                 config["preview"] = True
         except:
             error("problem while loading configuration from '{}'"
-                  .format(a))
+                  .format(f))
 
     for o, a in opts:
         if o in ["-h", "--help"]:
             display_help()
             sys.exit(0)
         elif o in ["-c", "--color"]:
-            config["color"]["filename"] = a
+            config["colorwheel"]["filename"] = a
         elif o in ["-o", "--output"]:
-            config["world"]["filename_template"] = a
+            config["output"]["filename_template"] = a
         elif o in ["-s", "--size"]:
             try:
                 tmp = map(int, re.split("[,x]", a))
                 width, height = tmp
-                config["world"]["size"] = (width, height)
+                config["output"]["size"] = (width, height)
             except:
                 error("problem with size '{}'".format(a))
                 sys.exit(1)
         elif o in ["-g", "--geometry"]:
             try:
                 x_min, x_max, y_min, y_max = str_to_floats(a)
-                config["world"]["geometry"] = x_min, x_max, y_min, y_max
+                config["output"]["geometry"] = x_min, x_max, y_min, y_max
             except:
                 error("problem with geometry '{}' for output".format(a))
                 sys.exit(1)
@@ -5779,33 +5794,33 @@ def main():     # <<<1
                 error("problem with rotational symmetry '{}'".format(a))
         elif o in ["--modulus"]:
             try:
-                config["world"]["modulu"] = float(a)
+                config["output"]["modulu"] = float(a)
             except:
                 error("problem with modulus '{}'".format(a))
                 sys.exit(1)
         elif o in ["--angle"]:
             try:
                 angle = float(a)
-                config["world"]["angle"] = float(a)
+                config["output"]["angle"] = float(a)
             except:
                 error("problem with angle '{}'".format(a))
                 sys.exit(1)
         elif o in ["--color-geometry"]:
             try:
                 x_min, x_max, y_min, y_max = str_to_floats(a)
-                config["color"]["geometry"] = x_min, x_max, y_min, y_max
+                config["colorwheel"]["geometry"] = x_min, x_max, y_min, y_max
             except:
                 error("problem with geometry '{}' for color image".format(a))
                 sys.exit(1)
         elif o in ["--color-modulus"]:
             try:
-                config["color"]["modulu"] = float(a)
+                config["colorwheel"]["modulus"] = float(a)
             except:
                 error("problem with modulus '{}'".format(a))
                 sys.exit(1)
         elif o in ["--color-angle"]:
             try:
-                config["color"]["angle"] = float(a)
+                config["colorwheel"]["angle"] = float(a)
             except:
                 error("problem with angle '{}'".format(a))
                 sys.exit(1)
@@ -5817,20 +5832,20 @@ def main():     # <<<1
                 config["function"]["pattern_type"] = "wallpaper"
                 config["function"]["wallpaper_pattern"] = pattern
                 config["function"]["wallpaper_color_pattern"] = color_pattern
-                config["world"]["display_mode"] = "plain"
+                config["output"]["display_mode"] = "plain"
             elif pattern in W_NAMES:
                 config["function"]["pattern_type"] = "wallpaper"
                 config["function"]["wallpaper_pattern"] = pattern
-                config["world"]["display_mode"] = "plain"
+                config["output"]["display_mode"] = "plain"
             elif pattern in S_NAMES:
                 config["function"]["pattern_type"] = "sphere"
                 config["function"]["sphere_pattern"] = pattern
-                config["world"]["display_mode"] = "sphere"
-                config["world"]["sphere_stars"] = NB_STARS
+                config["output"]["display_mode"] = "sphere"
+                config["output"]["sphere_stars"] = NB_STARS
             elif pattern == "hyperbolic":
                 config["function"]["pattern_type"] = "hyperbolic"
-                config["world"]["display_mode"] = "inversion"
-                config["world"]["sphere_stars"] = 0
+                config["output"]["display_mode"] = "inversion"
+                config["output"]["sphere_stars"] = 0
 
         elif o in ["--params"]:
             config["function"]["lattice_parameters"] = str_to_floats(a)
@@ -5868,8 +5883,8 @@ def main():     # <<<1
             )
 
         img = make_image(
-            color=config["color"],
-            world=config["world"],
+            color=config["colorwheel"],
+            output=config["output"],
             function=config["function"]
         )
         save_image(image=img, **config)
@@ -5877,7 +5892,7 @@ def main():     # <<<1
     else:
         gui = CreateSymmetry()
         gui.config = config
-        if os.path.isfile(".create_symmetry.ct"):
+        if config_files == [] and os.path.isfile(".create_symmetry.ct"):
             gui.load_config_file(".create_symmetry.ct")
             # gui.function.change_matrix(fourrier_identity(20))
         if config["preview"]:
