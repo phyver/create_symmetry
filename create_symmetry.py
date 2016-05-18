@@ -379,7 +379,8 @@ PATTERN = {         # <<<2
         "parity": "m = 1 mod 2",
         "type": "color reversing plane group",
         "description": "rectangular lattice without positive half turn",
-        # OK (the axis of symmetry are the same, only the size of the basic tile changes
+        # OK (the axis of symmetry are the same, only the size of the basic
+        # tile changes
     },
     ('*2222', '**'): {
         "alt_name": "",
@@ -1217,7 +1218,8 @@ def basis(pattern, *params):        # <<<2
 
 
 def bezout(a, b):       # <<<2
-    """Compute Bezout numbers, ie (u, v, p) st a*u + b*v = p and p = gcd(a, b)"""
+    """Compute Bezout numbers,
+    ie (u, v, p) st a*u + b*v = p and p = gcd(a, b)"""
     if a == 0 and b == 0:
         return (0, 0, 0)
     if b == 0:
@@ -1241,7 +1243,8 @@ def normalize_path(path):       # <<<2
 
 
 def fourrier_identity(degre):       # <<<2
-    """Fourrier approximation of the identity function, with period (1,0) / (0,1)"""
+    """Fourrier approximation of the identity function,
+    with period (1,0) / (0,1)"""
     M = {}
     for n in range(1, degre+1):
         M[(n, 0)] = (-1)**(n+1) * -1j/abs(n*pi)
@@ -1345,7 +1348,8 @@ def apply_color(                    # <<<2
 
     # morphing
     if morph_angle:
-        # print("morph from {} to {} ({}%)".format(morph_start_angle, morph_end_angle, morph_stable))
+        # print("morph from {} to {} ({}%)"
+        #       .format(morph_start_angle, morph_end_angle, morph_stable))
         width = res.shape[0]
         morph = np.arange(0, width, dtype="complex128")
 
@@ -1773,7 +1777,9 @@ def save_image(         # <<<2
     if "hyper_s" in cfg["function"]:
         cfg["function"]["hyper_s"] = str(cfg["function"]["hyper_s"])
     if "inversion_center" in cfg["output"]:
-        cfg["output"]["inversion_center"] = complex_to_str(cfg["output"]["inversion_center"])
+        cfg["output"]["inversion_center"] = complex_to_str(
+            cfg["output"]["inversion_center"]
+        )
 
     json.dump(cfg, config_file, indent=2)
     config_file.close()
@@ -1870,13 +1876,14 @@ def make_image(     # <<<2
             #       .format(nb, nb_blocks,
             #               i, j,
             #               local_width, local_height,
-            #               local_x_min, local_y_min, local_x_max, local_y_max))
+            #               local_x_min, local_y_min,
+            #               local_x_max, local_y_max))
 
             local_output = copy.deepcopy(output)
             local_color = copy.deepcopy(color)
             local_function = copy.deepcopy(function)
             local_output["geometry"] = (local_x_min, local_x_max,
-                                       local_y_min, local_y_max)
+                                        local_y_min, local_y_max)
             local_output["size"] = (local_width, local_height)
             local_output["sphere_stars"] /= nb_blocks
 
@@ -1930,13 +1937,18 @@ def make_image_single_block(                 # <<<2
         zs = plane_coordinates_to_sphere(zs, output["sphere_rotations"])
     elif output["display_mode"] == "inversion":
         x = output["inversion_center"].real
-        y = output["inversion_center"].imag
+        y = -output["inversion_center"].imag
 
         # cf p 317 and 125 in Needlam (pdf 337 and 145)
         # zs = np.conj(zs)
-        zs = 1j + 2 / (np.conj(zs) + 1j)
-        zs = zs + x
-        zs = zs * y
+        # zs = 2 / (zs + 1j) + 1j
+        np.add(zs, 1j, out=zs)
+        np.divide(2, zs, out=zs)
+        np.add(zs, 1j, out=zs)
+        # zs = zs - x
+        np.subtract(zs, x, out=zs)
+        # zs = zs * y
+        np.multiply(zs, y, out=zs)
 
     if pattern == "hyperbolic":
         res = make_hyperbolic_image(
@@ -1980,6 +1992,7 @@ def make_image_single_block(                 # <<<2
         geometry=color["geometry"],
         modulus=color["modulus"],
         angle=color["angle"],
+        stretch=color["stretch"],
         color=color["default_color"],
         morph_angle=output["morph"],
         morph_start_angle=output["morph_start"],
@@ -2704,7 +2717,7 @@ class ColorWheel(LabelFrame):   # <<<2
             x0-r+1, y0-r+1,
             x0+r, y0+r,
             width=1,
-            outline="gray",
+            outline="lightgray",
             tag="axes"
         )
 
@@ -2742,31 +2755,16 @@ class ColorWheel(LabelFrame):   # <<<2
         R = 5
         self._canvas.create_line(
             *l_plus,
-            fill="gray",
+            fill="lightgray",
             width=2,
             tags=("axes", "colorwheel")
         )
         self._canvas.create_line(
             *l_minus,
-            fill="gray",
+            fill="lightgray",
             width=1,
             tags=("axes", "colorwheel")
         )
-        # self._canvas.create_oval(
-        #     x1-R, y1-R,
-        #     x1+R+1, y1+R+1,
-        #     # fill="gray",
-        #     outline="gray",
-        #     tags=("axes", "colorwheel")
-        #     tag="axes"
-        # )
-        # self._canvas.create_oval(
-        #     x2-R, y2-R,
-        #     x2+R+1, y2+R+1,
-        #     # fill="gray",
-        #     outline="gray",
-        #     tags=("axes", "colorwheel")
-        # )
     # >>>3
 
     def choose_colorwheel(self, *args):    # <<<3
@@ -2815,8 +2813,8 @@ class ColorWheel(LabelFrame):   # <<<2
     @property
     def config(self):           # <<<3
         cfg = {}
-        for k in ["filename", "alt_filename", "default_color", "geometry", "modulus",
-                  "angle", "stretch"]:
+        for k in ["filename", "alt_filename", "default_color", "geometry",
+                  "modulus", "angle", "stretch"]:
             cfg[k] = getattr(self, k)
         return cfg
     # >>>3
@@ -3015,14 +3013,17 @@ class Output(LabelFrame):     # <<<2
 
     @property
     def geometry_tab(self):     # <<<4
-        if ("mode" in self._geometry_tabs.tab(self._geometry_tabs.select(),
-                                                "text")):
+        if "mode" in self._geometry_tabs.tab(
+                self._geometry_tabs.select(),
+                "text"):
             return "mode"
-        elif ("geometry" in self._geometry_tabs.tab(self._geometry_tabs.select(),
-                                                 "text")):
+        elif "geometry" in self._geometry_tabs.tab(
+                self._geometry_tabs.select(),
+                "text"):
             return "geometry"
-        elif ("morph" in self._geometry_tabs.tab(self._geometry_tabs.select(),
-                                                 "text")):
+        elif "morph" in self._geometry_tabs.tab(
+                self._geometry_tabs.select(),
+                "text"):
             return "morph"
         else:
             assert False
@@ -3159,7 +3160,11 @@ class Output(LabelFrame):     # <<<2
         self.configure(text="Output")
 
         # the preview image     <<<4
-        canvas_frame = Frame(self)
+        canvas_frame = Frame(
+            self,
+            borderwidth=1,
+            relief=RAISED
+        )
         canvas_frame.grid(row=0, column=0, rowspan=4, padx=5, pady=5)
 
         self._canvas = Canvas(
@@ -3268,7 +3273,10 @@ class Output(LabelFrame):     # <<<2
         self._geometry_tabs.add(self._geometry_morph_tab, text="morph")
 
         # geometry tab ###4
-        coord_frame = LabelFrame(self._geometry_geometry_tab, text="coordinates")
+        coord_frame = LabelFrame(
+            self._geometry_geometry_tab,
+            text="coordinates"
+        )
         coord_frame.pack(padx=5, pady=5)
         # coord_frame.grid(row=0, column=1, sticky=E+W, padx=5, pady=5)
         coord_frame.columnconfigure(0, weight=1)
@@ -3357,9 +3365,8 @@ class Output(LabelFrame):     # <<<2
         self._display_mode = StringVar()
 
         tmp = Frame(self._geometry_display_tab)
-        tmp.pack()
+        tmp.grid(row=0)
 
-        # TODO use grid so that we can "grid_forget" and "grid" widget in the same place
         plain_button = Radiobutton(
             tmp,
             text="plain",
@@ -3395,7 +3402,7 @@ class Output(LabelFrame):     # <<<2
             convert=str_to_floats,
             width=15
         )
-        self._rotations.pack(padx=5, pady=10)
+        self._rotations.grid(row=2, padx=5, pady=10)
 
         self._inversion_center = LabelEntry(
             self._geometry_display_tab,
@@ -3405,10 +3412,10 @@ class Output(LabelFrame):     # <<<2
             convert=str_to_complex,
             width=10
         )
-        self._inversion_center.pack(padx=5, pady=10)
+        self._inversion_center.grid(row=2, padx=5, pady=10)
 
         background_frame = Frame(self._geometry_display_tab)
-        background_frame.pack(padx=5, pady=5)
+        background_frame.grid(row=3, padx=5, pady=5)
 
         self._sphere_background_full_filename = ""
         self._sphere_background = StringVar()
@@ -3459,22 +3466,22 @@ class Output(LabelFrame):     # <<<2
             if s == "plain":
                 self._sphere_stars.disable()
                 self._sphere_background_fading.disable()
-                self._inversion_center.pack_forget()
-                self._rotations.pack_forget()
+                self._inversion_center.grid_forget()
+                self._rotations.grid_forget()
                 background_button.config(state=DISABLED)
                 background_entry.config(state=DISABLED)
             elif s == "sphere":
                 self._sphere_stars.enable()
                 self._sphere_background_fading.enable()
-                self._inversion_center.pack_forget()
-                self._rotations.pack()
+                self._inversion_center.grid_forget()
+                self._rotations.grid(row=2, padx=5, pady=10)
                 background_button.config(state=NORMAL)
                 background_entry.config(state=NORMAL)
             elif s == "inversion":
                 self._sphere_stars.enable()
                 self._sphere_background_fading.enable()
-                self._inversion_center.pack()
-                self._rotations.pack_forget()
+                self._inversion_center.grid(row=2, padx=5, pady=10)
+                self._rotations.grid_forget()
                 background_button.config(state=NORMAL)
                 background_entry.config(state=NORMAL)
             else:
@@ -3503,7 +3510,7 @@ class Output(LabelFrame):     # <<<2
             convert=int,
             width=3
         )
-        self._morph_start.grid(row=0, column=0, sticky=E, padx=5, pady=5)
+        self._morph_start.grid(row=0, sticky=E, padx=5, pady=5)
         self._morph_start.set(0)
 
         self._morph_end = LabelEntry(
@@ -3512,17 +3519,17 @@ class Output(LabelFrame):     # <<<2
             convert=int,
             width=3
         )
-        self._morph_end.grid(row=1, column=0, sticky=E, padx=5, pady=5)
+        self._morph_end.grid(row=1, sticky=E, padx=5, pady=5)
         self._morph_end.set(180)
 
         self._morph_stable_coeff = LabelEntry(
-            self._geometry_morph_tab,
+            tmp_frame,
             label="stable (%)",
             value=20,
             convert=float,
             width=3
         )
-        self._morph_stable_coeff.pack(padx=5, pady=5)
+        self._morph_stable_coeff.grid(row=2, sticky=E, padx=5, pady=5)
         # >>>4
 
         # result settings       <<<4
@@ -3768,21 +3775,17 @@ class Output(LabelFrame):     # <<<2
     # >>>3
 
     def start_apply_zoom_rectangle(self, event):   # <<<3
+        """the return value is True on the second clic: it means we can perform
+        the zoom operation"""
         if not hasattr(self._canvas, "_image_id"):
             return False
 
         if hasattr(self, "rect"):
             self._canvas.delete(self.rect)
             del self.rect
-            curX, curY = (event.x, event.y)
-            ratio = self.width / self.height
-            if ratio > abs(curX-self.start_x) / abs(curY-self.start_y):
-                curX = self.start_x + (curY-self.start_y) * ratio
-            else:
-                curY = self.start_y + (curX-self.start_x) / ratio
-
             x1, y1 = self.pixel_to_xy(self.start_x, self.start_y)
-            x2, y2 = self.pixel_to_xy(curX, curY)
+            x2, y2 = self.pixel_to_xy(self.curX, self.curY)
+            del self.start_x, self.start_y, self.curX, self.curY
             x_min, x_max = min(x1, x2), max(x1, x2)
             y_min, y_max = min(y1, y2), max(y1, y2)
             self.geometry = x_min, x_max, y_min, y_max
@@ -3820,6 +3823,8 @@ class Output(LabelFrame):     # <<<2
             self.start_x, self.start_y,
             curX, curY
         )
+        self.curX = curX
+        self.curY = curY
         self.update_pointer_coordinates(curX, curY)
     # >>>3
 
@@ -4703,7 +4708,7 @@ class CreateSymmetry(Tk):      # <<<2
             background="black", foreground="white",
             font="TkFixedFont",
             borderwidth=3,
-            relief="ridge"
+            relief=RIDGE
         )
         self._console.grid(
             row=1, column=0,
@@ -4717,7 +4722,7 @@ class CreateSymmetry(Tk):      # <<<2
             background="black", foreground="white",
             font="TkFixedFont",
             borderwidth=3,
-            relief="ridge"
+            relief=RIDGE
         )
         self._preview_console.grid(
             row=2, column=0,
@@ -4732,7 +4737,7 @@ class CreateSymmetry(Tk):      # <<<2
             background="black", foreground="white",
             font="TkFixedFont",
             borderwidth=3,
-            relief="ridge"
+            relief=RIDGE
         )
         self._output_console.grid(
             row=3, column=0,
@@ -4764,10 +4769,20 @@ class CreateSymmetry(Tk):      # <<<2
         self.bind("<Control-g>", sequence(self.function.new_random_matrix))
         self.bind("<Control-G>", sequence(self.new_random_preview))
 
-        self.bind("<Control-Key-minus>", sequence(self.output.zoom(1/ZOOM_FACTOR),
-                                                  self.make_preview))
-        self.bind("<Control-Key-plus>", sequence(self.output.zoom(ZOOM_FACTOR),
-                                                 self.make_preview))
+        self.bind(
+            "<Control-Key-minus>",
+            sequence(
+                self.output.zoom(1/ZOOM_FACTOR),
+                self.make_preview
+            )
+        )
+        self.bind(
+            "<Control-Key-plus>",
+            sequence(
+                self.output.zoom(ZOOM_FACTOR),
+                self.make_preview
+            )
+        )
 
         self.bind("<Control-Key-Left>", sequence(self.translate_rotate(1, 0),
                                                  self.make_preview))
@@ -4878,7 +4893,10 @@ class CreateSymmetry(Tk):      # <<<2
         output_menu.add_command(
             label="zoom -",
             accelerator="Ctrl--",
-            command=sequence(self.output.zoom(1/ZOOM_FACTOR), self.make_preview)
+            command=sequence(
+                self.output.zoom(1/ZOOM_FACTOR),
+                self.make_preview
+            )
         )
         output_menu.add_command(
             label="zoom +",
@@ -5007,7 +5025,7 @@ class CreateSymmetry(Tk):      # <<<2
 
         text = Text(
             dialog,
-            height=35,
+            height=40,
             background="lightgrey",
             relief=FLAT,
             font="TkFixedFont"
@@ -5024,7 +5042,7 @@ Keyboard shortcuts:
 
   Control-p     compute and display preview
   Control-s     compute and save result to file
-  Control-s     save current preview to file
+  Control-S     save current preview to file
 
   Control-n     add noise to matrix
   Control-N     add noise to matrix and display preview
@@ -5043,7 +5061,7 @@ Keyboard shortcuts:
   Control-Left
 
   Control-z
-  Control-Z     for spherical pattern, rotate around z-axis
+  Control-Z     rotate around z-axis
 
   Control-u     undo: go back to previous state
   Control-r     redo
@@ -5291,7 +5309,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
                     if self.function.pattern_type == "wallpaper":
                         pattern = self.function.full_wallpaper_pattern
 
-                        # name all argument of make tile and use dictionary here
+                        # name all argument of make tile and use dictionary
                         self.output._canvas._tile_img = (
                             self.output.geometry,
                             (self.output.modulus, self.output.angle),
@@ -5532,8 +5550,8 @@ contact: Pierre.Hyvernat@univ-smb.fr
                 if dx != 0 or dy != 0 or dz != 0:
                     x = self.output.inversion_center.real
                     y = self.output.inversion_center.imag
-                    x += dx*TRANSLATION_INVERSION_DELTA
-                    y += dy*TRANSLATION_INVERSION_DELTA
+                    x -= dx*TRANSLATION_INVERSION_DELTA
+                    y -= dy*TRANSLATION_INVERSION_DELTA
                     self.output.inversion_center = complex(x, y)
             else:
                 if dx != 0 or dy != 0:
@@ -5615,11 +5633,15 @@ contact: Pierre.Hyvernat@univ-smb.fr
             filename = filename + ".ct"
         config_file = open(filename, mode="w")
         if "matrix" in cfg["function"]:
-            cfg["function"]["matrix"] = matrix_to_list(cfg["function"]["matrix"])
+            cfg["function"]["matrix"] = matrix_to_list(
+                cfg["function"]["matrix"]
+            )
         if "hyper_s" in cfg["function"]:
             cfg["function"]["hyper_s"] = str(cfg["function"]["hyper_s"])
         if "inversion_center" in cfg["output"]:
-            cfg["output"]["inversion_center"] = str(cfg["output"]["inversion_center"])
+            cfg["output"]["inversion_center"] = str(
+                cfg["output"]["inversion_center"]
+            )
         json.dump(cfg, config_file, indent=2)
         config_file.close()
     # >>>3
@@ -5650,30 +5672,43 @@ def main():     # <<<1
     def display_help():
         print("""Usage: {} [flags]
 
-    -o FILE  /  --output=FILE           choose output file
-    -s W,H  /  --size=W,H               choose width and height of output
-    -g X,Y,X,Y  /  --geometry=X,Y,X,Y   choose "geometry of output"
-    --modulus=...  /  --angle=...       transformation of the result
+    -o FILE                     choose output file
+    --output=FILE
 
-    -c FILE  /  --color=FILE            choose color file
-    --color-geometry=X,Y,X,Y            choose "geometry" of the color file
-    --color-modulus=...                 transformation of the colorwheel
+    -s W,H                      choose width and height of output
+    --size=W,H
+
+    -g X,Y,X,Y                  choose geometry of output
+    --geometry=X,Y,X,Y
+
+    --modulus=...               transformation of the result
+    --angle=...
+
+    -c FILE                     choose color file
+    --color=FILE
+
+    --color-geometry=X,Y,X,Y    choose "geometry" of the color file
+
+    --color-modulus=...         transformation of the colorwheel
     --color-angle=...
 
-    --matrix=...                        transformation matrix
-    --rotation-symmetry=p               force p-fold symmetry around the origin
+    --matrix=...                transformation matrix
 
-    --pattern=...                       name of pattern
-    --params=...                        lattice parameters (only used when appropriate)
-    --N=...                             nb of rotations for appropriate spherical patterns
+    --rotation-symmetry=p       force p-fold symmetry around the origin
 
-    --config=...                        config file
+    --pattern=...               name of pattern
 
-    --preview                           compute the initial preview image
+    --params=...                lattice parameters (only used when appropriate)
 
-    --batch                             do not run GUI
+    --N=...                     rotations for relevant spherical patterns
 
-    -h  /  --help                       this message
+    --config=...                config file
+
+    --preview                   compute the initial preview image
+
+    --batch                     do not run GUI
+
+    -h  /  --help               this message
 """)
 
     # parsing the command line arguments

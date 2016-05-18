@@ -18,7 +18,9 @@ With this program, you can
 - generate random (or not) hyperbolic patterns based on the modular group, as described in Farris' book,
 - generate one kind of "morphing" wallpaper pattern.
 
-You cannot generate automatically the color-turning wallpaper patterns...
+You cannot generate automatically the color-turning wallpaper patterns: you'll
+need to input the transformation matrix and enforce the corresponding recipes
+by hand.
 
 
 ## System Requirements
@@ -41,12 +43,12 @@ $ sudo apt-get install python3-pillow python3-numpy python3-tk
 
 The "Colorwheel" frame contains a thumbnail of the current colorwheel image
 file. The coordinates of the corners are given below. Axes are added to
-visualize the origin, and a gray circle is added to see the unit circle.
+visualize the origin, and a gray circle is added to visualize the unit circle.
 
 If a pixel falls outside the image, the "default color" is used instead.
 
-You can switch between the current file and the previous one by double
-clicking anywhere on the thumbnail.
+You can switch between the current colorwheel file and the previous one by
+double clicking anywhere on the thumbnail.
 
 You can also choose a different spot for the origin by right clicking on the
 thumbnail.
