@@ -32,6 +32,7 @@ from tkinter import filedialog, messagebox
 
 # vectorized arrays
 import numpy as np
+import numexpr as ne
 
 # image manipulation (Pillow)
 import PIL
@@ -1274,15 +1275,13 @@ def make_coordinates_array(         # <<<2
     delta_y = (y_max-y_min) / (height-1)
 
     xs = np.arange(width, dtype='float')
-    np.multiply(delta_x, xs, out=xs)
-    np.add(x_min, xs, out=xs)
+    ne.evaluate("delta_x*xs + x_min", out=xs)
 
     ys = np.arange(height, dtype='float')
-    np.multiply(delta_y, ys, out=ys)
-    np.subtract(y_max, ys, out=ys)
+    ne.evaluate("delta_y*ys - y_max", out=ys)
 
     zs = xs[:, None] + 1j*ys
-    np.divide(zs, rho, out=zs)
+    zs = ne.evaluate("zs / rho", out=zs)
 
     return zs
 # >>>2
@@ -1326,7 +1325,6 @@ def apply_color(                    # <<<2
         morph_end_angle=180,        # to another
         morph_stable=20,            # and if so, how big (%) should the
         **_):                       # constant parts of the result be
-
     """replace each complex value in the array res by the color taken from an
     image in filename
     the resulting image is returned"""
@@ -1335,7 +1333,7 @@ def apply_color(                    # <<<2
         color = getrgb(color)
 
     if stretch:
-        np.divide(res, np.sqrt(1 + res.real**2 * res.imag**2), out=res)
+        ne.evaluate("res / (sqrt(1 + res.real**2 * res.imag**2))", out=res)
 
     rho = modulus * complex(cos(angle*pi/180), sin(angle*pi/180))
     x_min, x_max, y_min, y_max = geometry
@@ -1355,19 +1353,14 @@ def apply_color(                    # <<<2
         if morph_stable >= 50:
             morph_stable = 50 - 1e-10
         x = 100*morph_stable / ((100-2*morph_stable)*width)
-        # morph = -x + morph * (1+2*x) / width
-        np.multiply(morph, (1+2*x)/width, out=morph)
-        np.add(-x, morph, out=morph)
+        ne.evaluate("-x + morph * (1+2*x) / width", out=morph)
         np.place(morph, morph < 0, 0)
         np.place(morph, morph > 1, 1)
 
         a1 = morph_start_angle
         a2 = morph_end_angle
-        # morph = a1 + morph * (a2 - a1)
-        np.multiply(morph, a2-a1, out=morph)
-        np.add(morph, a1, out=morph)
-        np.exp(1j * pi * morph / 180, out=morph)
-
+        hundred_eighty = complex(180, 0)
+        ne.evaluate("exp((a1 + morph * (a2 - a1))*1j*pi/hundred_eighty)", out=morph)
         np.multiply(morph[:, None], res, out=res)
 
     # we add a one pixel border to the top / right of the color image, using
@@ -1380,7 +1373,7 @@ def apply_color(                    # <<<2
 
     # TODO when hyperbolic pattern, ComplexWarning: Casting complex values to
     # real discards the imaginary part ???
-    np.divide(res, rho, out=res)
+    ne.evaluate("res/rho", out=res)
 
     # convert the ``res`` array into pixel coordinates
     xs = np.rint((res.real - x_min) / delta_x).astype(int)
@@ -1388,8 +1381,8 @@ def apply_color(                    # <<<2
 
     # increase all coordinates by 1: 0 will be used for pixels in the border
     # with ``color``
-    np.add(xs, 1, out=xs)
-    np.add(ys, 1, out=ys)
+    ne.evaluate("xs+1", out=xs)
+    ne.evaluate("ys+1", out=ys)
 
     # replace too big / too small values with 0, to get the ``color``
     np.place(xs, xs < 0, [0])
@@ -1448,20 +1441,17 @@ def make_wallpaper_image(   # <<<2
         for k in range(0, N):
             rho = complex(cos(2*pi*k/N),
                           sin(2*pi*k/N))
-            _tmp = zs * rho
-            _xs = _tmp.real
-            _ys = _tmp.imag
-            _tmp = (n*(B[0][0]*_xs+B[1][0]*_ys) +
-                    m*(B[0][1]*_xs+B[1][1]*_ys)).astype(complex)
-            np.multiply(_tmp, 2j*pi, out=_tmp)
-            np.exp(_tmp, out=_tmp)
-            np.add(ZS, _tmp, out=ZS)
+            a, b = B[0][0], B[1][0]
+            c, d = B[0][1], B[1][1]
+            ne.evaluate("exp((n*rho*(a*zs.real + b*zs.imag) +"
+                        "     m*rho*(c*zs.real + d*zs.imag))"
+                        "    * 2j*pi) +"
+                        "ZS", out=ZS)
             if message_queue is not None:
                 message_queue.put(nb_block/nb_blocks+w1/(w2*nb_blocks))
             w1 += 1
-        np.divide(ZS, N, out=ZS)
-        np.multiply(ZS, matrix[(n, m)], out=ZS)
-        np.add(res, ZS, out=res)
+        coeff = matrix[n, m]
+        ne.evaluate("res + (ZS/N) * coeff", out=res)
     return res
 # >>>2
 
@@ -1513,8 +1503,8 @@ def make_hyperbolic_image(      # <<<2
     c, d = 0, 0
     w1, w2 = 0, nb_steps*len(matrix)
 
-    A = np.zeros(res.shape, dtype="complex128")
-    B = np.zeros(res.shape, dtype="complex128")
+    # A = np.zeros(res.shape, dtype="complex128")
+    # B = np.zeros(res.shape, dtype="complex128")
     ZS = np.zeros(res.shape, dtype="complex128")
     for a, b, c, d in PSL2():
         if len(done) >= nb_steps:
@@ -1524,24 +1514,14 @@ def make_hyperbolic_image(      # <<<2
         assert a*d - b*c == 1
         done.add((c, d))
 
-        # ZS = (a*zs + b) / (c*zs + d)
-        np.multiply(a, zs, out=A)
-        np.add(b, A, out=A)
-        np.multiply(c, zs, out=B)
-        np.add(d, B, out=B)
-        np.divide(A, B, out=ZS)
+        ne.evaluate("(a*zs + b) / (c*zs + d)", out=ZS)
 
         for n, m in matrix:
-            # res += ZS.imag**matrix[n, m] * np.exp(2j*pi*(n*ZS.real + m*ZS.imag))
-            np.multiply(n, ZS.real, out=A)
-            np.multiply(m, ZS.imag, out=B)
-            np.add(A, B, out=A)
-            np.multiply(2j*pi, A, out=B)
-            np.exp(B, out=A)
-            np.power(ZS.imag, complex(s), out=B)
-            np.multiply(A, B, out=ZS)
-            np.multiply(ZS, matrix[n, m], out=A)
-            np.add(res, A, out=res)
+            coeff = matrix[n, m]
+            ne.evaluate("res +"
+                        "ZS.imag**s * coeff *"
+                        "exp(2j*pi*(n*ZS.real + m*ZS.imag))",
+                        out=res)
             w1 += 1
             if message_queue is not None:
                 message_queue.put(nb_block/nb_blocks+w1/(w2*nb_blocks))
@@ -1572,8 +1552,7 @@ def make_sphere_image(      # <<<2
     matrix = add_symmetries(matrix, recipe, parity)
 
     if unwind:
-        np.multiply(1j, zs, out=zs)
-        np.exp(zs, out=zs)
+        ne.evaluate("exp(zs*1j)", out=zs)
 
     # choose the elements (rotations) on which to average
     if "T" in PATTERN[pattern]["alt_name"]:
@@ -1596,14 +1575,16 @@ def make_sphere_image(      # <<<2
         for j in range(average[0][1]):
             zsc = np.conj(zs)
             for (n, m) in matrix:
-                np.add(res, matrix[(n, m)] * zs**n * zsc**m, out=res)
+                coeff = matrix[n, m]
+                ne.evaluate("res + coeff * zs**n * zsc**m", out=res)
                 if message_queue is not None:
                     message_queue.put(nb_block/nb_blocks+w1/(w2*nb_blocks))
                 w1 += 1
-            np.divide(a*zs + b, c*zs + d, out=zs)
-        np.divide(e*zs + f, g*zs + h, out=zs)
+            ne.evaluate("(a*zs + b) / (c*zs + d)", out=zs)
+        ne.evaluate("(e*zs + f) / (g*zs + h)", out=zs)
 
-    np.divide(res, average[0][1]*average[1][1], out=res)
+    a = average[0][1] * average[1][1]
+    ne.evaluate("res/a", out=res)
     return res
 # >>>2
 
@@ -1938,13 +1919,8 @@ def make_image_single_block(                 # <<<2
         # cf p 317 and 125 in Needlam (pdf 337 and 145)
         # zs = np.conj(zs)
         # zs = 2 / (zs + 1j) + 1j
-        np.add(zs, 1j, out=zs)
-        np.divide(2, zs, out=zs)
-        np.add(zs, 1j, out=zs)
-        # zs = zs - x
-        np.subtract(zs, x, out=zs)
-        # zs = zs * y
-        np.multiply(zs, y, out=zs)
+        two = complex(2,0)
+        ne.evaluate("(1j + two/(zs+1j) - x) * y", out=zs)
 
     if pattern == "hyperbolic":
         res = make_hyperbolic_image(
@@ -2622,7 +2598,7 @@ class ColorWheel(LabelFrame):   # <<<2
                                   STRETCH_DISPLAY_RADIUS,
                                   -STRETCH_DISPLAY_RADIUS,
                                   STRETCH_DISPLAY_RADIUS))
-                np.divide(zs, np.sqrt(1 + zs.real**2 + zs.imag**2), out=zs)
+                ne.evaluate("zs / (sqrt(1+zs.real**2 + zs.imag**2))", out=zs)
                 img = apply_color(
                     zs,
                     filename,
