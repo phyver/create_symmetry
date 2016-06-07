@@ -43,12 +43,13 @@ from PIL.ImageColor import getrgb
 # >>>1
 
 ###
-# default configuration for colorwheel
+# default configuration options
+# <<<1
+# colorwheel
 COLOR_GEOMETRY = (-1, 1, -1, 1)
 DEFAULT_COLOR = "black"
 
-###
-# default configuration for output
+# output
 OUTPUT_GEOMETRY = (-1.5, 1.5, -1.5, 1.5)
 SPHERE_ROTATIONS = (15, 0, 0)
 TRANSLATION_INVERSION_DELTA = 0.1
@@ -63,7 +64,7 @@ FILENAME_TEMPLATE = "output-{type:}-{name:}.{nb:}"
 # misc options
 
 # color of background for sphere / hyperbolic patterns
-DEFAULT_SPHERE_BACKGROUND = "#000066"
+DEFAULT_BACKGROUND = "#000066"
 
 # color of random pixels ("stars") for sphere patterns
 STAR_COLOR = "#FFC"
@@ -84,7 +85,7 @@ BLOCK_SIZE = 2000
 # should always be at the same place during a run of the program to prevent
 # "jumps" during translatiosn / rotations of the image
 RANDOM_SEED = uniform(0, 1)
-
+# >>>1
 
 ###
 # recipes and related informations
@@ -931,6 +932,7 @@ def floats_to_str(l):       # <<<2
 
 
 def str_to_complex(s):      # <<<2
+    """transform a string into a complex number"""
     s = re.sub("\s*", "", s)
     s = s.replace("i", "j")
     return complex(s)
@@ -1230,13 +1232,10 @@ def bezout(a, b):       # <<<2
 
 
 def normalize_path(path):       # <<<2
-    # print("path:", path)
+    """normalize a path so that $HOME is portable across computers"""
     home = os.path.expanduser("~")
-    # print("home:", home)
     path = os.path.expanduser(path)
-    # print("path:", path)
     path = path.replace(home, "~")
-    # print("path:", path)
     # print()
     return path
 # >>>2
@@ -1636,7 +1635,7 @@ def make_sphere_background(     # <<<2
             background_img = PIL.Image.new(
                 mode="RGB",
                 size=(width, height),
-                color=DEFAULT_SPHERE_BACKGROUND
+                color=DEFAULT_BACKGROUND
             )
 
     mask = (zs.real**2 + zs.imag**2 > 1).astype(int).transpose(1, 0)
@@ -1803,7 +1802,8 @@ def make_image(     # <<<2
         function=None,          # configuration for function
         message_queue=None,
         block_size=BLOCK_SIZE):
-    """compute an image for a pattern"""
+    """compute an image for a pattern, cutting the output image into subimages
+    if necessary"""
 
     seed(RANDOM_SEED)
 
@@ -3131,8 +3131,8 @@ class Output(LabelFrame):     # <<<2
         # the preview image     <<<4
         canvas_frame = Frame(
             self,
-            borderwidth=1,
-            relief=RAISED
+            borderwidth=2,
+            relief=GROOVE
         )
         canvas_frame.grid(row=0, column=0, rowspan=4, padx=5, pady=5)
 
@@ -3402,7 +3402,7 @@ class Output(LabelFrame):     # <<<2
             width=10
         )
         background_entry.grid(row=0, column=1, padx=5, pady=10, sticky=E)
-        self.sphere_background = DEFAULT_SPHERE_BACKGROUND
+        self.sphere_background = DEFAULT_BACKGROUND
 
         self._sphere_background_fading = LabelEntry(
             background_frame,
@@ -5720,7 +5720,7 @@ def main():     # <<<1
                 "display_mode": "plain",
                 "sphere_rotations": SPHERE_ROTATIONS,
                 "inversion_center": INVERSION_CENTER,
-                "sphere_background": DEFAULT_SPHERE_BACKGROUND,
+                "sphere_background": DEFAULT_BACKGROUND,
                 "sphere_background_fading": 100,
                 "sphere_stars": NB_STARS,
                 "morph": False,
