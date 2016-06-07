@@ -27,14 +27,14 @@ by hand.
 
 This program is written in Python3, using the following additional libraries:
 
-- numpy, for efficient computation on large arrays,
+- numpy and numexpr, for efficient computation on large arrays,
 - pillow, for efficient image generation.
 
 You cannot run the program without them.
 
 On a Debian / Ubuntu system, the following should be enough:
 ```console
-$ sudo apt-get install python3-pillow python3-numpy python3-tk
+$ sudo apt-get install python3 python3-tk python3-pil python3-pil.imagetk python3-numpy python3-numexpr
 ```
 
 ## Description
@@ -64,6 +64,43 @@ of the corners while the colorwheel is stretched.)
 
 
 ### Output
+
+#### Preview window
+
+The main part of the "Output" part is the preview window, displaying a preview
+of the current transformation on the current colorwheel. This preview is
+updated whenever the "preview" button is pressed.
+
+Below this preview window are some buttons that allows to display some visual
+information about the current wallpaper pattern: the tile border, the
+different components of the orbifold (rotation centers, symmetry centers and
+glide symmetries).
+
+It is also possible to choose a smaller preview size, which can be useful when
+testing computationally expensive transformations.
+
+
+#### geometry and other options
+
+The "geometry" tab allows to choose the part of the plane to display. The
+transformation frame makes it easy to rotate or zoom in / out without changing
+the corners: the image is multiplied by "m (cos(alpha) + i sin(alpha))" as a
+final step.
+
+The "mode" tab, only accessible for "sphere" and "hyperbolic" patterns, is
+used to configured the way the function is displayed:
+  - normal mode
+  - project the plane onto a sphere (inverse of stereographic projection)
+  - inversion to send the half plane into a disk
+
+The "morph" tab, only available for wallpaper patterns, is used to creating
+images where the colorwheel is rotated to make morphing wallpapers.
+
+#### Output options
+
+This is where the size, filename and save directory for final images can be
+configured.
+
 
 
 ### Pattern
