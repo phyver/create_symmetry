@@ -770,6 +770,7 @@ for i in range(len(W_NAMES)):
     if _t != t:
         W_NAMES[i] += "         -- {}".format(t)
     _t = t
+del p
 
 # full names, with alternative names, for sphere groups
 S_NAMES = ["{} ({})".format(p, PATTERN[p]["alt_name"])
@@ -782,12 +783,13 @@ for i in range(len(S_NAMES)):
     if _t != t:
         S_NAMES[i] += "     -- {}".format(t)
     _t = t
+del p
+del _t
 
 # full names, with alternative names, for frieze groups
 F_NAMES = ["{} ({})".format(p, PATTERN[p]["alt_name"])
            for p in NAMES
            if PATTERN[p]["type"] == "frieze"]
-del _t
 
 
 # full names, with alternative names, for color reversing groups, as a function
@@ -2222,6 +2224,57 @@ def fade_image(image, coeff=100):       # <<<2
 ###
 # GUI
 # <<<1
+
+# tooltip objet (see http://www.voidspace.org.uk/python/weblog/arch_d7_2006_07_01.shtml)
+# <<<2
+class ToolTip(object):
+
+    def __init__(self, widget):
+        self.widget = widget
+        self.bcolor = self.widget.cget("highlightbackground")
+        self.tipwindow = None
+        self.id = None
+        self.x = self.y = 0
+
+    def showtip(self, text):
+        "Display text in tooltip window"
+        self.text = text
+        if self.tipwindow or not self.text:
+            return
+        x, y, cx, cy = self.widget.bbox("insert")
+        x = x + self.widget.winfo_rootx() + 20
+        y = y + cy + self.widget.winfo_rooty() + 20
+        self.tipwindow = tw = Toplevel(self.widget)
+        tw.wm_overrideredirect(1)
+        tw.wm_geometry("+%d+%d" % (x, y))
+        label = Label(tw, text=self.text, justify=LEFT,
+                      background="#ffffe0", relief=SOLID, borderwidth=1,
+                      font=("tahoma", "8", "normal"))
+        label.pack(ipadx=1)
+        self.widget.config(highlightbackground="green")
+
+    def hidetip(self):
+        tw = self.tipwindow
+        self.tipwindow = None
+        if tw:
+            tw.destroy()
+        self.widget.config(highlightbackground=self.bcolor)
+
+
+def createToolTip(widget, text):
+    toolTip = ToolTip(widget)
+
+    def enter(event):
+        toolTip.showtip(text)
+
+    def leave(event):
+        toolTip.hidetip()
+
+    widget.bind('<Enter>', enter)
+    widget.bind('<Leave>', leave)
+# >>>2
+
+
 class LabelEntry(Frame):  # <<<2
     """
     An Entry widget with a label on its left.
@@ -3156,6 +3209,7 @@ class Output(LabelFrame):     # <<<2
             text=""
         )
         self._draw_color_tile_button.pack(side=LEFT, padx=0, pady=0)
+        createToolTip(self._draw_color_tile_button, "show tile for color symmetry\n(instead of plain symmetry)")
 
         self._draw_tile = BooleanVar()
         self._draw_tile_button = Checkbutton(
@@ -3709,8 +3763,9 @@ class Output(LabelFrame):     # <<<2
     def pixel_to_xy(self, px, py):      # <<<3
         x_min, x_max, y_min, y_max = self.geometry
         try:
-            delta_x = (x_max - x_min) / self._canvas._image.width
-            delta_y = (y_max - y_min) / self._canvas._image.height
+            width, height = self._canvas._image.size
+            delta_x = (x_max - x_min) / width
+            delta_y = (y_max - y_min) / height
             px_center, py_center = self._canvas.coords(
                 self._canvas._image_id
             )
@@ -5131,7 +5186,6 @@ contact: Pierre.Hyvernat@univ-smb.fr
         else:
             self.output._draw_tile_button.config(state=NORMAL)
             self.output._draw_orbifold_button.config(state=NORMAL)
-            self.output._draw_color_tile_button.config(state=NORMAL)
             self.output._draw_mirrors_button.config(state=NORMAL)
             self.output._fade_button.config(state=NORMAL)
             self.output._fade_coeff.enable()
@@ -5139,6 +5193,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
                 self.output._draw_color_tile_button.config(state=DISABLED)
             else:
                 self.output._draw_color_tile_button.config(state=NORMAL)
+            self.update_output_preview()
             self.output.update()
 
     # >>>3
