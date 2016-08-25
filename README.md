@@ -36,6 +36,15 @@ On a Debian / Ubuntu system, the following should be enough:
 ```console
 $ sudo apt-get install python3 python3-tk python3-pil python3-pil.imagetk python3-numpy python3-numexpr
 ```
+If you use ``pip`` for python packages, 
+```console
+$ pip3 install numpy numexpr pillow --user
+```
+or
+```console
+$ sudo pip3 install numpy numexpr pillow
+```
+
 
 ## Description
 
