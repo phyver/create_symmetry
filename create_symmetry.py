@@ -1444,8 +1444,8 @@ def make_wallpaper_image(   # <<<2
                           sin(2*pi*k/N))
             a, b = B[0][0], B[1][0]
             c, d = B[0][1], B[1][1]
-            ne.evaluate("exp((n*rho*(a*zs.real + b*zs.imag) +"
-                        "     m*rho*(c*zs.real + d*zs.imag))"
+            ne.evaluate("exp((n*(a*(rho*zs).real + b*(rho*zs).imag) +"
+                        "     m*(c*(rho*zs).real + d*(rho*zs).imag))"
                         "    * 2j*pi) +"
                         "ZS", out=ZS)
             if message_queue is not None:
