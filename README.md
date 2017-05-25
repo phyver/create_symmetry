@@ -40,7 +40,7 @@ If you use ``pip`` for python packages,
 ```console
 $ pip3 install numpy numexpr pillow --user
 ```
-or
+or if you want to install them globally,
 ```console
 $ sudo pip3 install numpy numexpr pillow
 ```
@@ -114,9 +114,11 @@ configured.
 
 ### Pattern
 
+TODO
 
 ### Log and messages
 
+TODO
 
 
 ## Contact
@@ -125,7 +127,7 @@ Pierre Hyvernat
 
 pierre.hyvernat@univ-smb.fr
 
-http://lama.univ-savoie.fr/~hyvernat
+http://lama.univ-smb.fr/~hyvernat
 
 
 ## Licence

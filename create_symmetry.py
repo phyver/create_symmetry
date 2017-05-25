@@ -2981,6 +2981,8 @@ class Output(LabelFrame):     # <<<2
 
     @inversion_center.setter
     def inversion_center(self, z):    # <<<4
+        if isinstance(z, str):
+            z = str_to_complex(z)
         z = complex(z)
         self._inversion_center.set(complex_to_str(z, precision=3))
     # >>>4
