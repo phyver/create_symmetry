@@ -4062,8 +4062,12 @@ class Function(LabelFrame):     # <<<2
 
     @sphere_pattern.setter
     def sphere_pattern(self, p):    # <<<4
-        for i in range(len(S_NAMES)):
-            tmp = S_NAMES[i]
+        if self.sphere_mode in ["frieze", "rosette"]:
+            patterns = F_NAMES
+        else:
+            patterns = S_NAMES
+        for i in range(len(patterns)):
+            tmp = patterns[i]
             tmp = tmp.replace("(", " ").replace(")", " ")
             tmp = tmp.split()
             if p in tmp:
