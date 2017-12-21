@@ -2513,12 +2513,12 @@ class ColorWheel(LabelFrame):   # <<<2
         self._stretch_color.set(False)
         self._stretch_color.trace(
             "w",
-            lambda *_: self.change_colorwheel(self.filename)
+            lambda *_: self.change_colorwheel(self.filename, reset_geometry=False)
         )
         # Checkbutton(self, text="stretch unit disk",
         #             variable=self._stretch_color,
         #             onvalue=True, offvalue=False,
-        #             command=lambda: self.change_colorwheel(self.filename),
+        #             command=lambda: self.change_colorwheel(self.filename, reset_geometry=False),
         #             indicatoron=False
         #             ).pack(padx=5, pady=0)
 
@@ -2591,12 +2591,12 @@ class ColorWheel(LabelFrame):   # <<<2
         self._modulus.grid(row=0, column=0, sticky=E, padx=5, pady=(5, 2))
         self._modulus.bind(
             "<Return>",
-            lambda _: self.change_colorwheel(self.filename),
+            lambda _: self.change_colorwheel(self.filename, reset_geometry=False),
             add="+"
         )
         self._modulus.bind(
             "<FocusOut>",
-            lambda _: self.change_colorwheel(self.filename),
+            lambda _: self.change_colorwheel(self.filename, reset_geometry=False),
             add="+"
         )
 
@@ -2609,19 +2609,19 @@ class ColorWheel(LabelFrame):   # <<<2
         self._angle.grid(row=1, column=0, sticky=E, padx=5, pady=(2, 5))
         self._angle.bind(
             "<Return>",
-            lambda _: self.change_colorwheel(self.filename),
+            lambda _: self.change_colorwheel(self.filename, reset_geometry=False),
             add="+"
         )
         self._angle.bind(
             "<FocusOut>",
-            lambda _: self.change_colorwheel(self.filename),
+            lambda _: self.change_colorwheel(self.filename, reset_geometry=False),
             add="+"
         )
 
         self.update_default_color()
 
         if os.path.exists("./colorwheel.jpg"):
-            self.change_colorwheel("colorwheel.jpg")
+            self.change_colorwheel("colorwheel.jpg", reset_geometry=True)
         else:
             self.filename = None
     # >>>3
@@ -2632,7 +2632,7 @@ class ColorWheel(LabelFrame):   # <<<2
                                 .format(*self.rgb_color))
     # >>>3
 
-    def change_colorwheel(self, filename):  # <<<3
+    def change_colorwheel(self, filename, reset_geometry=True):  # <<<3
         if filename is None:
             return
         try:
@@ -2675,18 +2675,19 @@ class ColorWheel(LabelFrame):   # <<<2
                     (COLOR_SIZE+1, COLOR_SIZE+1),
                     PIL.Image.ANTIALIAS
                 )
-                width, height = img.size
-                ratio = width / height
-                if ratio < 1:
-                    self.geometry = (COLOR_GEOMETRY[0],
-                                     COLOR_GEOMETRY[1],
-                                     COLOR_GEOMETRY[2]/ratio,
-                                     COLOR_GEOMETRY[3]/ratio)
-                else:
-                    self.geometry = (COLOR_GEOMETRY[0]*ratio,
-                                     COLOR_GEOMETRY[1]*ratio,
-                                     COLOR_GEOMETRY[2],
-                                     COLOR_GEOMETRY[3])
+                if reset_geometry:
+                    width, height = img.size
+                    ratio = width / height
+                    if ratio < 1:
+                        self.geometry = (COLOR_GEOMETRY[0],
+                                         COLOR_GEOMETRY[1],
+                                         COLOR_GEOMETRY[2]/ratio,
+                                         COLOR_GEOMETRY[3]/ratio)
+                    else:
+                        self.geometry = (COLOR_GEOMETRY[0]*ratio,
+                                         COLOR_GEOMETRY[1]*ratio,
+                                         COLOR_GEOMETRY[2],
+                                         COLOR_GEOMETRY[3])
 
             self._image = img
             tk_img = PIL.ImageTk.PhotoImage(img)
@@ -2716,7 +2717,7 @@ class ColorWheel(LabelFrame):   # <<<2
 
     def switch_colorwheel(self, *args):     # <<<3
         try:
-            self.change_colorwheel(self._alt_filename)
+            self.change_colorwheel(self._alt_filename, reset_geometry=False)
             return "break"
         except AttributeError:
             pass
@@ -2801,7 +2802,7 @@ class ColorWheel(LabelFrame):   # <<<2
             filetypes=[("images", "*.jpg *.jpeg *.png"), ("all", "*.*")]
         )
         if filename:
-            self.change_colorwheel(filename)
+            self.change_colorwheel(filename, reset_geometry=True)
     # >>>3
 
     def set_origin(self, event):        # <<<3
@@ -2829,7 +2830,7 @@ class ColorWheel(LabelFrame):   # <<<2
         self.stretch = False
         self.geometry = COLOR_GEOMETRY
         if self.filename is not None:
-            self.change_colorwheel(self.filename)
+            self.change_colorwheel(self.filename, reset_geometry=True)
     # >>>3
 
     @property
@@ -2848,7 +2849,7 @@ class ColorWheel(LabelFrame):   # <<<2
             if k in cfg:
                 setattr(self, k, cfg[k])
         if "filename" in cfg:
-            self.change_colorwheel(cfg["filename"])
+            self.change_colorwheel(cfg["filename"], reset_geometry=False)
         if "alt_filename" in cfg:
             self.alt_filename = cfg["alt_filename"]
         if "default_color" in cfg:
