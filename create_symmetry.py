@@ -5825,7 +5825,7 @@ def main():     # <<<1
                 config["preview"] = True
         except:
             error("problem while loading configuration from '{}'"
-                  .format(f))
+                  .format(file))
 
     for o, a in opts:
         if o in ["-h", "--help"]:
