@@ -5936,7 +5936,6 @@ def main():     # <<<1
 
     # print("main PID", os.getpid())
     if batch:
-
         if config["function"]["matrix"] is None:
             config["function"]["matrix"] = random_matrix(
                 config["function"]["random_nb_coeffs"],
@@ -5945,22 +5944,28 @@ def main():     # <<<1
                 config["function"]["random_modulus"],
             )
 
+    gui = CreateSymmetry()
+    gui.config = config
+
+    if config_files == [] and os.path.isfile(".create_symmetry.ct"):
+        gui.load_config_file(".create_symmetry.ct")
+        # gui.function.change_matrix(fourrier_identity(20))
+
+    if batch:
         img = make_image(
             color=config["colorwheel"],
             output=config["output"],
             function=config["function"]
         )
-        save_image(image=img, **config)
+        if gui.output.config["fade"]:
+            img = fade_image(img)
+        save_image(image=img, **gui.config)
+        return
 
-    else:
-        gui = CreateSymmetry()
-        gui.config = config
-        if config_files == [] and os.path.isfile(".create_symmetry.ct"):
-            gui.load_config_file(".create_symmetry.ct")
-            # gui.function.change_matrix(fourrier_identity(20))
-        if config["preview"]:
-            gui.make_preview()
-        gui.mainloop()
+    if config["preview"]:
+        gui.make_preview()
+
+    gui.mainloop()
 # >>>1
 
 
