@@ -58,7 +58,7 @@ ROTATION_DELTA = 1
 ZOOM_FACTOR = 2**(1/4)
 INVERSION_CENTER = complex(-1/2, sqrt(3)/2)
 OUTPUT_SIZE = (800, 800)
-FILENAME_TEMPLATE = "output-{type:}-{name:}.{nb:}"
+FILENAME_TEMPLATE = "output-{type:}-{name:}-{nb:}"
 
 ###
 # misc options
@@ -2002,9 +2002,10 @@ def make_tile(geometry,         # <<<2
     """compute a transparent image with a tile and orbifold information
     this image can be added on top of a wallpaper image"""
 
-    coeff = 4       # draw bigger tile and resize with antialiasing
-    width = size[0]*coeff
-    height = size[1]*coeff
+    draw_width = 1     # width (pixels) for strokes
+    aa_coeff = 4       # draw bigger tile and resize with antialiasing
+    width = size[0]*aa_coeff
+    height = size[1]*aa_coeff
 
     # translation of tile, necessary for some color-reversing tiles that are
     # not on the origin
@@ -2108,22 +2109,30 @@ def make_tile(geometry,         # <<<2
         return xy_to_pixel(x, y)
 
     def disks(*coord, color="white"):
-        R = 5*coeff
+        R = 5*aa_coeff
+        R *= draw_width
         for i in range(0, len(coord), 2):
             x, y = XY_to_pixel(coord[i], coord[i+1])
             draw.ellipse((x-R, y-R, x+R, y+R), fill=color)
 
     def line(*coord, color="white", width=1, caps=False):
-        R = 5*coeff
+        width *= draw_width
+        R = 5*aa_coeff*draw_width
         for i in range(2, len(coord), 2):
             x1, y1 = XY_to_pixel(coord[i-2], coord[i-1])
             x2, y2 = XY_to_pixel(coord[i], coord[i+1])
-            draw.line((x1, y1, x2, y2), fill=color, width=width*coeff)
+            draw.line((x1, y1, x2, y2), fill=color, width=width*aa_coeff)
             if caps:
                 draw.ellipse([x1-R, y1-R, x1+R, y1+R], fill=color)
                 draw.ellipse([x2-R, y2-R, x2+R, y2+R], fill=color)
+            else:
+                r = (width*aa_coeff)//2
+                draw.ellipse([x1-r, y1-r, x1+r, y1+r], fill=color)
+                draw.ellipse([x2-r, y2-r, x2+r, y2+r], fill=color)
 
-    def mirror(X0, Y0, X1, Y1, order, pixels=50):
+    def mirror(X0, Y0, X1, Y1, order, pixels=50, width=1):
+        width *= draw_width
+        pixels *= draw_width
 
         # if order > 1:
         disks(X0, Y0, color="red")
@@ -2134,13 +2143,13 @@ def make_tile(geometry,         # <<<2
         x0, y0 = XY_to_pixel(X0, Y0)
         x1, y1 = XY_to_pixel(X1, Y1)
         p = complex(x1-x0, y1-y0)
-        p = p / abs(p) / 2 * coeff
+        p = p / abs(p) / 2 * aa_coeff
 
         for i in range(order):
             q = p * exp(i*pi*1j/order) * pixels
             x2, y2 = q.real, q.imag
             x3, y3 = -x2, -y2
-            draw.line((x2+x0, y2+y0, x3+x0, y3+y0), width=3*coeff, fill="red")
+            draw.line((x2+x0, y2+y0, x3+x0, y3+y0), width=3*width*aa_coeff, fill="red")
 
     # tile
     if draw_tile:
@@ -2148,7 +2157,7 @@ def make_tile(geometry,         # <<<2
 
     if draw_orbifold:
         if pattern == "o":
-            line(1, 0, 0, 0, 0, 1, color="green", width=3)
+            line(1, 0, 0, 0, 0, 1, color="black", width=3)
         elif pattern == "2222":
             disks(0, 0, 0, 1/2, 1/2, 0, 1/2, 1/2, color="blue")
         elif pattern == "442":
@@ -2193,16 +2202,16 @@ def make_tile(geometry,         # <<<2
             mirror(1/2, 1/2, 0, 1/2, 1)
         elif pattern == "22×":
             disks(0, 0, 1/2, 0, color="blue")
-            line(0, 1/4, 1/2, 1/4, color="lightgreen", width=3, caps=True)
+            line(0, 1/4, 1/2, 1/4, color="darkgreen", width=3, caps=True)
         elif pattern == "22*":
             disks(0, 1/2, 1/2, 0, color="blue")
             mirror(1/4, 0, 1/4, 1/2, 1)
         elif pattern == "*×":
             mirror(1/2, 1/2, 0, 0, 1)
-            line(1/2, 0, 1, 1/2, color="lightgreen", width=3, caps=True)
+            line(1/2, 0, 1, 1/2, color="darkgreen", width=3, caps=True)
         elif pattern == "××":
-            line(1/4, 0, 3/4, 0, color="lightgreen", width=3, caps=True)
-            line(1/4, 1/2, 3/4, 1/2, color="lightgreen", width=3, caps=True)
+            line(1/4, 0, 3/4, 0, color="darkgreen", width=3, caps=True)
+            line(1/4, 1/2, 3/4, 1/2, color="darkgreen", width=3, caps=True)
 
     img = img.resize(size, PIL.Image.ANTIALIAS)
 
