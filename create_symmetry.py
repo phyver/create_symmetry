@@ -5694,7 +5694,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
 
 ###
 # main
-def main():     # <<<1
+def main(argv):     # <<<1
     # TODO:
     #  --batch
     #  --raw-config=...:...
@@ -5738,7 +5738,7 @@ def main():     # <<<1
     --batch                     do not run GUI
 
     -h  /  --help               this message
-""")
+""".format(argv[0]))
 
     # parsing the command line arguments
     short_options = "hc:o:s:g:v"
@@ -5752,7 +5752,7 @@ def main():     # <<<1
             "config=", "batch"]
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], short_options, long_options)
+        opts, args = getopt.getopt(argv[1:], short_options, long_options)
     except getopt.GetoptError as err:
         print(str(err))
         sys.exit(-1)
@@ -5970,6 +5970,6 @@ def main():     # <<<1
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
 
 # vim: textwidth=0 foldmarker=<<<,>>> foldmethod=marker foldlevel=0
