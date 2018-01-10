@@ -132,6 +132,14 @@ PATTERN = {         # <<<2
         "description": "rectangular lattice",
         # OK
     },
+    '**₁': {
+        "alt_name": "pm",
+        "type": "plane group",
+    },
+    '**₂': {
+        "alt_name": "pm",
+        "type": "plane group",
+    },
     '××': {
         "alt_name": "pg",
         "recipe": "n,m = -{n}(n,-m)",
@@ -229,7 +237,7 @@ PATTERN = {         # <<<2
         # OK
     },      # >>>3
 
-    # the 47 color reversing wallpaper groups       <<<3
+    # the 46 color reversing wallpaper groups       <<<3
     ('o', 'o'): {
         "alt_name": "",
         "recipe": "",
