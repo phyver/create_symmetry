@@ -45,6 +45,10 @@ from PIL.ImageColor import getrgb
 ###
 # default configuration options
 # <<<1
+
+# DEVELOPPER MODE
+DEVEL = False
+
 # colorwheel
 COLOR_GEOMETRY = (-1, 1, -1, 1)
 DEFAULT_COLOR = "black"
@@ -3313,7 +3317,8 @@ class Output(LabelFrame):     # <<<2
         self._geometry_tabs.add(self._geometry_display_tab, text="mode")
 
         self._geometry_morph_tab = Frame(self._geometry_tabs)
-        self._geometry_tabs.add(self._geometry_morph_tab, text="morph")
+        if DEVEL:
+            self._geometry_tabs.add(self._geometry_morph_tab, text="morph")
 
         # geometry tab ###4
         coord_frame = LabelFrame(
@@ -3417,7 +3422,8 @@ class Output(LabelFrame):     # <<<2
             value="plain",
             indicatoron=False,
         )
-        plain_button.pack(side=LEFT, padx=5, pady=10)
+        if DEVEL:
+            plain_button.pack(side=LEFT, padx=5, pady=10)
 
         sphere_button = Radiobutton(
             tmp,
@@ -3426,7 +3432,8 @@ class Output(LabelFrame):     # <<<2
             value="sphere",
             indicatoron=False,
         )
-        sphere_button.pack(side=LEFT, padx=5, pady=10)
+        if DEVEL:
+            sphere_button.pack(side=LEFT, padx=5, pady=10)
 
         inversion_button = Radiobutton(
             tmp,
@@ -3435,7 +3442,8 @@ class Output(LabelFrame):     # <<<2
             value="inversion",
             indicatoron=False,
         )
-        inversion_button.pack(side=LEFT, padx=5, pady=10)
+        if DEVEL:
+            inversion_button.pack(side=LEFT, padx=5, pady=10)
 
         self._rotations = LabelEntry(
             self._geometry_display_tab,
@@ -3665,7 +3673,8 @@ class Output(LabelFrame):     # <<<2
 
     def disable_geometry_morph_tab(self, *args):  # <<<3
         self.morph = False
-        self._geometry_tabs.tab(self._geometry_morph_tab, state=DISABLED)
+        if DEVEL:
+            self._geometry_tabs.tab(self._geometry_morph_tab, state=DISABLED)
     # >>>3
 
     def enable_mode_tab(self, *args):   # <<<3
@@ -3673,7 +3682,8 @@ class Output(LabelFrame):     # <<<2
     # >>>3
 
     def enable_geometry_morph_tab(self, *args):   # <<<3
-        self._geometry_tabs.tab(self._geometry_morph_tab, state=NORMAL)
+        if DEVEL:
+            self._geometry_tabs.tab(self._geometry_morph_tab, state=NORMAL)
     # >>>3
 
     def reset_geometry(self, *args):        # <<<3
@@ -4158,7 +4168,8 @@ class Function(LabelFrame):     # <<<2
         self._tabs.add(self._sphere_tab, text="sphere")
 
         self._hyper_tab = Frame(self._tabs)
-        self._tabs.add(self._hyper_tab, text="hyperbolic")
+        if DEVEL:
+            self._tabs.add(self._hyper_tab, text="hyperbolic")
         # >>>4
 
         # wallpaper tab      <<<4
@@ -4226,12 +4237,13 @@ class Function(LabelFrame):     # <<<2
             convert=int,
             width=3
         )
-        self._wallpaper_N.pack(padx=5, pady=5)
-        self._wallpaper_N.disable()
-        self._wallpaper_N.bind(
-            "<Double-Button-1>",
-            sequence(self._wallpaper_N.toggle)
-        )
+        if DEVEL:
+            self._wallpaper_N.pack(padx=5, pady=5)
+            self._wallpaper_N.disable()
+            self._wallpaper_N.bind(
+                "<Double-Button-1>",
+                sequence(self._wallpaper_N.toggle)
+            )
         # # >>>4
 
         # sphere tab        <<<4
@@ -4268,30 +4280,31 @@ class Function(LabelFrame):     # <<<2
         radio_frame.pack(padx=5, pady=(10, 5))
         self._sphere_mode = StringVar()
         self._sphere_mode.set("sphere")
-        Radiobutton(
-            radio_frame,
-            indicatoron=0,
-            text="sphere",
-            variable=self._sphere_mode,
-            value="sphere",
-            command=self.update
-        ).grid(row=0, column=0, padx=5, pady=5)
-        Radiobutton(
-            radio_frame,
-            indicatoron=0,
-            text="rosette",
-            variable=self._sphere_mode,
-            value="rosette",
-            command=self.update
-        ).grid(row=0, column=1, padx=5, pady=5)
-        Radiobutton(
-            radio_frame,
-            indicatoron=0,
-            text="frieze",
-            variable=self._sphere_mode,
-            value="frieze",
-            command=self.update
-        ).grid(row=0, column=2, padx=5, pady=5)
+        if DEVEL:
+            Radiobutton(
+                radio_frame,
+                indicatoron=0,
+                text="sphere",
+                variable=self._sphere_mode,
+                value="sphere",
+                command=self.update
+            ).grid(row=0, column=0, padx=5, pady=5)
+            Radiobutton(
+                radio_frame,
+                indicatoron=0,
+                text="rosette",
+                variable=self._sphere_mode,
+                value="rosette",
+                command=self.update
+            ).grid(row=0, column=1, padx=5, pady=5)
+            Radiobutton(
+                radio_frame,
+                indicatoron=0,
+                text="frieze",
+                variable=self._sphere_mode,
+                value="frieze",
+                command=self.update
+            ).grid(row=0, column=2, padx=5, pady=5)
         # >>>4
 
         # hyperbolic tab        <<<4
@@ -5754,6 +5767,8 @@ def main(argv):     # <<<1
 
     --batch                     do not run GUI
 
+    --devel                     run in developper mode
+
     -h  /  --help               this message
 """.format(argv[0]))
 
@@ -5766,7 +5781,8 @@ def main(argv):     # <<<1
             "matrix=", "rotation-symmetry=",
             "preview",
             "pattern=", "params=",
-            "config=", "batch"]
+            "config=", "batch",
+            "devel"]
 
     try:
         opts, args = getopt.getopt(argv[1:], short_options, long_options)
@@ -5941,6 +5957,9 @@ def main(argv):     # <<<1
             batch = True
         elif o == "--gui":
             batch = False
+        elif o == "--devel":
+            global DEVEL
+            DEVEL = True
         else:
             assert False
 
