@@ -13,14 +13,15 @@ With this program, you can
 
 - generate random (or not) patterns for the 17 planar wallpaper groups
 - generate random (or not) pattern for the 46 planar color-reversing wallpaper groups
-- generate random (or not) patterns for the 14 spherical symmetry groups, in "3D" form or stereographic projection (this includes the different rosette types),
-- generate random (or not) pattern for the 7 frieze pattern types,
-- generate random (or not) hyperbolic patterns based on the modular group, as described in Farris' book,
-- generate one kind of "morphing" wallpaper pattern.
+- generate random (or not) patterns for the 14 spherical symmetry groups,
 
 You cannot generate automatically the color-turning wallpaper patterns: you'll
 need to input the transformation matrix and enforce the corresponding recipes
 by hand.
+
+Exemples of images for the 17 wallpaper groups and 14 spherical groups can be
+seen here: http://www.lama.univ-savoie.fr/~hyvernat/symetries.php (the page is
+in French, but the pictures are not...)
 
 
 ## System Requirements
@@ -96,14 +97,6 @@ transformation frame makes it easy to rotate or zoom in / out without changing
 the corners: the image is multiplied by "m (cos(alpha) + i sin(alpha))" as a
 final step.
 
-The "mode" tab, only accessible for "sphere" and "hyperbolic" patterns, is
-used to configured the way the function is displayed:
-  - normal mode
-  - project the plane onto a sphere (inverse of stereographic projection)
-  - inversion to send the half plane into a disk
-
-The "morph" tab, only available for wallpaper patterns, is used to creating
-images where the colorwheel is rotated to make morphing wallpapers.
 
 #### Output options
 
@@ -114,11 +107,70 @@ configured.
 
 ### Pattern
 
-TODO
+The "Pattern" frame contains the transformation used to generate the image.
+The left part allows to chose the kind of symmetry to enforce (either planar
+or spherical).
+
+For planar symmetries, the "color symmetry group" is used to generate "color
+reversing" patterns. (In this case, the colorwheel image needs to be color
+reversing!) It should be left empty for "normal" patterns.
+
+The general, rhombic and rectangular patterns are parametrized by additional
+numerical parameters.
+
+The "Matrix" part contains the matrix representation of the current
+transformation. Individual entries can be input with
+```
+i, j : z
+```
+where ``i`` and ``j`` are integers, and ``z`` is a complex number.
+
+The "make matrix" button adds the relevant symmetries (depending on the
+current pattern) to the matrix.
+
+
+The right side of this frame contains parameters for random generation of
+matrices.
+
 
 ### Log and messages
 
-TODO
+The bottom left corner contains log messages and can mostly be ignored.
+
+## Shortcuts
+
+The following shortcuts are available:
+
+- Control-q     quit
+
+- Control-p     compute and display preview
+- Control-s     compute and save result to file
+- Control-S     save current preview to file
+
+- Control-n     add noise to matrix
+- Control-N     add noise to matrix and display preview
+
+- Control-g     generate random matrix
+- Control-G     generate random matrix and display preview
+
+- Control--     zoom out the result file and display preview
+- Control-+     zoom in the result file and display preview
+
+- Control-0     reset geometry of output and display preview
+
+- Control-Up    translate the result and display preview
+- Control-Down  (for spherical patterns, rotate instead)
+- Control-Right
+- Control-Left
+
+- Control-z     rotate around z-axis
+- Control-Z     (for spherical patterns)
+
+- Control-u     undo: go back to previous state
+- Control-r     redo
+- Control-U     undo: go back to previous state and compute preview
+- Control-R     redo
+
 
 
 ## Contact
