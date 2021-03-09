@@ -13,7 +13,6 @@ import os.path
 from itertools import product
 import re
 import json
-from ast import literal_eval
 
 # math
 from cmath import exp
@@ -1053,6 +1052,8 @@ def eqn_indices(eq, n, m):        # <<<2
     [ (1, (7, 4)), (1, (-7, 4)), (-1, (4, 7)) ]
     """
     eq = eq.strip()
+    assert isinstance(n, int)
+    assert isinstance(m, int)
 
     if eq == "":
         return [(1, (n, m))]
@@ -1064,7 +1065,7 @@ def eqn_indices(eq, n, m):        # <<<2
         for snm in l:
             if re.match("^[-nm, ]*$", snm):
                 nm = snm.replace("n", str(n)).replace("m", str(m))
-                res.append((1, literal_eval(nm)))
+                res.append((1, eval(nm)))
             else:
                 # print("snm", snm)
                 _r = re.match("^([-i])([-{n+m1} ]*)(\(.*\))$", snm)
@@ -1083,8 +1084,8 @@ def eqn_indices(eq, n, m):        # <<<2
                     s = 1j
                 if e == "":
                     e = "1"
-                e = s**(literal_eval(e))
-                res.append((e, literal_eval(nm)))
+                e = s**(eval(e))
+                res.append((e, eval(nm)))
     except Exception as e:
         raise Error("cannot compute indices for recipe '{}': {}"
                     .format(eq, e))
@@ -1166,8 +1167,10 @@ def apply_parity(parity, M):    # <<<2
 
     R = {}
     for (n, m) in M.keys():
+        assert isinstance(n, int)
+        assert isinstance(m, int)
         s = parity.replace("n", str(n)) .replace("m", str(m))
-        if literal_eval(s) % modulo == equal:
+        if eval(s) % modulo == equal:
             R[n, m] = M[n, m]
     return R
 # >>>2
