@@ -35,7 +35,7 @@ You cannot run the program without them.
 
 On a Debian / Ubuntu system, the following should be enough:
 ```console
-$ sudo apt-get install python3 python3-tk python3-pil python3-pil.imagetk python3-numpy python3-numexpr
+$ sudo apt install python3 python3-tk python3-pil python3-pil.imagetk python3-numpy python3-numexpr
 ```
 If you use ``pip`` for python packages, 
 ```console
@@ -179,7 +179,7 @@ Pierre Hyvernat
 
 pierre.hyvernat@univ-smb.fr
 
-http://lama.univ-smb.fr/~hyvernat
+http://www.lama.univ-smb.fr/~hyvernat
 
 
 ## Licence
