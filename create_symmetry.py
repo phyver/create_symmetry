@@ -24,7 +24,10 @@ from multiprocessing import Process, Queue
 import queue
 
 # Tkinter for GUI
-from tkinter import *
+from tkinter import Tk, Canvas, Label, Frame, LabelFrame, Entry, Text, Menu
+from tkinter import Button, Checkbutton, Radiobutton, Listbox, Scrollbar, Toplevel
+from tkinter import StringVar, BooleanVar
+import tkinter as tk
 from tkinter.ttk import Combobox, Notebook, Style
 import tkinter.font
 from tkinter import filedialog, messagebox
@@ -916,7 +919,7 @@ def str_to_floats(s):       # <<<2
         if s.strip() == "":
             return []
         else:
-            s = re.sub("[,;]", " ", s)
+            s = re.sub(r"[,;]", " ", s)
             return list(map(float, s.split()))
     except:
         raise ValueError("str_to_floats: '{}' is not a list of floats"
@@ -930,7 +933,7 @@ def float_to_str(x):       # <<<2
     """
     s = str(x)
     if "." in s:
-        s = re.sub("0*\s*$", "", s)
+        s = re.sub(r"0*\s*$", "", s)
     s = s.rstrip(".")
     if s == "":
         s = "0"
@@ -946,7 +949,7 @@ def floats_to_str(l):       # <<<2
 
 def str_to_complex(s):      # <<<2
     """transform a string into a complex number"""
-    s = re.sub("\s*", "", s)
+    s = re.sub(r"\s*", "", s)
     s = s.replace("i", "j")
     return complex(s)
 # >>>2
@@ -1008,7 +1011,7 @@ def parse_matrix(s):        # <<<2
     """parse a string and return the corresponding matrix"""
     # ugly, but works
     s = s.strip(" {}")
-    tmp = re.split("\s*(?:[,;:]|(?:[-=]>))\s*", s)
+    tmp = re.split(r"\s*(?:[,;:]|(?:[-=]>))\s*", s)
     M = {}
     for i in range(0, len(tmp), 3):
         n, m, e = tmp[i:i+3]
@@ -1063,12 +1066,12 @@ def eqn_indices(eq, n, m):        # <<<2
         l = map(lambda s: s.strip(), eq.split("="))
 
         for snm in l:
-            if re.match("^[-nm, ]*$", snm):
+            if re.match(r"^[-nm, ]*$", snm):
                 nm = snm.replace("n", str(n)).replace("m", str(m))
                 res.append((1, eval(nm)))
             else:
                 # print("snm", snm)
-                _r = re.match("^([-i])([-{n+m1} ]*)(\(.*\))$", snm)
+                _r = re.match(r"^([-i])([-{n+m1} ]*)(\(.*\))$", snm)
                 s = _r.group(1)
                 # print("s = '{}'".format(s))
                 e = _r.group(2)
@@ -1153,13 +1156,13 @@ def apply_parity(parity, M):    # <<<2
     if parity == "":
         return M
 
-    r = re.match("^([-+nm ()0-9]*)\s*==?\s*([0-9]+)\s*mod\s*([0-9]+)",
+    r = re.match(r"^([-+nm ()0-9]*)\s*==?\s*([0-9]+)\s*mod\s*([0-9]+)",
                  parity)
     if r:
         modulo = int(r.group(3))
         equal = int(r.group(2))
         parity = r.group(1)
-    elif re.match("^[-+nm 0-9]*$", parity):
+    elif re.match(r"^[-+nm 0-9]*$", parity):
         modulo = 2
         equal = 1
     else:
@@ -1277,11 +1280,11 @@ def fourrier_identity(degre):       # <<<2
 # making an image from a transformation and a colorwheel
 # <<<1
 def make_coordinates_array(         # <<<2
-        size=OUTPUT_SIZE,
-        geometry=OUTPUT_GEOMETRY,
-        modulus=1,
-        angle=0,
-        ):
+    size=OUTPUT_SIZE,
+    geometry=OUTPUT_GEOMETRY,
+    modulus=1,
+    angle=0,
+):
     """compute the array of floating point numbers associated to each pixel"""
     rho = modulus * complex(cos(angle*pi/180), sin(angle*pi/180))
 
@@ -1441,10 +1444,9 @@ def make_wallpaper_image(   # <<<2
     ``message_queue`` is used to keep track of progress
     """
 
-    matrix = add_symmetries(
-            matrix,
-            PATTERN[pattern]["recipe"],
-            parity=PATTERN[pattern]["parity"])
+    matrix = add_symmetries(matrix,
+                            PATTERN[pattern]["recipe"],
+                            parity=PATTERN[pattern]["parity"])
 
     B = invert22(basis)
 
@@ -1624,8 +1626,8 @@ def make_sphere_background(     # <<<2
     zs = make_coordinates_array(img.size, geometry, modulus, angle)
     try:
         background_img = PIL.Image.open(background)
-        background_img = background_img.resize((width, height))
-    except Exception as e:
+        background_img = background_img.resize(img.size)
+    except:
         try:
             color = getrgb(background)
             background_img = PIL.Image.new(
@@ -1673,10 +1675,10 @@ def make_sphere_background(     # <<<2
 
 
 def save_image(         # <<<2
-        message_queue=None,
-        image=None,
-        **config
-        ):
+    message_queue=None,
+    image=None,
+    **config
+):
     """save an image to a file, and construct a shell script to invoke the
     program with the exact same parameters
     ``config`` should contain the whole configuration of the program
@@ -1684,7 +1686,6 @@ def save_image(         # <<<2
     save_directory = config["output"]["save_directory"]
     filename_template = config["output"]["filename_template"]
 
-    colorwheel = config["colorwheel"]
     output = config["output"]
     function = config["function"]
 
@@ -1757,7 +1758,7 @@ def save_image(         # <<<2
             break
         _filename = filename
         info["nb"] += 1
-    image.save(filename + ".jpg")
+    image.convert("RGB").save(filename + ".jpg")
     if message_queue is not None:
         message_queue.put("saved file {}".format(filename+".jpg"))
 
@@ -2228,7 +2229,7 @@ def make_tile(geometry,         # <<<2
             line(1/4, 0, 3/4, 0, color="darkgreen", width=3, caps=True)
             line(1/4, 1/2, 3/4, 1/2, color="darkgreen", width=3, caps=True)
 
-    img = img.resize(size, PIL.Image.ANTIALIAS)
+    img = img.resize(size, PIL.Image.Resampling.LANCZOS)
 
     return img
 # >>>2
@@ -2271,8 +2272,8 @@ class ToolTip(object):
         self.tipwindow = tw = Toplevel(self.widget)
         tw.wm_overrideredirect(1)
         tw.wm_geometry("+%d+%d" % (x, y))
-        label = Label(tw, text=self.text, justify=LEFT,
-                      background="#ffffe0", relief=SOLID, borderwidth=1,
+        label = Label(tw, text=self.text, justify=tk.LEFT,
+                      background="#ffffe0", relief=tk.SOLID, borderwidth=1,
                       font=("tahoma", "8", "normal"))
         label.pack(ipadx=1)
         self.widget.config(highlightbackground="green")
@@ -2311,25 +2312,25 @@ class LabelEntry(Frame):  # <<<2
     def __init__(self, parent, label, on_click=None,  # <<<3
                  value="",
                  convert=None,
-                 state=NORMAL,
+                 state=tk.NORMAL,
                  orientation="H", **kwargs):
         Frame.__init__(self, parent)
 
         self.convert = convert
 
         if orientation == "H":
-            side = LEFT
+            side = tk.LEFT
             padx = (0, 5)
             pady = 0
         elif orientation == "V":
-            side = TOP
+            side = tk.TOP
             padx = 0
             pady = 0
         if label:
             self.label_widget = Label(self, text=label)
             self.label_widget.pack(side=side, padx=padx, pady=pady)
 
-        self.content = StringVar("")
+        self.content = StringVar()
         self.content.set(value)
         self.entry_widget = Entry(self, textvar=self.content,
                                   exportselection=0,
@@ -2352,7 +2353,7 @@ class LabelEntry(Frame):  # <<<2
                 self.convert(self.content.get())
                 self.entry_widget.config(foreground="black")
                 return True
-            except Exception as e:
+            except:
                 self.entry_widget.config(foreground="red")
                 return False
     # >>>3
@@ -2384,19 +2385,19 @@ class LabelEntry(Frame):  # <<<2
     # >>>3
 
     def disable(self):  # <<<3
-        self.entry_widget.config(state=DISABLED)
+        self.entry_widget.config(state=tk.DISABLED)
         if self.label_widget is not None:
-            self.label_widget.config(state=DISABLED)
+            self.label_widget.config(state=tk.DISABLED)
     # >>>3
 
     def enable(self):  # <<<3
-        self.entry_widget.config(state=NORMAL)
+        self.entry_widget.config(state=tk.NORMAL)
         if self.label_widget is not None:
-            self.label_widget.config(state=NORMAL)
+            self.label_widget.config(state=tk.NORMAL)
     # >>>3
 
     def toggle(self):  # <<<3
-        if self.entry_widget.cget("state") == NORMAL:
+        if self.entry_widget.cget("state") == tk.NORMAL:
             self.disable()
         else:
             self.enable()
@@ -2573,36 +2574,36 @@ class ColorWheel(LabelFrame):   # <<<2
         self._alt_filename_label.pack(padx=5, pady=(0, 5))
 
         self._coord_frame = LabelFrame(self, text="coordinates")
-        self._coord_frame.pack(fill=X, padx=5, pady=5)
+        self._coord_frame.pack(fill=tk.X, padx=5, pady=5)
         self._coord_frame.columnconfigure(0, weight=1)
         self._coord_frame.columnconfigure(1, weight=1)
 
         self._x_min = LabelEntry(self._coord_frame, label="x min",
                                  value=COLOR_GEOMETRY[0],
                                  convert=float,
-                                 width=4, justify=RIGHT)
+                                 width=4, justify=tk.RIGHT)
         self._x_min.grid(row=0, column=0, padx=5, pady=5)
 
         self._x_max = LabelEntry(self._coord_frame, label="x max",
                                  value=COLOR_GEOMETRY[1],
                                  convert=float,
-                                 width=4, justify=RIGHT)
+                                 width=4, justify=tk.RIGHT)
         self._x_max.grid(row=0, column=1, padx=5, pady=5)
 
         self._y_min = LabelEntry(self._coord_frame, label="y min",
                                  value=COLOR_GEOMETRY[2],
                                  convert=float,
-                                 width=4, justify=RIGHT)
+                                 width=4, justify=tk.RIGHT)
         self._y_min.grid(row=1, column=0, padx=5, pady=5)
 
         self._y_max = LabelEntry(self._coord_frame, label="y max",
                                  value=COLOR_GEOMETRY[3],
                                  convert=float,
-                                 width=4, justify=RIGHT)
+                                 width=4, justify=tk.RIGHT)
         self._y_max.grid(row=1, column=1, padx=5, pady=5)
 
         transformation_frame = LabelFrame(self, text="transformation")
-        transformation_frame.pack(fill=X, padx=5, pady=5)
+        transformation_frame.pack(fill=tk.X, padx=5, pady=5)
         tmp_frame = Frame(transformation_frame)
         tmp_frame.pack()
         self._modulus = LabelEntry(
@@ -2612,7 +2613,7 @@ class ColorWheel(LabelFrame):   # <<<2
             convert=float,
             width=6
         )
-        self._modulus.grid(row=0, column=0, sticky=E, padx=5, pady=(5, 2))
+        self._modulus.grid(row=0, column=0, sticky=tk.E, padx=5, pady=(5, 2))
         self._modulus.bind(
             "<Return>",
             lambda _: self.change_colorwheel(self.filename, reset_geometry=False),
@@ -2630,7 +2631,7 @@ class ColorWheel(LabelFrame):   # <<<2
             convert=float,
             width=4
         )
-        self._angle.grid(row=1, column=0, sticky=E, padx=5, pady=(2, 5))
+        self._angle.grid(row=1, column=0, sticky=tk.E, padx=5, pady=(2, 5))
         self._angle.bind(
             "<Return>",
             lambda _: self.change_colorwheel(self.filename, reset_geometry=False),
@@ -2669,12 +2670,11 @@ class ColorWheel(LabelFrame):   # <<<2
                 self._y_max.disable()
                 # self._modulus.disable()
                 # self._angle.disable()
-                zs = make_coordinates_array(
-                        size=(PREVIEW_SIZE, PREVIEW_SIZE),
-                        geometry=(-STRETCH_DISPLAY_RADIUS,
-                                  STRETCH_DISPLAY_RADIUS,
-                                  -STRETCH_DISPLAY_RADIUS,
-                                  STRETCH_DISPLAY_RADIUS))
+                zs = make_coordinates_array(size=(PREVIEW_SIZE, PREVIEW_SIZE),
+                                            geometry=(-STRETCH_DISPLAY_RADIUS,
+                                                      STRETCH_DISPLAY_RADIUS,
+                                                      -STRETCH_DISPLAY_RADIUS,
+                                                      STRETCH_DISPLAY_RADIUS))
                 ne.evaluate("zs / (sqrt(1+zs.real**2 + zs.imag**2))", out=zs)
                 img = apply_color(
                     zs,
@@ -2693,11 +2693,11 @@ class ColorWheel(LabelFrame):   # <<<2
                 self._y_max.enable()
                 self._modulus.enable()
                 self._angle.enable()
-                # self._reset_button.configure(state=NORMAL)
+                # self._reset_button.configure(state=tk.NORMAL)
                 img = PIL.Image.open(filename)
                 img.thumbnail(
                     (COLOR_SIZE+1, COLOR_SIZE+1),
-                    PIL.Image.ANTIALIAS
+                    PIL.Image.Resampling.LANCZOS
                 )
                 if reset_geometry:
                     width, height = img.size
@@ -3161,7 +3161,7 @@ class Output(LabelFrame):     # <<<2
 
     @property
     def morph(self):    # <<<4
-        return (self._morph_button.cget("state") != DISABLED and
+        return (self._morph_button.cget("state") != tk.DISABLED and
                 self._morph.get())
     # >>>4
 
@@ -3212,7 +3212,7 @@ class Output(LabelFrame):     # <<<2
         canvas_frame = Frame(
             self,
             borderwidth=2,
-            relief=GROOVE
+            relief=tk.GROOVE
         )
         canvas_frame.grid(row=0, column=0, rowspan=4, padx=5, pady=5)
 
@@ -3235,7 +3235,7 @@ class Output(LabelFrame):     # <<<2
             variable=self._draw_color_tile,
             text=""
         )
-        self._draw_color_tile_button.pack(side=LEFT, padx=0, pady=0)
+        self._draw_color_tile_button.pack(side=tk.LEFT, padx=0, pady=0)
         createToolTip(self._draw_color_tile_button, "show tile for color symmetry\n(instead of plain symmetry)")
 
         self._draw_tile = BooleanVar()
@@ -3245,7 +3245,7 @@ class Output(LabelFrame):     # <<<2
             text="tile",
             indicatoron=False
         )
-        self._draw_tile_button.pack(side=LEFT, padx=5, pady=5)
+        self._draw_tile_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         self._draw_orbifold = BooleanVar()
         self._draw_orbifold_button = Checkbutton(
@@ -3254,7 +3254,7 @@ class Output(LabelFrame):     # <<<2
             text="orbifold",
             indicatoron=False
         )
-        self._draw_orbifold_button.pack(side=LEFT, padx=5, pady=5)
+        self._draw_orbifold_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         self._draw_mirrors = BooleanVar()
         self._draw_mirrors_button = Checkbutton(
@@ -3263,7 +3263,7 @@ class Output(LabelFrame):     # <<<2
             text="mirrors",
             indicatoron=False
         )
-        self._draw_mirrors_button.pack(side=LEFT, padx=5, pady=5)
+        self._draw_mirrors_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         self._fade = BooleanVar()
         self._fade_button = Checkbutton(
@@ -3272,7 +3272,7 @@ class Output(LabelFrame):     # <<<2
             text="fade",
             indicatoron=False
         )
-        self._fade_button.pack(side=LEFT, padx=(5, 0), pady=5)
+        self._fade_button.pack(side=tk.LEFT, padx=(5, 0), pady=5)
 
         self._fade_coeff = LabelEntry(
             canvas_frame,
@@ -3280,7 +3280,7 @@ class Output(LabelFrame):     # <<<2
             width=3,
             label=""
         )
-        self._fade_coeff.pack(side=LEFT, padx=(0, 5), pady=5)
+        self._fade_coeff.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
         self._preview_size = LabelEntry(
             canvas_frame,
@@ -3288,7 +3288,7 @@ class Output(LabelFrame):     # <<<2
             width=3,
             label="preview size"
         )
-        self._preview_size.pack(side=RIGHT, padx=5, pady=5)
+        self._preview_size.pack(side=tk.RIGHT, padx=5, pady=5)
         self._preview_size.set(PREVIEW_SIZE)
 
         self._draw_tile.trace("w", self.update)
@@ -3306,7 +3306,7 @@ class Output(LabelFrame):     # <<<2
 
         # geometry of result    <<<4
         self._geometry_tabs = Notebook(self)
-        self._geometry_tabs.grid(row=0, column=1, sticky=E+W, padx=5, pady=5)
+        self._geometry_tabs.grid(row=0, column=1, sticky=tk.E+tk.W, padx=5, pady=5)
         # prevent arrows from changing tab
         self._geometry_tabs.bind_all(
             "<<NotebookTabChanged>>",
@@ -3329,7 +3329,7 @@ class Output(LabelFrame):     # <<<2
             text="coordinates"
         )
         coord_frame.pack(padx=5, pady=5)
-        # coord_frame.grid(row=0, column=1, sticky=E+W, padx=5, pady=5)
+        # coord_frame.grid(row=0, column=1, sticky=tk.E+tk.W, padx=5, pady=5)
         coord_frame.columnconfigure(0, weight=1)
         coord_frame.columnconfigure(1, weight=1)
 
@@ -3338,7 +3338,7 @@ class Output(LabelFrame):     # <<<2
             label="x min",
             value=OUTPUT_GEOMETRY[0],
             convert=float,
-            width=4, justify=RIGHT
+            width=4, justify=tk.RIGHT
         )
         self._x_min.grid(row=0, column=0, padx=5, pady=5)
 
@@ -3347,7 +3347,7 @@ class Output(LabelFrame):     # <<<2
             label="x max",
             value=OUTPUT_GEOMETRY[1],
             convert=float,
-            width=4, justify=RIGHT
+            width=4, justify=tk.RIGHT
         )
         self._x_max.grid(row=0, column=1, padx=5, pady=5)
 
@@ -3356,7 +3356,7 @@ class Output(LabelFrame):     # <<<2
             label="y min",
             value=OUTPUT_GEOMETRY[2],
             convert=float,
-            width=4, justify=RIGHT
+            width=4, justify=tk.RIGHT
         )
         self._y_min.grid(row=1, column=0, padx=5, pady=5)
 
@@ -3365,7 +3365,7 @@ class Output(LabelFrame):     # <<<2
             label="y max",
             value=OUTPUT_GEOMETRY[3],
             convert=float,
-            width=4, justify=RIGHT
+            width=4, justify=tk.RIGHT
         )
         self._y_max.grid(row=1, column=1, padx=5, pady=5)
 
@@ -3373,7 +3373,7 @@ class Output(LabelFrame):     # <<<2
             self._geometry_geometry_tab,
             text="transformation"
         )
-        transformation_frame.pack(padx=5, pady=5, fill=BOTH)
+        transformation_frame.pack(padx=5, pady=5, fill=tk.BOTH)
         tmp_frame = Frame(transformation_frame)
         tmp_frame.pack()
         self._modulus = LabelEntry(
@@ -3383,7 +3383,7 @@ class Output(LabelFrame):     # <<<2
             convert=float,
             width=6
         )
-        self._modulus.grid(row=0, column=0, sticky=E, padx=5, pady=(5, 2))
+        self._modulus.grid(row=0, column=0, sticky=tk.E, padx=5, pady=(5, 2))
 
         self._angle = LabelEntry(
             tmp_frame,
@@ -3392,18 +3392,18 @@ class Output(LabelFrame):     # <<<2
             convert=float,
             width=4
         )
-        self._angle.grid(row=1, column=0, sticky=E, padx=5, pady=(2, 5))
+        self._angle.grid(row=1, column=0, sticky=tk.E, padx=5, pady=(2, 5))
 
         Button(
             transformation_frame,
             text="zoom -",
             command=self.zoom(1/ZOOM_FACTOR)
-        ).pack(side=LEFT, padx=5, pady=5)
+        ).pack(side=tk.LEFT, padx=5, pady=5)
         Button(
             transformation_frame,
             text="zoom +",
             command=self.zoom(ZOOM_FACTOR)
-        ).pack(side=RIGHT, padx=5, pady=5)
+        ).pack(side=tk.RIGHT, padx=5, pady=5)
         # >>>4
 
         # sphere parameters     <<<4
@@ -3426,7 +3426,7 @@ class Output(LabelFrame):     # <<<2
             indicatoron=False,
         )
         if DEVEL:
-            plain_button.pack(side=LEFT, padx=5, pady=10)
+            plain_button.pack(side=tk.LEFT, padx=5, pady=10)
 
         sphere_button = Radiobutton(
             tmp,
@@ -3436,7 +3436,7 @@ class Output(LabelFrame):     # <<<2
             indicatoron=False,
         )
         if DEVEL:
-            sphere_button.pack(side=LEFT, padx=5, pady=10)
+            sphere_button.pack(side=tk.LEFT, padx=5, pady=10)
 
         inversion_button = Radiobutton(
             tmp,
@@ -3446,7 +3446,7 @@ class Output(LabelFrame):     # <<<2
             indicatoron=False,
         )
         if DEVEL:
-            inversion_button.pack(side=LEFT, padx=5, pady=10)
+            inversion_button.pack(side=tk.LEFT, padx=5, pady=10)
 
         self._rotations = LabelEntry(
             self._geometry_display_tab,
@@ -3480,13 +3480,13 @@ class Output(LabelFrame):     # <<<2
             command=self.choose_sphere_background,
             padx=1, pady=1
         )
-        background_button.grid(row=0, column=0, sticky=E)
+        background_button.grid(row=0, column=0, sticky=tk.E)
         background_entry = Entry(
             background_frame,
             textvar=self._sphere_background,
             width=10
         )
-        background_entry.grid(row=0, column=1, padx=5, pady=10, sticky=E)
+        background_entry.grid(row=0, column=1, padx=5, pady=10, sticky=tk.E)
         self.sphere_background = DEFAULT_BACKGROUND
 
         self._sphere_background_fading = LabelEntry(
@@ -3499,7 +3499,7 @@ class Output(LabelFrame):     # <<<2
         self._sphere_background_fading.grid(
             row=1, column=0, columnspan=2,
             padx=5, pady=5,
-            sticky=E
+            sticky=tk.E
         )
 
         self._sphere_stars = LabelEntry(
@@ -3512,7 +3512,7 @@ class Output(LabelFrame):     # <<<2
         self._sphere_stars.grid(
             row=2, column=0, columnspan=2,
             padx=5, pady=5,
-            sticky=E
+            sticky=tk.E
         )
 
         def update_tab(*args):
@@ -3522,22 +3522,22 @@ class Output(LabelFrame):     # <<<2
                 self._sphere_background_fading.disable()
                 self._inversion_center.grid_forget()
                 self._rotations.grid_forget()
-                background_button.config(state=DISABLED)
-                background_entry.config(state=DISABLED)
+                background_button.config(state=tk.DISABLED)
+                background_entry.config(state=tk.DISABLED)
             elif s == "sphere":
                 self._sphere_stars.enable()
                 self._sphere_background_fading.enable()
                 self._inversion_center.grid_forget()
                 self._rotations.grid(row=2, padx=5, pady=10)
-                background_button.config(state=NORMAL)
-                background_entry.config(state=NORMAL)
+                background_button.config(state=tk.NORMAL)
+                background_entry.config(state=tk.NORMAL)
             elif s == "inversion":
                 self._sphere_stars.enable()
                 self._sphere_background_fading.enable()
                 self._inversion_center.grid(row=2, padx=5, pady=10)
                 self._rotations.grid_forget()
-                background_button.config(state=NORMAL)
-                background_entry.config(state=NORMAL)
+                background_button.config(state=tk.NORMAL)
+                background_entry.config(state=tk.NORMAL)
             else:
                 assert False
 
@@ -3564,7 +3564,7 @@ class Output(LabelFrame):     # <<<2
             convert=int,
             width=3
         )
-        self._morph_start.grid(row=0, sticky=E, padx=5, pady=5)
+        self._morph_start.grid(row=0, sticky=tk.E, padx=5, pady=5)
         self._morph_start.set(0)
 
         self._morph_end = LabelEntry(
@@ -3573,7 +3573,7 @@ class Output(LabelFrame):     # <<<2
             convert=int,
             width=3
         )
-        self._morph_end.grid(row=1, sticky=E, padx=5, pady=5)
+        self._morph_end.grid(row=1, sticky=tk.E, padx=5, pady=5)
         self._morph_end.set(180)
 
         self._morph_stable_coeff = LabelEntry(
@@ -3583,16 +3583,16 @@ class Output(LabelFrame):     # <<<2
             convert=float,
             width=3
         )
-        self._morph_stable_coeff.grid(row=2, sticky=E, padx=5, pady=5)
+        self._morph_stable_coeff.grid(row=2, sticky=tk.E, padx=5, pady=5)
         # >>>4
 
         # result settings       <<<4
         settings_frame = LabelFrame(self, text="output")
-        settings_frame.grid(row=2, column=1, sticky=E+W, padx=5, pady=5)
+        settings_frame.grid(row=2, column=1, sticky=tk.E+tk.W, padx=5, pady=5)
 
         def convert_size(s):
             try:
-                s = re.sub("[,;x]", " ", s)
+                s = re.sub(r"[,;x]", " ", s)
                 w, h = s.split()
                 w = int(w.strip())
                 h = int(h.strip())
@@ -3671,22 +3671,22 @@ class Output(LabelFrame):     # <<<2
 
     def disable_mode_tab(self, *args):  # <<<3
         self.display_mode = "plain"
-        self._geometry_tabs.tab(self._geometry_display_tab, state=DISABLED)
+        self._geometry_tabs.tab(self._geometry_display_tab, state=tk.DISABLED)
     # >>>3
 
     def disable_geometry_morph_tab(self, *args):  # <<<3
         self.morph = False
         if DEVEL:
-            self._geometry_tabs.tab(self._geometry_morph_tab, state=DISABLED)
+            self._geometry_tabs.tab(self._geometry_morph_tab, state=tk.DISABLED)
     # >>>3
 
     def enable_mode_tab(self, *args):   # <<<3
-        self._geometry_tabs.tab(self._geometry_display_tab, state=NORMAL)
+        self._geometry_tabs.tab(self._geometry_display_tab, state=tk.NORMAL)
     # >>>3
 
     def enable_geometry_morph_tab(self, *args):   # <<<3
         if DEVEL:
-            self._geometry_tabs.tab(self._geometry_morph_tab, state=NORMAL)
+            self._geometry_tabs.tab(self._geometry_morph_tab, state=tk.NORMAL)
     # >>>3
 
     def reset_geometry(self, *args):        # <<<3
@@ -3721,30 +3721,30 @@ class Output(LabelFrame):     # <<<2
     # >>>3
 
     def rotate(self, dx, dy, dz=0):   # <<<3
-            theta_x, theta_y, theta_z = self.sphere_rotations
+        theta_x, theta_y, theta_z = self.sphere_rotations
 
-            theta_x = theta_x*pi/180
-            theta_y = theta_y*pi/180
-            theta_z = theta_z*pi/180
-            R1 = rotation_matrix(theta_x, theta_y, theta_z)
+        theta_x = theta_x*pi/180
+        theta_y = theta_y*pi/180
+        theta_z = theta_z*pi/180
+        R1 = rotation_matrix(theta_x, theta_y, theta_z)
 
-            R2 = rotation_matrix(10*dz*pi/180, 10*dx*pi/180, -10*dy*pi/180)
+        R2 = rotation_matrix(10*dz*pi/180, 10*dx*pi/180, -10*dy*pi/180)
 
-            R = matrix_mult(R1, R2)
-            theta_x, theta_y, theta_z = tait_angle(R)
+        R = matrix_mult(R1, R2)
+        theta_x, theta_y, theta_z = tait_angle(R)
 
-            theta_x = round(theta_x * 180 / pi)
-            theta_y = round(theta_y * 180 / pi)
-            theta_z = round(theta_z * 180 / pi)
+        theta_x = round(theta_x * 180 / pi)
+        theta_y = round(theta_y * 180 / pi)
+        theta_z = round(theta_z * 180 / pi)
 
-            if theta_x < 0:
-                theta_x += 360
-            if theta_y < 0:
-                theta_y += 360
-            if theta_z < 0:
-                theta_z += 360
+        if theta_x < 0:
+            theta_x += 360
+        if theta_y < 0:
+            theta_y += 360
+        if theta_z < 0:
+            theta_z += 360
 
-            self.sphere_rotations = theta_x, theta_y, theta_z
+        self.sphere_rotations = theta_x, theta_y, theta_z
     # >>>3
 
     def choose_sphere_background(self, *args):    # <<<3
@@ -3760,9 +3760,9 @@ class Output(LabelFrame):     # <<<2
 
     def update(self, *args):   # <<<3
         if self.draw_orbifold:
-            self._draw_mirrors_button.config(state=NORMAL)
+            self._draw_mirrors_button.config(state=tk.NORMAL)
         else:
-            self._draw_mirrors_button.config(state=DISABLED)
+            self._draw_mirrors_button.config(state=tk.DISABLED)
 
         if self.fade:
             self._fade_coeff.enable()
@@ -3815,7 +3815,7 @@ class Output(LabelFrame):     # <<<2
         if not hasattr(self._canvas, "_pointer_coords"):
             self._canvas._pointer_coords = self._canvas.create_text(
                 PREVIEW_SIZE, PREVIEW_SIZE,
-                anchor=SE,
+                anchor=tk.SE,
                 fill="white",
                 text=""
             )
@@ -4044,7 +4044,7 @@ class Function(LabelFrame):     # <<<2
         values = self._wallpaper_combo["values"]
         for i in range(len(values)):
             tmp = values[i]
-            tmp = re.sub("--.*$", "", tmp)
+            tmp = re.sub(r"--.*$", "", tmp)
             tmp = tmp.replace("(", " ").replace(")", " ")
             tmp = tmp.split()
             if p in tmp:
@@ -4067,7 +4067,7 @@ class Function(LabelFrame):     # <<<2
         values = self._wallpaper_color_combo["values"]
         for i in range(len(values)):
             tmp = values[i]
-            tmp = re.sub("--.*$", "", tmp)
+            tmp = re.sub(r"--.*$", "", tmp)
             tmp = tmp.replace("(", " ").replace(")", " ")
             tmp = tmp.split()
             if p in tmp:
@@ -4157,7 +4157,7 @@ class Function(LabelFrame):     # <<<2
 
         # tabs for the different kinds of functions / symmetries  <<<4
         self._tabs = Notebook(self)
-        self._tabs.grid(row=0, column=0, rowspan=2, sticky=N+S, padx=5, pady=5)
+        self._tabs.grid(row=0, column=0, rowspan=2, sticky=tk.N+tk.S, padx=5, pady=5)
         # prevent arrows from changing tab
         self._tabs.bind_all(
             "<<NotebookTabChanged>>",
@@ -4336,7 +4336,7 @@ class Function(LabelFrame):     # <<<2
         main_matrix_frame = LabelFrame(self, text="matrix")
         main_matrix_frame.grid(
             row=0, column=1,
-            sticky=N+S+E+W,
+            sticky=tk.N+tk.S+tk.E+tk.W,
             padx=5, pady=5
         )
 
@@ -4344,14 +4344,14 @@ class Function(LabelFrame):     # <<<2
         scroll_matrix_frame.pack()
         self._display_matrix = Listbox(
             scroll_matrix_frame,
-            selectmode=MULTIPLE,
+            selectmode=tk.MULTIPLE,
             font="TkFixedFont",
             width=26, height=8
         )
-        self._display_matrix.pack(side=LEFT)
+        self._display_matrix.pack(side=tk.LEFT)
 
         scrollbar = Scrollbar(scroll_matrix_frame)
-        scrollbar.pack(side=RIGHT, fill=Y)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self._display_matrix.config(yscrollcommand=scrollbar.set)
         scrollbar.config(command=self._display_matrix.yview)
 
@@ -4375,18 +4375,18 @@ class Function(LabelFrame):     # <<<2
         Button(
             main_matrix_frame, text="make matrix",
             command=self.make_matrix
-        ).pack(side=LEFT, padx=5, pady=10)
+        ).pack(side=tk.LEFT, padx=5, pady=10)
 
         Button(
             main_matrix_frame,
             text="reset",
             command=lambda *_: self.change_matrix({})
-        ).pack(side=RIGHT, padx=5, pady=5)
+        ).pack(side=tk.RIGHT, padx=5, pady=5)
         # >>>4
 
         # random matrix     <<<4
         random_frame = LabelFrame(self, text="random matrix")
-        random_frame.grid(row=0, column=2, sticky=N+S, padx=5, pady=5)
+        random_frame.grid(row=0, column=2, sticky=tk.N+tk.S, padx=5, pady=5)
 
         self._random_nb_coeffs = LabelEntry(
             random_frame,
@@ -4438,7 +4438,7 @@ class Function(LabelFrame):     # <<<2
             value=25,
             convert=float,
             width=3)
-        self._random_noise.pack(side=RIGHT, padx=5, pady=5)
+        self._random_noise.pack(side=tk.RIGHT, padx=5, pady=5)
         self._random_noise.bind("<Return>", self.add_noise)
 
         random_noise = Button(
@@ -4446,7 +4446,7 @@ class Function(LabelFrame):     # <<<2
             text="noise (%)",
             command=self.add_noise
         )
-        random_noise.pack(side=LEFT, padx=5, pady=5)
+        random_noise.pack(side=tk.LEFT, padx=5, pady=5)
         # >>>4
 
         # make sure the layout reflects the selected options    <<<4
@@ -4459,15 +4459,15 @@ class Function(LabelFrame):     # <<<2
             M = self.matrix
         else:
             self.matrix = dict(M)
-        self._display_matrix.delete(0, END)
+        self._display_matrix.delete(0, tk.END)
         keys = list(M.keys())
         keys.sort()
 
         for (n, m) in keys:
             self._display_matrix.insert(
-                    END,
-                    "{:2}, {:2} : {}"
-                    .format(n, m, complex_to_str(M[(n, m)], precision=3)))
+                tk.END,
+                "{:2}, {:2} : {}"
+                .format(n, m, complex_to_str(M[(n, m)], precision=3)))
     # >>>3
 
     def new_random_matrix(self, *args):     # <<<3
@@ -4486,7 +4486,7 @@ class Function(LabelFrame):     # <<<2
         if e == "":
             return
         try:
-            tmp = re.split("\s*(?:[,;:]|(?:[-=]>))\s*", e)
+            tmp = re.split(r"\s*(?:[,;:]|(?:[-=]>))\s*", e)
             n, m, z = tmp
             n = n.strip(" ()")
             m = m.strip(" ()")
@@ -4509,7 +4509,7 @@ class Function(LabelFrame):     # <<<2
         p = 0
         for e in entries:
             tmp = self._display_matrix.get(e-p)
-            n, m, _ = re.split("\s*(?:[,;:]|(?:[-=]>))\s*", tmp)
+            n, m, _ = re.split(r"\s*(?:[,;:]|(?:[-=]>))\s*", tmp)
             self.matrix.pop((int(n), int(m)))
             self._display_matrix.delete(e-p, e-p)
             p += 1
@@ -4581,7 +4581,7 @@ class Function(LabelFrame):     # <<<2
         for k in ["random_nb_coeffs", "random_min_degre",
                   "random_max_degre", "random_modulus", "random_noise",
                   "pattern_type",
-                  "wallpaper_pattern",  "wallpaper_N",  # "lattice_parameters",
+                  "wallpaper_pattern", "wallpaper_N",  # "lattice_parameters",
                   # "wallpaper_color_pattern",
                   "sphere_pattern", "sphere_N", "sphere_mode",
                   "hyper_nb_steps", "hyper_s"]:
@@ -4757,9 +4757,9 @@ class CreateSymmetry(Tk):      # <<<2
 
         self.function = Function(self)
 
-        self.colorwheel.grid(row=0, column=0, sticky=N+S, padx=10, pady=10)
-        self.output.grid(row=0, column=1, sticky=N+S, padx=10, pady=10)
-        self.function.grid(row=1, column=1, sticky=E+W, padx=10, pady=10)
+        self.colorwheel.grid(row=0, column=0, sticky=tk.N+tk.S, padx=10, pady=10)
+        self.output.grid(row=0, column=1, sticky=tk.N+tk.S, padx=10, pady=10)
+        self.function.grid(row=1, column=1, sticky=tk.E+tk.W, padx=10, pady=10)
 
         console_frame = Frame(self)
         console_frame.grid(row=1, column=0, padx=0, pady=0)
@@ -4770,28 +4770,28 @@ class CreateSymmetry(Tk):      # <<<2
             background="black", foreground="white",
             font="TkFixedFont",
             borderwidth=3,
-            relief=RIDGE
+            relief=tk.RIDGE
         )
         self._console.grid(
             row=1, column=0,
-            sticky=E+W+N+S,
+            sticky=tk.E+tk.W+tk.N+tk.S,
             padx=10, pady=(10, 0)
         )
-        self._console.config(state=DISABLED)
+        self._console.config(state=tk.DISABLED)
 
         self._preview_console = Text(
             console_frame, width=10, height=1,
             background="black", foreground="white",
             font="TkFixedFont",
             borderwidth=3,
-            relief=RIDGE
+            relief=tk.RIDGE
         )
         self._preview_console.grid(
             row=2, column=0,
-            sticky=E+W,
+            sticky=tk.E+tk.W,
             padx=10, pady=0
         )
-        self._preview_console.config(state=DISABLED)
+        self._preview_console.config(state=tk.DISABLED)
 
         self._output_console = Text(
             console_frame,
@@ -4799,14 +4799,14 @@ class CreateSymmetry(Tk):      # <<<2
             background="black", foreground="white",
             font="TkFixedFont",
             borderwidth=3,
-            relief=RIDGE
+            relief=tk.RIDGE
         )
         self._output_console.grid(
             row=3, column=0,
-            sticky=E+W,
+            sticky=tk.E+tk.W,
             padx=10, pady=(0, 10)
         )
-        self._output_console.config(state=DISABLED)
+        self._output_console.config(state=tk.DISABLED)
         # >>>4
 
         # attach appropriate actions to buttons     <<<4
@@ -5089,11 +5089,11 @@ class CreateSymmetry(Tk):      # <<<2
             dialog,
             height=40,
             background="lightgrey",
-            relief=FLAT,
+            relief=tk.FLAT,
             font="TkFixedFont"
         )
         text.pack()
-        text.insert(END, """
+        text.insert(tk.END, """
 Keyboard shortcuts:
 
   Control-h     this help message
@@ -5130,7 +5130,7 @@ Keyboard shortcuts:
   Control-U     undo: go back to previous state and compute preview
   Control-R     redo
 """)
-        text.config(state=DISABLED)
+        text.config(state=tk.DISABLED)
 
         dialog.bind("<Escape>", lambda _: dialog.destroy())
         dialog.bind("<Control-q>", lambda _: dialog.destroy())
@@ -5153,11 +5153,11 @@ Keyboard shortcuts:
             background="lightgrey",
             height=12,
             width=60,
-            relief=FLAT,
+            relief=tk.FLAT,
             font="TkFixedFont"
         )
         text.pack()
-        text.insert(END, """
+        text.insert(tk.END, """
 create symmetry
 ===============
 
@@ -5167,7 +5167,7 @@ Frank Farris book "creating symmetry"
 author: Pierre Hyvernat
 contact: Pierre.Hyvernat@univ-smb.fr
 """)
-        text.config(state=DISABLED)
+        text.config(state=tk.DISABLED)
 
         dialog.bind("<Escape>", lambda _: dialog.destroy())
         dialog.bind("<Control-q>", lambda _: dialog.destroy())
@@ -5217,22 +5217,22 @@ contact: Pierre.Hyvernat@univ-smb.fr
             self.output.draw_orbifold = False
             self.output.draw_mirrors = False
             self.output.fade = False
-            self.output._draw_tile_button.config(state=DISABLED)
-            self.output._draw_orbifold_button.config(state=DISABLED)
-            self.output._draw_color_tile_button.config(state=DISABLED)
-            self.output._draw_mirrors_button.config(state=DISABLED)
-            self.output._fade_button.config(state=DISABLED)
+            self.output._draw_tile_button.config(state=tk.DISABLED)
+            self.output._draw_orbifold_button.config(state=tk.DISABLED)
+            self.output._draw_color_tile_button.config(state=tk.DISABLED)
+            self.output._draw_mirrors_button.config(state=tk.DISABLED)
+            self.output._fade_button.config(state=tk.DISABLED)
             self.output._fade_coeff.disable()
         else:
-            self.output._draw_tile_button.config(state=NORMAL)
-            self.output._draw_orbifold_button.config(state=NORMAL)
-            self.output._draw_mirrors_button.config(state=NORMAL)
-            self.output._fade_button.config(state=NORMAL)
+            self.output._draw_tile_button.config(state=tk.NORMAL)
+            self.output._draw_orbifold_button.config(state=tk.NORMAL)
+            self.output._draw_mirrors_button.config(state=tk.NORMAL)
+            self.output._fade_button.config(state=tk.NORMAL)
             self.output._fade_coeff.enable()
             if self.function.wallpaper_color_pattern == "":
-                self.output._draw_color_tile_button.config(state=DISABLED)
+                self.output._draw_color_tile_button.config(state=tk.DISABLED)
             else:
-                self.output._draw_color_tile_button.config(state=NORMAL)
+                self.output._draw_color_tile_button.config(state=tk.NORMAL)
             self.update_output_preview()
             self.output.update()
 
@@ -5302,14 +5302,14 @@ contact: Pierre.Hyvernat@univ-smb.fr
     def update_GUI(self):        # <<<3
 
         # console messages
-        self._console.config(state=NORMAL)
+        self._console.config(state=tk.NORMAL)
         while not self.message_queue.empty():
             self._console.insert(
-                END,
+                tk.END,
                 self.message_queue.get(block=False) + "\n"
             )
-        self._console.yview(END)
-        self._console.config(state=DISABLED)
+        self._console.yview(tk.END)
+        self._console.config(state=tk.DISABLED)
 
         m = None
         while True:
@@ -5317,17 +5317,17 @@ contact: Pierre.Hyvernat@univ-smb.fr
                 m = self.preview_message_queue.get(block=False)
             except queue.Empty:
                 if m is not None:
-                    self._preview_console.config(state=NORMAL)
-                    self._preview_console.delete(0.0, END)
+                    self._preview_console.config(state=tk.NORMAL)
+                    self._preview_console.delete(0.0, tk.END)
                     self._preview_console.insert(
                         0.0,
                         "Preview: {}%".format(int(m*100))
                     )
-                    self._preview_console.config(state=DISABLED)
+                    self._preview_console.config(state=tk.DISABLED)
                 elif not self.pending_preview:
-                    self._preview_console.config(state=NORMAL)
-                    self._preview_console.delete(0.0, END)
-                    self._preview_console.config(state=DISABLED)
+                    self._preview_console.config(state=tk.NORMAL)
+                    self._preview_console.delete(0.0, tk.END)
+                    self._preview_console.config(state=tk.DISABLED)
                 break
 
         m = None
@@ -5336,19 +5336,19 @@ contact: Pierre.Hyvernat@univ-smb.fr
                 m = self.output_message_queue.get(block=False)
             except queue.Empty:
                 if m is not None:
-                    self._output_console.config(state=NORMAL)
-                    self._output_console.delete(0.0, END)
+                    self._output_console.config(state=tk.NORMAL)
+                    self._output_console.delete(0.0, tk.END)
                     self._output_console.insert(
                         0.0,
                         "output ({}): {}%"
                         .format(1+self.output_params_queue.qsize(),
                                 round(m*100, 3))
                     )
-                    self._output_console.config(state=DISABLED)
+                    self._output_console.config(state=tk.DISABLED)
                 elif not self.pending_outputs:
-                    self._output_console.config(state=NORMAL)
-                    self._output_console.delete(0.0, END)
-                    self._output_console.config(state=DISABLED)
+                    self._output_console.config(state=tk.NORMAL)
+                    self._output_console.delete(0.0, tk.END)
+                    self._output_console.config(state=tk.DISABLED)
                 break
 
         # preview image
@@ -5513,7 +5513,7 @@ contact: Pierre.Hyvernat@univ-smb.fr
             # redefine queues to avoid corruption
             self.preview_message_queue = Queue()
             self.preview_image_queue = Queue()
-        except AttributeError as e:
+        except AttributeError:
             pass
 
         try:
@@ -5778,14 +5778,14 @@ def main(argv):     # <<<1
     # parsing the command line arguments
     short_options = "hc:o:s:g:v"
     long_options = [
-            "help",
-            "color=", "color-geometry=", "color-modulus=", "color-angle=",
-            "output=", "size=", "geometry=", "modulus=", "angle=",
-            "matrix=", "rotation-symmetry=",
-            "preview",
-            "pattern=", "params=",
-            "config=", "batch",
-            "devel"]
+        "help",
+        "color=", "color-geometry=", "color-modulus=", "color-angle=",
+        "output=", "size=", "geometry=", "modulus=", "angle=",
+        "matrix=", "rotation-symmetry=",
+        "preview",
+        "pattern=", "params=",
+        "config=", "batch",
+        "devel"]
 
     try:
         opts, args = getopt.getopt(argv[1:], short_options, long_options)
@@ -5803,46 +5803,46 @@ def main(argv):     # <<<1
             "stretch": False,
         },
         "output": {
-                "size": OUTPUT_SIZE,
-                "geometry": OUTPUT_GEOMETRY,
-                "modulus": 1,
-                "angle": 0,
-                "filename_template": FILENAME_TEMPLATE,
-                "save_directory": "./",
-                "draw_tile": False,
-                "draw_orbifold": False,
-                "draw_color_tile": False,
-                "draw_mirrors": False,
-                "fade": False,
-                "fade_coeff": FADE_COEFF,
-                "display_mode": "plain",
-                "sphere_rotations": SPHERE_ROTATIONS,
-                "inversion_center": INVERSION_CENTER,
-                "sphere_background": DEFAULT_BACKGROUND,
-                "sphere_background_fading": 100,
-                "sphere_stars": NB_STARS,
-                "morph": False,
-                "morph_start": 0,
-                "morph_end": 180,
-                "morph_stable_coeff": 20,
+            "size": OUTPUT_SIZE,
+            "geometry": OUTPUT_GEOMETRY,
+            "modulus": 1,
+            "angle": 0,
+            "filename_template": FILENAME_TEMPLATE,
+            "save_directory": "./",
+            "draw_tile": False,
+            "draw_orbifold": False,
+            "draw_color_tile": False,
+            "draw_mirrors": False,
+            "fade": False,
+            "fade_coeff": FADE_COEFF,
+            "display_mode": "plain",
+            "sphere_rotations": SPHERE_ROTATIONS,
+            "inversion_center": INVERSION_CENTER,
+            "sphere_background": DEFAULT_BACKGROUND,
+            "sphere_background_fading": 100,
+            "sphere_stars": NB_STARS,
+            "morph": False,
+            "morph_start": 0,
+            "morph_end": 180,
+            "morph_stable_coeff": 20,
         },
         "function": {
-                "matrix": None,
-                "pattern_type": "wallpaper",
-                "wallpaper_pattern": "o",
-                "wallpaper_color_pattern": "",
-                "lattice_parameters": [],
-                "sphere_pattern": "332",
-                "random_nb_coeffs": 3,
-                "random_min_degre": -3,
-                "random_max_degre": 3,
-                "random_modulus": 1,
-                "random_noise": 25,
-                "wallpaper_N": 1,
-                "sphere_N": 5,
-                "sphere_mode": "sphere",
-                "hyper_nb_steps": 25,
-                "hyper_s": 3,
+            "matrix": None,
+            "pattern_type": "wallpaper",
+            "wallpaper_pattern": "o",
+            "wallpaper_color_pattern": "",
+            "lattice_parameters": [],
+            "sphere_pattern": "332",
+            "random_nb_coeffs": 3,
+            "random_min_degre": -3,
+            "random_max_degre": 3,
+            "random_modulus": 1,
+            "random_noise": 25,
+            "wallpaper_N": 1,
+            "sphere_N": 5,
+            "sphere_mode": "sphere",
+            "hyper_nb_steps": 25,
+            "hyper_s": 3,
         },
         "preview": False,
         "working_directory": "./"}
@@ -5874,7 +5874,7 @@ def main(argv):     # <<<1
             config["output"]["filename_template"] = a
         elif o in ["-s", "--size"]:
             try:
-                tmp = map(int, re.split("[,x]", a))
+                tmp = map(int, re.split(r"[,x]", a))
                 width, height = tmp
                 config["output"]["size"] = (width, height)
             except:
